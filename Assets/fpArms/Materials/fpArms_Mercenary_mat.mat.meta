@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 68ca7a6c7f68a9a4fb6b2f2b1147d653
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 17201
+  packageName: First Person Assault Character Pack
+  packageVersion: 1.5
+  assetPath: Assets/fpArms/Materials/fpArms_Mercenary_mat.mat
+  uploadId: 546396
