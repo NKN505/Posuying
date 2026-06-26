@@ -7,6 +7,11 @@ public abstract class EnemyBehaviour : Character
     public float detectionRadius = 10f;
     public float patrolRadius = 20f;
 
+    [Header("Daño")]
+    public float damageAmount = 10f;
+    public float damageCooldown = 1f;
+    private float _damageTimer = 0f;
+
     protected NavMeshAgent agent;
     protected Transform player;
     protected enum State { Patrolling, Chasing }
@@ -30,6 +35,8 @@ public abstract class EnemyBehaviour : Character
     protected override void Update()
     {
         base.Update();
+
+        if (_damageTimer > 0f) _damageTimer -= Time.deltaTime;
 
         if (player == null) return;
 
@@ -57,6 +64,20 @@ public abstract class EnemyBehaviour : Character
         NavMeshHit hit;
         if (NavMesh.SamplePosition(randomDirection, out hit, patrolRadius, 1))
             agent.SetDestination(hit.position);
+    }
+
+    void OnTriggerStay(Collider other)
+    {
+        if (other.CompareTag("Player") && _damageTimer <= 0f)
+        {
+            Character playerChar = other.GetComponent<Character>();
+            if (playerChar != null)
+            {
+                playerChar.TakeDamage(damageAmount);
+                _damageTimer = damageCooldown;
+                Debug.Log("Daño infligido: " + damageAmount);
+            }
+        }
     }
 
     void OnDrawGizmosSelected()
