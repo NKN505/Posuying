@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerController : Character
 {
@@ -15,6 +16,8 @@ public class PlayerController : Character
         SetIsJumping(false);
 
         cameraTransform = Camera.main.transform;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     protected override void Update(){
@@ -41,6 +44,12 @@ public class PlayerController : Character
         pitch = Mathf.Clamp(pitch, -90f, 90f);
 
         cameraTransform.localRotation = Quaternion.Euler(pitch, 0, 0);
-        
+
+    }
+
+    protected override void Die()
+    {
+        Debug.Log("Jugador muerto - reiniciando escena");
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

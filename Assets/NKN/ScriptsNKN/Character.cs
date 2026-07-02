@@ -23,7 +23,19 @@ public class Character : MonoBehaviour{
     private Vector3 velocity;
     private float gravity = -9.81f;
 
-    public float GetHealth()
+    public void TakeDamage(float amount)
+{
+    health -= amount;
+    if (health <= 0)
+        Die();
+}
+
+protected virtual void Die()
+{
+    gameObject.SetActive(false);
+}
+
+public float GetHealth()
 {
     return health;
 }
