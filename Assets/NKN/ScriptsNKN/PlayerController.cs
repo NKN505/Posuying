@@ -16,6 +16,8 @@ public class PlayerController : Character
         SetIsJumping(false);
 
         cameraTransform = Camera.main.transform;
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     protected override void Update(){
