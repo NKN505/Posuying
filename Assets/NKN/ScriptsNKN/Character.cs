@@ -27,11 +27,19 @@ public class Character : MonoBehaviour{
     private Vector3 velocity;
     [SerializeField] private float gravity = -25f;
 
+    private float maxHealth;
+    private float regenTimer = 0f;
+
     public void TakeDamage(float amount)
 {
     health -= amount;
     if (health <= 0)
         Die();
+}
+
+public void Heal(float amount)
+{
+    health = Mathf.Min(health + amount, maxHealth);
 }
 
 protected virtual void Die()
@@ -160,11 +168,31 @@ public void Jump()
 protected virtual void Awake(){
 
     controller = GetComponent<CharacterController>();
+    maxHealth = health;
 
 }
 
 protected virtual void Update(){
 
+    UpdatePassiveRegen();
+
+}
+
+private void UpdatePassiveRegen()
+{
+    if (this is IPassiveRegenerator regenerator)
+    {
+        if (regenerator.CanRegenerate())
+        {
+            regenTimer += Time.deltaTime;
+            if (regenTimer >= regenerator.RegenDelay)
+                Heal(regenerator.RegenAmountPerSecond * Time.deltaTime);
+        }
+        else
+        {
+            regenTimer = 0f;
+        }
+    }
 }
 
 }

@@ -9,6 +9,6 @@ public class HUD : MonoBehaviour
     void Update()
     {
         if (player != null)
-            healthText.text = "Vida: " + Mathf.Max(0, player.GetHealth());
+            healthText.text = "Vida: " + Mathf.Max(0, Mathf.RoundToInt(player.GetHealth()));
     }
 }

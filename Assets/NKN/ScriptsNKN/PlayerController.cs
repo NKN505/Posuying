@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class PlayerController : Character
+public class PlayerController : Character, IPassiveRegenerator
 {
     private Transform cameraTransform;
     private float pitch = 0f;
@@ -23,6 +23,16 @@ public class PlayerController : Character
     public LayerMask climbLayerMask = ~0;
 
     private bool isClimbing = false;
+
+    [Header("Regeneracion pasiva")]
+    public float regenDelay = 3f;
+    public float regenAmountPerSecond = 2f;
+
+    private bool _isStillCrouching = false;
+
+    float IPassiveRegenerator.RegenDelay => regenDelay;
+    float IPassiveRegenerator.RegenAmountPerSecond => regenAmountPerSecond;
+    bool IPassiveRegenerator.CanRegenerate() => _isStillCrouching;
 
     protected override void Awake(){
 
@@ -78,6 +88,10 @@ public class PlayerController : Character
         Vector3 move = transform.right * movex + transform.forward * movez;
 
         controller.Move(move * GetSpeed() * Time.deltaTime);
+
+        // Condicion de regeneracion pasiva (leida por Character via IPassiveRegenerator)
+        bool isStill = Mathf.Approximately(movex, 0f) && Mathf.Approximately(movez, 0f);
+        _isStillCrouching = wantsToCrouch && isStill;
 
     }
 
