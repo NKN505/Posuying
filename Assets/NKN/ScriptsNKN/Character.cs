@@ -12,16 +12,20 @@ public class Character : MonoBehaviour{
 
     [SerializeField] private float health = 1000f;
     [SerializeField] private float speed = 5f;
-    [SerializeField] private float jumpForce =10f;
+    [SerializeField] private float jumpForce = 7f;
+    [SerializeField] private float sprintMultiplier = 1.8f;
+    [SerializeField] private float crouchMultiplier = 0.5f;
 
     [SerializeField] private bool isPlayer = false;
 
     private bool isLiving = false;
     private bool isJumping = false;
     private bool isAvailable = false;
+    private bool isSprinting = false;
+    private bool isCrouching = false;
 
     private Vector3 velocity;
-    private float gravity = -9.81f;
+    [SerializeField] private float gravity = -25f;
 
     public void TakeDamage(float amount)
 {
@@ -47,12 +51,29 @@ public void SetHealth(float health)
 
 public float GetSpeed()
 {
+    if (isCrouching) return speed * crouchMultiplier;
+    if (isSprinting) return speed * sprintMultiplier;
     return speed;
 }
 
 public void SetSpeed(float speed)
 {
     this.speed = speed;
+}
+
+public void SetIsSprinting(bool sprinting)
+{
+    this.isSprinting = sprinting;
+}
+
+public bool GetIsCrouching()
+{
+    return isCrouching;
+}
+
+public void SetIsCrouching(bool crouching)
+{
+    this.isCrouching = crouching;
 }
 
 public float GetJumpForce()
@@ -118,12 +139,22 @@ public void ApplyGravity(){
     if (controller.isGrounded && velocity.y < 0)
     {
         velocity.y = -2f;
+        SetIsJumping(false);
     }
 
     velocity.y += gravity * Time.deltaTime;
 
     controller.Move(velocity * Time.deltaTime);
 
+}
+
+public void Jump()
+{
+    if (controller.isGrounded)
+    {
+        velocity.y = jumpForce;
+        SetIsJumping(true);
+    }
 }
 
 protected virtual void Awake(){
