@@ -76,9 +76,10 @@ public class PlayerController : Character, IPassiveRegenerator
 
         if (isClimbing) return;
 
-        bool wantsToCrouch = Input.GetKey(KeyCode.LeftControl);
+        bool wantsToCrouch = Input.GetButton("Crouch");
+
         SetIsCrouching(wantsToCrouch);
-        SetIsSprinting(!wantsToCrouch && Input.GetKey(KeyCode.LeftShift));
+        SetIsSprinting(!wantsToCrouch && Input.GetButton("Sprint"));
         UpdateCrouch(wantsToCrouch);
 
         // DESPLAZAMIENTO
