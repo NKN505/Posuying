@@ -162,6 +162,7 @@ public void Jump()
     {
         velocity.y = jumpForce;
         SetIsJumping(true);
+        Debug.Log("Salto ejecutado");
     }
 }
 
