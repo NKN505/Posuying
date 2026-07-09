@@ -33,7 +33,7 @@ public class PlayerController : Character, IPassiveRegenerator
     float IPassiveRegenerator.RegenDelay => regenDelay;
     float IPassiveRegenerator.RegenAmountPerSecond => regenAmountPerSecond;
     bool IPassiveRegenerator.CanRegenerate() => _isStillCrouching;
-
+    
     protected override void Awake(){
 
         base.Awake();
