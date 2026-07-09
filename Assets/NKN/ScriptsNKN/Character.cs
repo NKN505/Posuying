@@ -30,6 +30,13 @@ public class Character : MonoBehaviour{
     private float maxHealth;
     private float regenTimer = 0f;
 
+    [Header("Estamina")]
+    [SerializeField] private float maxStamina = 100f;
+    [SerializeField] private float staminaRegenRate = 25f;
+    [SerializeField] private float staminaRegenDelay = 1.5f;
+    private float stamina;
+    private float staminaRegenTimer = 0f;
+
     public void TakeDamage(float amount)
 {
     health -= amount;
@@ -40,6 +47,42 @@ public class Character : MonoBehaviour{
 public void Heal(float amount)
 {
     health = Mathf.Min(health + amount, maxHealth);
+}
+
+// Restaura vida y estamina al maximo (usado al reaparecer)
+public void FullRestore()
+{
+    health = maxHealth;
+    stamina = maxStamina;
+}
+
+// --- ESTAMINA ---
+public float GetStamina()
+{
+    return stamina;
+}
+
+public float GetMaxStamina()
+{
+    return maxStamina;
+}
+
+// Gasto puntual (salto). Devuelve true si habia suficiente y se consumio.
+public bool ConsumeStamina(float amount)
+{
+    if (stamina < amount) return false;
+    stamina -= amount;
+    staminaRegenTimer = 0f;
+    return true;
+}
+
+// Gasto continuo (correr, escalar). Devuelve false cuando ya no queda estamina.
+public bool DrainStamina(float amountThisFrame)
+{
+    if (stamina <= 0f) return false;
+    stamina = Mathf.Max(0f, stamina - amountThisFrame);
+    staminaRegenTimer = 0f;
+    return true;
 }
 
 protected virtual void Die()
@@ -170,13 +213,24 @@ protected virtual void Awake(){
 
     controller = GetComponent<CharacterController>();
     maxHealth = health;
+    stamina = maxStamina;
 
 }
 
 protected virtual void Update(){
 
     UpdatePassiveRegen();
+    UpdateStaminaRegen();
 
+}
+
+private void UpdateStaminaRegen()
+{
+    if (stamina >= maxStamina) return;
+
+    staminaRegenTimer += Time.deltaTime;
+    if (staminaRegenTimer >= staminaRegenDelay)
+        stamina = Mathf.Min(maxStamina, stamina + staminaRegenRate * Time.deltaTime);
 }
 
 private void UpdatePassiveRegen()

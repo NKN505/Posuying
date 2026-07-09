@@ -24,6 +24,11 @@ public class PlayerController : Character, IPassiveRegenerator
 
     private bool isClimbing = false;
 
+    [Header("Coste de estamina")]
+    public float sprintStaminaPerSecond = 20f;
+    public float jumpStaminaCost = 15f;
+    public float climbStaminaPerSecond = 15f;
+
     [Header("Regeneracion pasiva")]
     public float regenDelay = 3f;
     public float regenAmountPerSecond = 2f;
@@ -56,6 +61,10 @@ public class PlayerController : Character, IPassiveRegenerator
 
         base.Update();
 
+        // DEBUG: matar al jugador con K para probar el spawn
+        if (Input.GetKeyDown(KeyCode.K))
+            TakeDamage(GetHealth());
+
         // MOVIMIENTO DE CAMARA (siempre activo, incluso escalando)
         float mouseX = Input.GetAxis("Mouse X");
         float mouseY = Input.GetAxis("Mouse Y");
@@ -72,32 +81,47 @@ public class PlayerController : Character, IPassiveRegenerator
         ApplyGravity();
 
         if (Input.GetButtonDown("Jump") && !TryClimb())
-            Jump();
+        {
+            // El salto cuesta estamina; solo si estamos en el suelo y hay suficiente
+            if (controller.isGrounded && ConsumeStamina(jumpStaminaCost))
+                Jump();
+        }
 
         if (isClimbing) return;
 
         bool wantsToCrouch = Input.GetButton("Crouch");
 
-        SetIsCrouching(wantsToCrouch);
-        SetIsSprinting(!wantsToCrouch && Input.GetButton("Sprint"));
-        UpdateCrouch(wantsToCrouch);
-
         // DESPLAZAMIENTO
         float movex = Input.GetAxis("Horizontal");
         float movez = Input.GetAxis("Vertical");
+
+        bool isMoving = !(Mathf.Approximately(movex, 0f) && Mathf.Approximately(movez, 0f));
+
+        // SPRINT: solo si nos movemos, no agachados, con boton pulsado y queda estamina
+        bool wantsSprint = !wantsToCrouch && isMoving && Input.GetButton("Sprint");
+        bool sprinting = wantsSprint && GetStamina() > 0f;
+        if (sprinting)
+            DrainStamina(sprintStaminaPerSecond * Time.deltaTime);
+
+        SetIsCrouching(wantsToCrouch);
+        SetIsSprinting(sprinting);
+        UpdateCrouch(wantsToCrouch);
 
         Vector3 move = transform.right * movex + transform.forward * movez;
 
         controller.Move(move * GetSpeed() * Time.deltaTime);
 
         // Condicion de regeneracion pasiva (leida por Character via IPassiveRegenerator)
-        bool isStill = Mathf.Approximately(movex, 0f) && Mathf.Approximately(movez, 0f);
-        _isStillCrouching = wantsToCrouch && isStill;
+        _isStillCrouching = wantsToCrouch && !isMoving;
 
     }
 
     private bool TryClimb()
     {
+        // Sin estamina no se puede escalar
+        if (GetStamina() <= 0f)
+            return false;
+
         Vector3 origin = transform.position + Vector3.up * (controller.height * 0.5f);
 
         if (!Physics.Raycast(origin, transform.forward, climbCheckDistance, climbLayerMask))
@@ -131,6 +155,10 @@ public class PlayerController : Character, IPassiveRegenerator
                 cleared = true;
                 break;
             }
+
+            // Escalar consume estamina; si se agota, dejamos de subir y caemos
+            if (!DrainStamina(climbStaminaPerSecond * Time.deltaTime))
+                break;
 
             float progress = climbed / climbMaxHeight;
             float speed = Mathf.Lerp(climbBaseSpeed, climbMinSpeed, progress);
@@ -193,7 +221,25 @@ public class PlayerController : Character, IPassiveRegenerator
 
     protected override void Die()
     {
-        Debug.Log("Jugador muerto - reiniciando escena");
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        Debug.Log("Jugador muerto - reapareciendo");
+
+        Transform sp = SpawnManager.Instance != null ? SpawnManager.Instance.GetSpawnPoint() : null;
+
+        FullRestore();
+
+        if (sp != null)
+        {
+            // Teletransportar: hay que desactivar el controller para moverlo con seguridad
+            controller.enabled = false;
+            transform.position = sp.position;
+            transform.rotation = Quaternion.Euler(0f, sp.eulerAngles.y, 0f);
+            pitch = 0f;
+            controller.enabled = true;
+        }
+        else
+        {
+            // Sin puntos de spawn definidos: recargar la escena como antes
+            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        }
     }
 }
