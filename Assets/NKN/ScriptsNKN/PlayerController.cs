@@ -110,65 +110,71 @@ public class PlayerController : Character, IPassiveRegenerator
     private System.Collections.IEnumerator ClimbRoutine(Vector3 forward)
     {
         isClimbing = true;
-        controller.enabled = false;
+        // IMPORTANTE: el CharacterController se mantiene ACTIVADO durante toda la
+        // escalada. Movemos con controller.Move() para que las colisiones sigan
+        // respetandose y sea imposible atravesar cualquier objeto.
 
-        float chestOffset = standingHeight * 0.5f;
         float climbed = 0f;
         float elapsed = 0f;
-        bool foundLedge = false;
-        Vector3 ledgePosition = Vector3.zero;
+        bool cleared = false;
 
+        // FASE 1: subir mientras el obstaculo siga delante
         while (elapsed < climbMaxTime && climbed < climbMaxHeight)
         {
             elapsed += Time.deltaTime;
+
+            // ¿Hemos superado ya el borde superior del obstaculo?
+            // Rayo a la altura de los pies: cuando deja de chocar, lo hemos coronado.
+            Vector3 feetRay = transform.position + Vector3.up * 0.1f;
+            if (!Physics.Raycast(feetRay, forward, climbCheckDistance + 0.2f, climbLayerMask))
+            {
+                cleared = true;
+                break;
+            }
 
             float progress = climbed / climbMaxHeight;
             float speed = Mathf.Lerp(climbBaseSpeed, climbMinSpeed, progress);
             float step = speed * Time.deltaTime;
 
-            // Si hay techo/saliente justo encima, no seguir subiendo (evita atravesar geometria)
-            if (Physics.Raycast(transform.position, Vector3.up, step + 0.05f, climbLayerMask))
+            float prevY = transform.position.y;
+            controller.Move(Vector3.up * step);
+            float actualRise = transform.position.y - prevY;
+            climbed += actualRise;
+
+            // Si apenas subimos pese a intentarlo, hay un techo encima: no se puede escalar mas
+            if (actualRise < step * 0.5f)
                 break;
-
-            climbed += step;
-            transform.position += Vector3.up * step;
-
-            // Solo buscamos aterrizaje cuando ya hemos superado la altura de la pared
-            // (el rayo hacia delante deja de chocar con ella)
-            bool wallStillBlocking = Physics.Raycast(
-                transform.position + Vector3.up * chestOffset,
-                forward, climbCheckDistance + 0.3f, climbLayerMask);
-
-            if (!wallStillBlocking)
-            {
-                Vector3 aheadPoint = transform.position + forward * (climbCheckDistance + 0.5f) + Vector3.up * 0.5f;
-                if (Physics.Raycast(aheadPoint, Vector3.down, out RaycastHit landHit, 2f, climbLayerMask))
-                {
-                    foundLedge = true;
-                    ledgePosition = landHit.point;
-                    ledgePosition.y += 0.05f;
-                    break;
-                }
-            }
 
             yield return null;
         }
 
-        if (foundLedge)
+        // FASE 2: solo si hemos coronado el obstaculo, avanzamos para subirnos encima.
+        // Si no (timeout, altura maxima o techo), no avanzamos y el jugador cae por gravedad.
+        if (cleared)
         {
-            Vector3 start = transform.position;
-            float t = 0f;
-            while (t < 0.15f)
+            // Pequeño margen extra de subida para no engancharnos en el borde
+            float margin = 0f;
+            while (margin < 0.25f)
             {
-                t += Time.deltaTime;
-                transform.position = Vector3.Lerp(start, ledgePosition, t / 0.15f);
+                float step = climbMinSpeed * Time.deltaTime + 0.02f;
+                controller.Move(Vector3.up * step);
+                margin += step;
                 yield return null;
             }
-            transform.position = ledgePosition;
-        }
-        // Si no se encontro el borde a tiempo, el jugador se queda donde llego y cae con la gravedad normal
 
-        controller.enabled = true;
+            // Avanzar sobre la superficie. controller.Move respeta colisiones,
+            // asi que si quedara pared delante el jugador simplemente no avanzaria.
+            float forwardDist = 0f;
+            float targetForward = climbCheckDistance + 0.3f;
+            while (forwardDist < targetForward)
+            {
+                float step = climbBaseSpeed * Time.deltaTime;
+                controller.Move(forward * step);
+                forwardDist += step;
+                yield return null;
+            }
+        }
+
         isClimbing = false;
     }
 
