@@ -33,7 +33,18 @@ public class PlayerController : Character, IPassiveRegenerator
     public float regenDelay = 3f;
     public float regenAmountPerSecond = 2f;
 
+    [Header("Dano por caida")]
+    [Tooltip("Metros de caida sin dano")]
+    public float fallSafeHeight = 4f;
+    [Tooltip("Metros de caida a partir de los cuales la caida es mortal")]
+    public float fallLethalHeight = 15f;
+    [Tooltip("Dano por cada metro caido por encima del umbral seguro")]
+    public float fallDamagePerMeter = 40f;
+
     private bool _isStillCrouching = false;
+
+    private bool _wasGrounded = true;
+    private float _fallPeakY;
 
     float IPassiveRegenerator.RegenDelay => regenDelay;
     float IPassiveRegenerator.RegenAmountPerSecond => regenAmountPerSecond;
@@ -55,6 +66,8 @@ public class PlayerController : Character, IPassiveRegenerator
         standingHeight = controller.height;
         standingCenter = controller.center;
         standingCameraPos = cameraTransform.localPosition;
+
+        _fallPeakY = transform.position.y;
     }
 
     protected override void Update(){
@@ -114,6 +127,56 @@ public class PlayerController : Character, IPassiveRegenerator
         // Condicion de regeneracion pasiva (leida por Character via IPassiveRegenerator)
         _isStillCrouching = wantsToCrouch && !isMoving;
 
+        TrackFall();
+
+    }
+
+    private void TrackFall()
+    {
+        bool grounded = controller.isGrounded;
+
+        if (grounded)
+        {
+            // Acabamos de aterrizar: calcular la distancia caida desde el punto mas alto
+            if (!_wasGrounded)
+            {
+                float fallDistance = _fallPeakY - transform.position.y;
+                HandleFallDamage(fallDistance);
+            }
+            _fallPeakY = transform.position.y;
+        }
+        else
+        {
+            // En el aire: guardar la altura maxima alcanzada
+            if (transform.position.y > _fallPeakY)
+                _fallPeakY = transform.position.y;
+        }
+
+        _wasGrounded = grounded;
+    }
+
+    private void HandleFallDamage(float fallDistance)
+    {
+        if (fallDistance <= fallSafeHeight)
+            return;
+
+        if (fallDistance >= fallLethalHeight)
+        {
+            Debug.Log("Caida mortal: " + fallDistance.ToString("F1") + "m");
+            TakeDamage(GetHealth());
+            return;
+        }
+
+        float damage = (fallDistance - fallSafeHeight) * fallDamagePerMeter;
+        Debug.Log("Dano por caida: " + damage.ToString("F0") + " (" + fallDistance.ToString("F1") + "m)");
+        TakeDamage(damage);
+    }
+
+    // Reinicia el seguimiento de caida (tras escalar o reaparecer) para evitar dano falso
+    private void ResetFallTracking()
+    {
+        _fallPeakY = transform.position.y;
+        _wasGrounded = true;
     }
 
     private bool TryClimb()
@@ -204,6 +267,7 @@ public class PlayerController : Character, IPassiveRegenerator
         }
 
         isClimbing = false;
+        ResetFallTracking(); // no contar la subida como una caida
     }
 
     private void UpdateCrouch(bool crouching)
@@ -235,6 +299,7 @@ public class PlayerController : Character, IPassiveRegenerator
             transform.rotation = Quaternion.Euler(0f, sp.eulerAngles.y, 0f);
             pitch = 0f;
             controller.enabled = true;
+            ResetFallTracking(); // no aplicar dano de caida tras teletransportar
         }
         else
         {
