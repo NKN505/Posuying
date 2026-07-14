@@ -6,6 +6,8 @@ public abstract class EnemyBehaviour : Character
     [Header("IA")]
     public float detectionRadius = 10f;
     public float patrolRadius = 20f;
+    [Tooltip("Si esta activo, el enemigo va siempre a por el jugador (no patrulla). Lo usan los enemigos de horda.")]
+    public bool alwaysAggro = false;
 
     [Header("Daño")]
     public float damageAmount = 10f;
@@ -41,7 +43,7 @@ public abstract class EnemyBehaviour : Character
         if (player == null) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
-        state = distanceToPlayer < detectionRadius ? State.Chasing : State.Patrolling;
+        state = (alwaysAggro || distanceToPlayer < detectionRadius) ? State.Chasing : State.Patrolling;
 
         switch (state)
         {
@@ -57,6 +59,12 @@ public abstract class EnemyBehaviour : Character
     }
 
     protected abstract void Chase();
+
+    // Los enemigos se destruyen al morir (util para las hordas: no acumula objetos inactivos)
+    protected override void Die()
+    {
+        Destroy(gameObject);
+    }
 
     protected void SetNewPatrolTarget()
     {
@@ -75,7 +83,6 @@ public abstract class EnemyBehaviour : Character
             {
                 playerChar.TakeDamage(damageAmount);
                 _damageTimer = damageCooldown;
-                Debug.Log("Daño infligido: " + damageAmount);
             }
         }
     }
