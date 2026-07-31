@@ -3,6 +3,9 @@ using UnityEngine.SceneManagement;
 
 public class PlayerController : Character, IPassiveRegenerator
 {
+    [Tooltip("Camara de ESTE jugador. Si se deja vacia se busca entre sus hijos.")]
+    public Camera playerCamera;
+
     private Transform cameraTransform;
     private float pitch = 0f;
 
@@ -59,7 +62,12 @@ public class PlayerController : Character, IPassiveRegenerator
         SetIsAvailable(true);
         SetIsJumping(false);
 
-        cameraTransform = Camera.main.transform;
+        // Cada jugador usa SU propia camara: con varios jugadores en red,
+        // Camera.main podria devolver la camara de otro jugador.
+        if (playerCamera == null)
+            playerCamera = GetComponentInChildren<Camera>(true);
+        cameraTransform = playerCamera.transform;
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 

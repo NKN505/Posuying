@@ -18,17 +18,22 @@ public class InventoryHUD : MonoBehaviour
     private Image[] _icons;
     private Text[] _counts;
 
-    void Start()
+    private bool _built = false;
+
+    void Update()
     {
-        if (inventory == null || container == null)
-        {
-            Debug.LogWarning("InventoryHUD: falta asignar inventory o container.");
-            return;
-        }
+        if (_built) return;
+
+        // En red el inventario llega con el jugador local, que aparece al conectar
+        if (inventory == null)
+            inventory = NetworkPlayer.LocalInventory;
+
+        if (inventory == null || container == null) return;
 
         BuildSlots();
         inventory.OnInventoryChanged += Refresh;
         Refresh();
+        _built = true;
     }
 
     void OnDestroy()

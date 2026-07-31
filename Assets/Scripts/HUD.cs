@@ -12,6 +12,10 @@ public class HUD : MonoBehaviour
 
     void Update()
     {
+        // En red el jugador no esta en la escena: lo crea el NetworkManager al conectar
+        if (player == null)
+            player = NetworkPlayer.LocalPlayer;
+
         if (player == null) return;
 
         healthText.text = "Vida: " + Mathf.Max(0, Mathf.RoundToInt(player.GetHealth()));
