@@ -44,7 +44,7 @@ public class InventoryHUD : MonoBehaviour
 
     void BuildSlots()
     {
-        int n = inventory.slotCount;
+        int n = inventory.hotbarSize;   // abajo solo se ve el cinturon
         _bgs = new Image[n];
         _icons = new Image[n];
         _counts = new Text[n];

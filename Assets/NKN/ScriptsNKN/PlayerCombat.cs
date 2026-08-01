@@ -27,6 +27,9 @@ public class PlayerCombat : MonoBehaviour
 
     void Update()
     {
+        // Con una ventana abierta, los clics son para la interfaz (no disparar)
+        if (UIState.BlocksGameplay) return;
+
         if (_meleeTimer > 0f) _meleeTimer -= Time.deltaTime;
         if (_shootTimer > 0f) _shootTimer -= Time.deltaTime;
 

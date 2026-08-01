@@ -62,10 +62,12 @@ public class NetworkUI : MonoBehaviour
 
         _wasConnected = connected;
         MenuOpen = _menuOpen;
+        UIState.NetMenuOpen = _menuOpen;
 
-        // Este script es el unico que manda sobre el cursor
-        Cursor.lockState = _menuOpen ? CursorLockMode.None : CursorLockMode.Locked;
-        Cursor.visible = _menuOpen;
+        // El cursor se libera si hay CUALQUIER ventana abierta (menu o inventario)
+        bool freeCursor = UIState.BlocksGameplay;
+        Cursor.lockState = freeCursor ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = freeCursor;
     }
 
     void OnGUI()
