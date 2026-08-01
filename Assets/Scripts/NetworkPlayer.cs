@@ -33,8 +33,7 @@ public class NetworkPlayer : NetworkBehaviour
 
             gameObject.name = "Player (LOCAL)";
 
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            // El cursor lo gestiona NetworkUI segun este abierto el menu de red
 
             MoveToSpawnPoint();
         }

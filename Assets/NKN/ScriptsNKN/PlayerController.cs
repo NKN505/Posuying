@@ -69,8 +69,7 @@ public class PlayerController : Character, IPassiveRegenerator
             playerCamera = GetComponentInChildren<Camera>(true);
         cameraTransform = playerCamera.transform;
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        // El cursor lo gestiona NetworkUI (segun este abierto o no el menu de red)
 
         standingHeight = controller.height;
         standingCenter = controller.center;
@@ -82,6 +81,13 @@ public class PlayerController : Character, IPassiveRegenerator
     protected override void Update(){
 
         base.Update();
+
+        // Con el menu de red abierto no se juega: el raton es para los botones
+        if (NetworkUI.MenuOpen)
+        {
+            ApplyGravity();
+            return;
+        }
 
         // DEBUG: matar al jugador con K para probar el spawn
         if (Input.GetKeyDown(KeyCode.K))

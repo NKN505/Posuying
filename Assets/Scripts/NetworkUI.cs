@@ -7,8 +7,11 @@ using UnityEngine;
 // este script en el objeto NetworkManager de la escena.
 //
 // Dos modos:
-//  - LOCAL: por IP. Util para probar en el mismo PC con Multiplayer Play Mode.
+//  - LOCAL: por IP. Util para probar en el mismo PC.
 //  - ONLINE: por codigo de partida (Relay), para jugar desde casas distintas.
+//
+// Mientras el menu esta abierto se libera el raton y se ignora el input del
+// jugador, para poder pulsar los botones sin que la camara se mueva.
 public class NetworkUI : MonoBehaviour
 {
     [Header("Conexion local (mismo PC / LAN)")]
@@ -19,11 +22,17 @@ public class NetworkUI : MonoBehaviour
     [Header("Conexion online (codigo de partida)")]
     public OnlineSession onlineSession;
 
-    [Header("Atajos de teclado")]
+    [Header("Teclas")]
+    public KeyCode menuKey = KeyCode.Escape;
     public KeyCode hostKey = KeyCode.F1;
     public KeyCode clientKey = KeyCode.F2;
 
+    // Lo consulta PlayerController para no moverse mientras el menu esta abierto
+    public static bool MenuOpen { get; private set; }
+
     private string _codeInput = "";
+    private bool _menuOpen = true;
+    private bool _wasConnected = false;
 
     void Awake()
     {
@@ -33,28 +42,52 @@ public class NetworkUI : MonoBehaviour
 
     void Update()
     {
-        // Mientras no estemos conectados hace falta el raton para pulsar los botones,
-        // asi que lo liberamos (PlayerController lo bloquea al arrancar).
-        if (!IsConnected())
+        bool connected = IsConnected();
+
+        if (!connected)
         {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            // Sin partida, el menu siempre visible
+            _menuOpen = true;
 
             if (Input.GetKeyDown(hostKey)) StartHost();
             else if (Input.GetKeyDown(clientKey)) StartClient();
         }
+        else
+        {
+            // Al entrar en partida cerramos el menu para empezar a jugar
+            if (!_wasConnected) _menuOpen = false;
+
+            if (Input.GetKeyDown(menuKey)) _menuOpen = !_menuOpen;
+        }
+
+        _wasConnected = connected;
+        MenuOpen = _menuOpen;
+
+        // Este script es el unico que manda sobre el cursor
+        Cursor.lockState = _menuOpen ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = _menuOpen;
     }
 
     void OnGUI()
     {
-        GUILayout.BeginArea(new Rect(10, 10, 330, 430));
-
         if (NetworkManager.Singleton == null)
         {
-            GUILayout.Label("Falta el objeto NetworkManager en la escena.");
-            GUILayout.EndArea();
+            GUI.Label(new Rect(10, 10, 400, 24), "Falta el objeto NetworkManager en la escena.");
             return;
         }
+
+        // Menu cerrado: solo una linea de ayuda con el codigo de partida
+        if (!_menuOpen)
+        {
+            string hint = menuKey + " = menu de red";
+            if (onlineSession != null && !string.IsNullOrEmpty(onlineSession.JoinCode))
+                hint += "   |   CODIGO: " + onlineSession.JoinCode;
+
+            GUI.Label(new Rect(10, 10, 500, 26), "<b>" + hint + "</b>", RichLabel());
+            return;
+        }
+
+        GUILayout.BeginArea(new Rect(10, 10, 330, 440));
 
         if (IsConnected()) DrawStatus();
         else DrawStartButtons();
@@ -119,7 +152,7 @@ public class NetworkUI : MonoBehaviour
         if (nm.IsServer)
             GUILayout.Label("Jugadores conectados: " + nm.ConnectedClientsIds.Count);
 
-        // Codigo de partida bien visible, para poder dictarselo al companero
+        // Codigo de partida bien visible, para poder pasarselo al companero
         if (onlineSession != null && !string.IsNullOrEmpty(onlineSession.JoinCode))
         {
             GUILayout.Space(6);
@@ -130,6 +163,10 @@ public class NetworkUI : MonoBehaviour
         }
 
         GUILayout.Space(8);
+        if (GUILayout.Button("Seguir jugando  [" + menuKey + "]", GUILayout.Height(26)))
+            _menuOpen = false;
+
+        GUILayout.Space(4);
         if (GUILayout.Button("Desconectar", GUILayout.Height(28)))
             Disconnect();
     }
