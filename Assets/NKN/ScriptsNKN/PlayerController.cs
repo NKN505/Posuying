@@ -82,8 +82,8 @@ public class PlayerController : Character, IPassiveRegenerator
 
         base.Update();
 
-        // Con el menu de red abierto no se juega: el raton es para los botones
-        if (NetworkUI.MenuOpen)
+        // Con el menu de red o el inventario abiertos no se juega: el raton es para la interfaz
+        if (UIState.BlocksGameplay)
         {
             ApplyGravity();
             return;

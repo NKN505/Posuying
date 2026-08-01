@@ -6836,6 +6836,7 @@ MonoBehaviour:
   joinIp: 127.0.0.1
   port: 7777
   onlineSession: {fileID: 0}
+  menuKey: 27
   hostKey: 282
   clientKey: 283
 --- !u!114 &711044510
@@ -20865,6 +20866,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2138116937}
   - component: {fileID: 2138116938}
+  - component: {fileID: 2138116939}
   m_Layer: 5
   m_Name: InventoryHUD
   m_TagString: Untagged
@@ -20909,6 +20911,29 @@ MonoBehaviour:
   spacing: 6
   normalColor: {r: 0, g: 0, b: 0, a: 0.5}
   selectedColor: {r: 1, g: 1, b: 0.3, a: 0.85}
+--- !u!114 &2138116939
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2138116936}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f2a05bbd9662b7e459f65be07fbc4d5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  inventory: {fileID: 0}
+  canvas: {fileID: 0}
+  toggleKey: 9
+  columns: 6
+  slotSize: 56
+  spacing: 6
+  padding: 16
+  panelColor: {r: 0, g: 0, b: 0, a: 0.85}
+  slotColor: {r: 1, g: 1, b: 1, a: 0.12}
+  hotbarSlotColor: {r: 1, g: 1, b: 1, a: 0.22}
+  selectedColor: {r: 1, g: 1, b: 0.3, a: 0.6}
 --- !u!1001 &2139155191
 PrefabInstance:
   m_ObjectHideFlags: 0

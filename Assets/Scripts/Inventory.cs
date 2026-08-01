@@ -13,7 +13,11 @@ public class Inventory : MonoBehaviour
     }
 
     [Header("Configuracion")]
-    public int slotCount = 5;
+    [Tooltip("Huecos del cinturon (los que se ven abajo y se eligen con 1..N)")]
+    public int hotbarSize = 5;
+    [Tooltip("Huecos de la mochila (se ven al abrir el inventario con TAB)")]
+    public int backpackSize = 24;
+
     public Slot[] slots;
     public int selectedIndex = 0;
 
@@ -25,26 +29,34 @@ public class Inventory : MonoBehaviour
 
     private Character _character;
 
+    // Los primeros huecos del array son el cinturon; el resto, la mochila
+    public int TotalSlots => hotbarSize + backpackSize;
+    public bool IsHotbarSlot(int index) => index >= 0 && index < hotbarSize;
+
     void Awake()
     {
         _character = GetComponent<Character>();
+        EnsureSlots();
+    }
 
-        if (slots == null || slots.Length == 0)
-        {
-            slots = new Slot[slotCount];
-            for (int i = 0; i < slotCount; i++)
-                slots[i] = new Slot();
-        }
-        else
-        {
-            slotCount = slots.Length;
-        }
+    private void EnsureSlots()
+    {
+        int total = TotalSlots;
+        if (slots != null && slots.Length == total) return;
+
+        Slot[] old = slots;
+        slots = new Slot[total];
+        for (int i = 0; i < total; i++)
+            slots[i] = (old != null && i < old.Length && old[i] != null) ? old[i] : new Slot();
     }
 
     void Update()
     {
-        // Seleccion por teclas numericas 1..N
-        for (int i = 0; i < slotCount; i++)
+        // Con el inventario o el menu de red abiertos, el raton es para la interfaz
+        if (UIState.BlocksGameplay) return;
+
+        // Seleccion por teclas numericas 1..N (solo cinturon)
+        for (int i = 0; i < hotbarSize; i++)
         {
             if (Input.GetKeyDown(KeyCode.Alpha1 + i))
                 SelectSlot(i);
@@ -52,19 +64,23 @@ public class Inventory : MonoBehaviour
 
         // Seleccion por rueda del raton (mouseScrollDelta no depende del Input Manager)
         float scroll = Input.mouseScrollDelta.y;
-        if (scroll > 0f) SelectSlot((selectedIndex - 1 + slotCount) % slotCount);
-        else if (scroll < 0f) SelectSlot((selectedIndex + 1) % slotCount);
+        if (scroll > 0f) SelectSlot(selectedIndex - 1);
+        else if (scroll < 0f) SelectSlot(selectedIndex + 1);
 
         // Usar el objeto seleccionado
         if (Input.GetKeyDown(useKey))
             UseSelected();
     }
 
+    // La seleccion solo se mueve por el cinturon
     public void SelectSlot(int index)
     {
-        selectedIndex = ((index % slotCount) + slotCount) % slotCount;
+        selectedIndex = ((index % hotbarSize) + hotbarSize) % hotbarSize;
         OnInventoryChanged?.Invoke();
     }
+
+    // Para que la interfaz avise cuando mueve objetos entre huecos
+    public void NotifyChanged() => OnInventoryChanged?.Invoke();
 
     // Anade objetos al inventario. Devuelve cuantos NO cupieron (0 = todo entro).
     public int AddItem(ItemData item, int amount = 1)
