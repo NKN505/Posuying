@@ -50,8 +50,8 @@ public class Inventory : MonoBehaviour
                 SelectSlot(i);
         }
 
-        // Seleccion por rueda del raton
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
+        // Seleccion por rueda del raton (mouseScrollDelta no depende del Input Manager)
+        float scroll = Input.mouseScrollDelta.y;
         if (scroll > 0f) SelectSlot((selectedIndex - 1 + slotCount) % slotCount);
         else if (scroll < 0f) SelectSlot((selectedIndex + 1) % slotCount);
 
@@ -109,7 +109,7 @@ public class Inventory : MonoBehaviour
             case ItemType.Consumable:
                 if (_character != null && slot.item.healAmount > 0f)
                 {
-                    _character.Heal(slot.item.healAmount);
+                    _character.RequestHeal(slot.item.healAmount);
                     slot.count--;
                     if (slot.count <= 0) slot.Clear();
                     OnInventoryChanged?.Invoke();

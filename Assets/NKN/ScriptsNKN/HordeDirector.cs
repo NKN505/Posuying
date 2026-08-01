@@ -1,12 +1,16 @@
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 
 // Director de hordas estilo Left4Dead:
 // - Mantiene una poblacion de enemigos vivos y la repone continuamente.
 // - Cada cierto tiempo lanza un "pico de panico" (mas enemigos, mas rapido).
-// - Los enemigos aparecen en el NavMesh, alrededor del jugador y fuera de su vista.
+// - Los enemigos aparecen en el NavMesh, alrededor de un jugador y fuera de su vista.
 // - Mezcla: mayoria comunes, algunos especiales.
+//
+// EN RED: solo se ejecuta en el SERVIDOR. Los enemigos se crean como objetos de red
+// para que aparezcan igual en todas las maquinas.
 public class HordeDirector : MonoBehaviour
 {
     [Header("Enemigos (prefabs)")]
@@ -37,12 +41,12 @@ public class HordeDirector : MonoBehaviour
     public float spawnYOffset = 1f;
     [Tooltip("Compensa que el modelo quede enterrado. Sube este valor hasta que el enemigo aparezca de pie.")]
     public float agentBaseOffset = 0.9f;
+    [Tooltip("Angulo del cono de vision del jugador: no aparecen enemigos dentro de el")]
+    public float viewConeAngle = 100f;
 
     [Header("Control")]
     public bool active = true;
 
-    private Transform _player;
-    private Camera _cam;
     private readonly List<EnemyBehaviour> _alive = new List<EnemyBehaviour>();
     private float _spawnTimer;
     private float _panicTimer;
@@ -50,16 +54,18 @@ public class HordeDirector : MonoBehaviour
 
     void Start()
     {
-        GameObject p = GameObject.FindWithTag("Player");
-        if (p != null) _player = p.transform;
-        _cam = Camera.main;
-
         _panicTimer = Random.Range(panicEverySeconds.x, panicEverySeconds.y);
     }
 
     void Update()
     {
-        if (!active || _player == null) return;
+        if (!active) return;
+
+        // Solo el servidor decide cuando y donde aparecen los enemigos
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsServer) return;
+
+        // Sin jugadores en partida no hay alrededor de quien spawnear
+        if (NetworkPlayer.AllPlayers.Count == 0) return;
 
         PruneDead();
         UpdatePanic();
@@ -108,7 +114,11 @@ public class HordeDirector : MonoBehaviour
 
     private void SpawnOne()
     {
-        if (!TryGetSpawnPosition(out Vector3 pos)) return;
+        // Con varios jugadores, elegimos alrededor de cual aparece este enemigo
+        PlayerController target = PickRandomPlayer();
+        if (target == null) return;
+
+        if (!TryGetSpawnPosition(target.transform, out Vector3 pos)) return;
 
         EnemyBehaviour prefab = PickPrefab();
         if (prefab == null) return;
@@ -116,7 +126,6 @@ public class HordeDirector : MonoBehaviour
         pos.y += spawnYOffset; // evita que el modelo aparezca enterrado
 
         EnemyBehaviour enemy = Instantiate(prefab, pos, Quaternion.identity);
-        enemy.SetHealth(enemyHealth);          // vida baja para matarlo facil
         enemy.alwaysAggro = true;              // va siempre a por el jugador
         enemy.gameObject.SetActive(true);      // por si el prefab quedo desactivado
 
@@ -125,7 +134,31 @@ public class HordeDirector : MonoBehaviour
         if (na != null)
             na.baseOffset = agentBaseOffset;
 
+        // Darlo de alta en la red: a partir de aqui existe en todas las maquinas
+        NetworkObject netObj = enemy.GetComponent<NetworkObject>();
+        if (netObj == null)
+        {
+            Debug.LogError("El prefab " + prefab.name + " no tiene NetworkObject: no puede aparecer en red.");
+            Destroy(enemy.gameObject);
+            return;
+        }
+        netObj.Spawn();
+
+        // La vida se fija DESPUES de Spawn (antes no existe la variable de red)
+        enemy.SetMaxHealth(enemyHealth);
+
         _alive.Add(enemy);
+    }
+
+    private PlayerController PickRandomPlayer()
+    {
+        var players = NetworkPlayer.AllPlayers;
+        for (int i = 0; i < 5 && players.Count > 0; i++)
+        {
+            var p = players[Random.Range(0, players.Count)];
+            if (p != null) return p;
+        }
+        return null;
     }
 
     private EnemyBehaviour PickPrefab()
@@ -141,20 +174,20 @@ public class HordeDirector : MonoBehaviour
         return pool[Random.Range(0, pool.Length)];
     }
 
-    private bool TryGetSpawnPosition(out Vector3 result)
+    private bool TryGetSpawnPosition(Transform around, out Vector3 result)
     {
         for (int i = 0; i < placementTries; i++)
         {
             float angle = Random.Range(0f, Mathf.PI * 2f);
             float dist = Random.Range(minSpawnDistance, maxSpawnDistance);
             Vector3 dir = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
-            Vector3 candidate = _player.position + dir * dist;
+            Vector3 candidate = around.position + dir * dist;
 
             if (!NavMesh.SamplePosition(candidate, out NavMeshHit hit, navSampleRadius, NavMesh.AllAreas))
                 continue;
 
-            if (IsVisible(hit.position))
-                continue; // debe aparecer fuera del campo de vision del jugador
+            if (IsVisibleToAnyPlayer(hit.position))
+                continue; // debe aparecer fuera del campo de vision de TODOS
 
             result = hit.position;
             return true;
@@ -164,24 +197,32 @@ public class HordeDirector : MonoBehaviour
         return false;
     }
 
-    private bool IsVisible(Vector3 worldPos)
+    // El servidor no tiene la camara de los demas jugadores, asi que aproximamos
+    // su vision con un cono hacia delante + comprobacion de que no haya pared en medio.
+    private bool IsVisibleToAnyPlayer(Vector3 worldPos)
     {
-        if (_cam == null) return false;
+        var players = NetworkPlayer.AllPlayers;
 
-        Vector3 vp = _cam.WorldToViewportPoint(worldPos + Vector3.up * 1f);
-        return vp.z > 0f
-            && vp.x > -0.05f && vp.x < 1.05f
-            && vp.y > -0.05f && vp.y < 1.05f;
+        for (int i = 0; i < players.Count; i++)
+        {
+            var p = players[i];
+            if (p == null) continue;
+
+            Vector3 toPoint = worldPos - p.transform.position;
+            toPoint.y = 0f;
+            if (toPoint.sqrMagnitude < 0.01f) return true;
+
+            float angle = Vector3.Angle(p.transform.forward, toPoint.normalized);
+            if (angle > viewConeAngle * 0.5f) continue;   // fuera de su cono de vision
+
+            // Dentro del cono: si no hay nada de por medio, nos veria aparecer
+            if (!Physics.Linecast(p.transform.position + Vector3.up, worldPos + Vector3.up))
+                return true;
+        }
+
+        return false;
     }
 
     // Cuantos enemigos hay vivos ahora mismo (util para HUD o depuracion)
     public int AliveCount => _alive.Count;
-
-    void OnDrawGizmosSelected()
-    {
-        if (_player == null) return;
-        Gizmos.color = Color.red;
-        Gizmos.DrawWireSphere(_player.position, minSpawnDistance);
-        Gizmos.DrawWireSphere(_player.position, maxSpawnDistance);
-    }
 }

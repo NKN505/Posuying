@@ -1,8 +1,12 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class PlayerController : Character, IPassiveRegenerator
 {
+    [Tooltip("Camara de ESTE jugador. Si se deja vacia se busca entre sus hijos.")]
+    public Camera playerCamera;
+
     private Transform cameraTransform;
     private float pitch = 0f;
 
@@ -59,9 +63,13 @@ public class PlayerController : Character, IPassiveRegenerator
         SetIsAvailable(true);
         SetIsJumping(false);
 
-        cameraTransform = Camera.main.transform;
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        // Cada jugador usa SU propia camara: con varios jugadores en red,
+        // Camera.main podria devolver la camara de otro jugador.
+        if (playerCamera == null)
+            playerCamera = GetComponentInChildren<Camera>(true);
+        cameraTransform = playerCamera.transform;
+
+        // El cursor lo gestiona NetworkUI (segun este abierto o no el menu de red)
 
         standingHeight = controller.height;
         standingCenter = controller.center;
@@ -74,9 +82,16 @@ public class PlayerController : Character, IPassiveRegenerator
 
         base.Update();
 
+        // Con el menu de red abierto no se juega: el raton es para los botones
+        if (NetworkUI.MenuOpen)
+        {
+            ApplyGravity();
+            return;
+        }
+
         // DEBUG: matar al jugador con K para probar el spawn
         if (Input.GetKeyDown(KeyCode.K))
-            TakeDamage(GetHealth());
+            RequestDamage(GetHealth());
 
         // MOVIMIENTO DE CAMARA (siempre activo, incluso escalando)
         float mouseX = Input.GetAxis("Mouse X");
@@ -163,13 +178,13 @@ public class PlayerController : Character, IPassiveRegenerator
         if (fallDistance >= fallLethalHeight)
         {
             Debug.Log("Caida mortal: " + fallDistance.ToString("F1") + "m");
-            TakeDamage(GetHealth());
+            RequestDamage(GetHealth());
             return;
         }
 
         float damage = (fallDistance - fallSafeHeight) * fallDamagePerMeter;
         Debug.Log("Dano por caida: " + damage.ToString("F0") + " (" + fallDistance.ToString("F1") + "m)");
-        TakeDamage(damage);
+        RequestDamage(damage);
     }
 
     // Reinicia el seguimiento de caida (tras escalar o reaparecer) para evitar dano falso
@@ -283,28 +298,30 @@ public class PlayerController : Character, IPassiveRegenerator
         cameraTransform.localPosition = camPos;
     }
 
+    // La muerte la decide el SERVIDOR (es quien lleva la vida).
     protected override void Die()
     {
+        if (!IsServer) return;
+
         Debug.Log("Jugador muerto - reapareciendo");
 
-        Transform sp = SpawnManager.Instance != null ? SpawnManager.Instance.GetSpawnPoint() : null;
+        FullRestore();        // el servidor devuelve la vida al maximo
+        RespawnClientRpc();   // y avisa al dueno para que se mueva al punto de spawn
+    }
 
-        FullRestore();
+    // La posicion del jugador la manda su dueno (NetworkTransform en modo Owner),
+    // por eso el teletransporte lo tiene que hacer el, no el servidor.
+    [ClientRpc]
+    private void RespawnClientRpc()
+    {
+        if (!IsOwner) return;
 
-        if (sp != null)
-        {
-            // Teletransportar: hay que desactivar el controller para moverlo con seguridad
-            controller.enabled = false;
-            transform.position = sp.position;
-            transform.rotation = Quaternion.Euler(0f, sp.eulerAngles.y, 0f);
-            pitch = 0f;
-            controller.enabled = true;
-            ResetFallTracking(); // no aplicar dano de caida tras teletransportar
-        }
-        else
-        {
-            // Sin puntos de spawn definidos: recargar la escena como antes
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-        }
+        var networkPlayer = GetComponent<NetworkPlayer>();
+        if (networkPlayer != null)
+            networkPlayer.MoveToSpawnPoint();
+
+        FullRestore();        // restaura la estamina local
+        pitch = 0f;
+        ResetFallTracking();  // no contar el teletransporte como una caida
     }
 }
