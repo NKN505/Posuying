@@ -5,16 +5,31 @@ using UnityEngine;
 // Interfaz minima para crear o unirse a una partida.
 // Se dibuja con OnGUI para no depender de un Canvas: basta con poner
 // este script en el objeto NetworkManager de la escena.
+//
+// Dos modos:
+//  - LOCAL: por IP. Util para probar en el mismo PC con Multiplayer Play Mode.
+//  - ONLINE: por codigo de partida (Relay), para jugar desde casas distintas.
 public class NetworkUI : MonoBehaviour
 {
-    [Header("Conexion")]
-    [Tooltip("IP del host. 127.0.0.1 = este mismo PC (para probar con dos ventanas)")]
+    [Header("Conexion local (mismo PC / LAN)")]
+    [Tooltip("IP del host. 127.0.0.1 = este mismo PC")]
     public string joinIp = "127.0.0.1";
     public ushort port = 7777;
+
+    [Header("Conexion online (codigo de partida)")]
+    public OnlineSession onlineSession;
 
     [Header("Atajos de teclado")]
     public KeyCode hostKey = KeyCode.F1;
     public KeyCode clientKey = KeyCode.F2;
+
+    private string _codeInput = "";
+
+    void Awake()
+    {
+        if (onlineSession == null)
+            onlineSession = GetComponent<OnlineSession>();
+    }
 
     void Update()
     {
@@ -32,7 +47,7 @@ public class NetworkUI : MonoBehaviour
 
     void OnGUI()
     {
-        GUILayout.BeginArea(new Rect(10, 10, 280, 260));
+        GUILayout.BeginArea(new Rect(10, 10, 330, 430));
 
         if (NetworkManager.Singleton == null)
         {
@@ -49,22 +64,48 @@ public class NetworkUI : MonoBehaviour
 
     private void DrawStartButtons()
     {
-        GUILayout.Label("<b>POSUYING - COOP</b>", RichLabel());
+        GUILayout.Label("<b>POSUYING - COOP</b>", RichLabel(15));
 
-        GUILayout.Space(6);
+        // ---------- ONLINE ----------
+        GUILayout.Space(8);
+        GUILayout.Label("<b>Jugar por internet</b>", RichLabel());
+
+        if (onlineSession == null)
+        {
+            GUILayout.Label("Falta el componente OnlineSession.");
+        }
+        else if (onlineSession.Busy)
+        {
+            GUILayout.Label(onlineSession.Status);
+        }
+        else
+        {
+            if (GUILayout.Button("CREAR PARTIDA ONLINE", GUILayout.Height(32)))
+                onlineSession.CreateOnlineGame();
+
+            GUILayout.Space(4);
+            GUILayout.Label("Codigo de tu companero:");
+            _codeInput = GUILayout.TextField(_codeInput, 10);
+
+            if (GUILayout.Button("UNIRSE CON CODIGO", GUILayout.Height(32)))
+                onlineSession.JoinOnlineGame(_codeInput);
+
+            if (!string.IsNullOrEmpty(onlineSession.Status))
+                GUILayout.Label(onlineSession.Status);
+        }
+
+        // ---------- LOCAL ----------
+        GUILayout.Space(12);
+        GUILayout.Label("<b>Jugar en este PC / red local</b>", RichLabel());
+
         GUILayout.Label("IP del host:");
         joinIp = GUILayout.TextField(joinIp);
 
-        GUILayout.Space(6);
-
-        if (GUILayout.Button("CREAR PARTIDA (Host)  [" + hostKey + "]", GUILayout.Height(34)))
+        if (GUILayout.Button("Host local  [" + hostKey + "]"))
             StartHost();
 
-        if (GUILayout.Button("UNIRSE (Cliente)  [" + clientKey + "]", GUILayout.Height(34)))
+        if (GUILayout.Button("Cliente local  [" + clientKey + "]"))
             StartClient();
-
-        GUILayout.Space(6);
-        GUILayout.Label("El host crea la partida. El otro jugador\npone la IP del host y pulsa Unirse.");
     }
 
     private void DrawStatus()
@@ -72,16 +113,36 @@ public class NetworkUI : MonoBehaviour
         var nm = NetworkManager.Singleton;
 
         string rol = nm.IsHost ? "HOST" : (nm.IsServer ? "SERVIDOR" : "CLIENTE");
-        GUILayout.Label("<b>" + rol + "</b>", RichLabel());
+        GUILayout.Label("<b>" + rol + "</b>", RichLabel(15));
         GUILayout.Label("Mi id de cliente: " + nm.LocalClientId);
 
         if (nm.IsServer)
             GUILayout.Label("Jugadores conectados: " + nm.ConnectedClientsIds.Count);
 
-        GUILayout.Space(6);
+        // Codigo de partida bien visible, para poder dictarselo al companero
+        if (onlineSession != null && !string.IsNullOrEmpty(onlineSession.JoinCode))
+        {
+            GUILayout.Space(6);
+            GUILayout.Label("<b>CODIGO: " + onlineSession.JoinCode + "</b>", RichLabel(18));
+
+            if (GUILayout.Button("Copiar codigo"))
+                GUIUtility.systemCopyBuffer = onlineSession.JoinCode;
+        }
+
+        GUILayout.Space(8);
         if (GUILayout.Button("Desconectar", GUILayout.Height(28)))
-            nm.Shutdown();
+            Disconnect();
     }
+
+    private void Disconnect()
+    {
+        if (onlineSession != null && onlineSession.HasSession)
+            onlineSession.LeaveOnlineGame();   // cierra tambien la sesion de Relay
+        else
+            NetworkManager.Singleton.Shutdown();
+    }
+
+    // ---------- Conexion local por IP ----------
 
     private void StartHost()
     {
@@ -114,8 +175,8 @@ public class NetworkUI : MonoBehaviour
         return nm != null && (nm.IsClient || nm.IsServer);
     }
 
-    private GUIStyle RichLabel()
+    private GUIStyle RichLabel(int size = 13)
     {
-        return new GUIStyle(GUI.skin.label) { richText = true, fontSize = 14 };
+        return new GUIStyle(GUI.skin.label) { richText = true, fontSize = size };
     }
 }
