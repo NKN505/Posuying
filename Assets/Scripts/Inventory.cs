@@ -109,7 +109,7 @@ public class Inventory : MonoBehaviour
             case ItemType.Consumable:
                 if (_character != null && slot.item.healAmount > 0f)
                 {
-                    _character.Heal(slot.item.healAmount);
+                    _character.RequestHeal(slot.item.healAmount);
                     slot.count--;
                     if (slot.count <= 0) slot.Clear();
                     OnInventoryChanged?.Invoke();

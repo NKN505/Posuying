@@ -13,8 +13,6 @@ public class EnemyHealthBar : MonoBehaviour
 
     void Start()
     {
-        _cam = Camera.main.transform;
-        maxHealth = enemy.GetHealth();
         _fullWidth = background != null
             ? background.rectTransform.sizeDelta.x
             : fillBar.rectTransform.sizeDelta.x;
@@ -24,12 +22,21 @@ public class EnemyHealthBar : MonoBehaviour
     {
         if (enemy == null || !enemy.gameObject.activeSelf) return;
 
+        // La camara local no existe hasta que aparece nuestro jugador
+        if (_cam == null)
+        {
+            if (Camera.main == null) return;
+            _cam = Camera.main.transform;
+        }
+
         transform.LookAt(_cam);
         transform.Rotate(0, 180f, 0);
 
         if (fillBar != null)
         {
-            float ratio = Mathf.Clamp01(enemy.GetHealth() / maxHealth);
+            // La vida maxima la manda el servidor (el director de hordas la fija al crear el enemigo)
+            maxHealth = enemy.GetMaxHealth();
+            float ratio = maxHealth > 0f ? Mathf.Clamp01(enemy.GetHealth() / maxHealth) : 0f;
             Vector2 size = fillBar.rectTransform.sizeDelta;
             size.x = _fullWidth * ratio;
             fillBar.rectTransform.sizeDelta = size;

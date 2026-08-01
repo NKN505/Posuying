@@ -47,7 +47,8 @@ public class PlayerCombat : MonoBehaviour
             EnemyBehaviour enemy = hit.collider.GetComponentInParent<EnemyBehaviour>();
             if (enemy != null)
             {
-                enemy.TakeDamage(meleeDamage);
+                // El dano lo aplica el servidor (RequestDamage se encarga de pedirlo)
+                enemy.RequestDamage(meleeDamage);
                 Debug.Log("Golpe melee a " + hit.collider.name);
             }
         }
@@ -63,7 +64,7 @@ public class PlayerCombat : MonoBehaviour
             EnemyBehaviour enemy = hit.collider.GetComponentInParent<EnemyBehaviour>();
             if (enemy != null)
             {
-                enemy.TakeDamage(shootDamage);
+                enemy.RequestDamage(shootDamage);
                 Debug.Log("Disparo a " + hit.collider.name);
             }
         }

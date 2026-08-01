@@ -29,17 +29,35 @@ public abstract class EnemyBehaviour : Character
         SetIsJumping(false);
 
         agent = GetComponent<NavMeshAgent>();
-        player = GameObject.FindWithTag("Player")?.transform;
+    }
 
-        SetNewPatrolTarget();
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        if (IsServer)
+        {
+            // Solo el servidor mueve a los enemigos
+            SetNewPatrolTarget();
+        }
+        else if (agent != null)
+        {
+            // En los clientes el enemigo se mueve por NetworkTransform.
+            // Si dejaramos el NavMeshAgent activo, pelearia contra la posicion recibida.
+            agent.enabled = false;
+        }
     }
 
     protected override void Update()
     {
         base.Update();
 
+        // La IA es autoridad del servidor: los clientes solo ven el resultado
+        if (!IsServer) return;
+
         if (_damageTimer > 0f) _damageTimer -= Time.deltaTime;
 
+        UpdateNearestPlayer();
         if (player == null) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
@@ -52,6 +70,29 @@ public abstract class EnemyBehaviour : Character
         }
     }
 
+    // Con varios jugadores, el enemigo va a por el que tenga mas cerca
+    protected void UpdateNearestPlayer()
+    {
+        Transform nearest = null;
+        float nearestSqr = float.MaxValue;
+
+        var players = NetworkPlayer.AllPlayers;
+        for (int i = 0; i < players.Count; i++)
+        {
+            var p = players[i];
+            if (p == null) continue;
+
+            float sqr = (p.transform.position - transform.position).sqrMagnitude;
+            if (sqr < nearestSqr)
+            {
+                nearestSqr = sqr;
+                nearest = p.transform;
+            }
+        }
+
+        player = nearest;
+    }
+
     protected virtual void Patrol()
     {
         if (!agent.hasPath || agent.remainingDistance < 1f)
@@ -60,9 +101,11 @@ public abstract class EnemyBehaviour : Character
 
     protected abstract void Chase();
 
-    // Los enemigos se destruyen al morir (util para las hordas: no acumula objetos inactivos)
+    // Los enemigos se destruyen al morir. Al hacerlo en el servidor sobre un objeto
+    // de red, Netcode se encarga de eliminarlo tambien en todos los clientes.
     protected override void Die()
     {
+        if (!IsServer) return;
         Destroy(gameObject);
     }
 
@@ -76,6 +119,9 @@ public abstract class EnemyBehaviour : Character
 
     void OnTriggerStay(Collider other)
     {
+        // El dano a los jugadores solo lo aplica el servidor
+        if (!IsServer) return;
+
         if (other.CompareTag("Player") && _damageTimer <= 0f)
         {
             Character playerChar = other.GetComponent<Character>();

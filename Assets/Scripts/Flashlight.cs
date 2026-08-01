@@ -1,8 +1,14 @@
+using Unity.Netcode;
 using UnityEngine;
 
 // Linterna del jugador. La luz debe ser un Spot Light hijo de la camara,
 // asi apunta automaticamente hacia donde mira el jugador.
-public class Flashlight : MonoBehaviour
+//
+// EN RED: el estado (encendida / bateria baja) viaja como variable de red escrita
+// por el dueno, de modo que tu companero ve tu linterna igual que tu.
+// Por eso este script NO se desactiva en los jugadores remotos: necesita seguir
+// ejecutandose para aplicar el estado que llega por la red.
+public class Flashlight : NetworkBehaviour
 {
     [Header("Referencias")]
     public Light spotLight;
@@ -21,7 +27,12 @@ public class Flashlight : MonoBehaviour
     public float lowBatteryThreshold = 20f;
     public float flickerInterval = 0.1f;
 
-    private bool _isOn = false;
+    // Solo el dueno de la linterna las escribe; todos las leen.
+    private readonly NetworkVariable<bool> netIsOn = new NetworkVariable<bool>(
+        false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    private readonly NetworkVariable<bool> netLowBattery = new NetworkVariable<bool>(
+        false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
     private float _battery;
     private float _baseIntensity;
     private float _flickerTimer;
@@ -35,26 +46,33 @@ public class Flashlight : MonoBehaviour
             spotLight = GetComponentInChildren<Light>();
 
         if (spotLight != null)
-        {
             _baseIntensity = spotLight.intensity;
-        }
 
-        _isOn = false;
         ApplyLightState();
     }
 
     void Update()
     {
+        // Solo el dueno maneja el interruptor y gasta bateria...
+        if (IsOwner)
+            UpdateOwner();
+
+        // ...pero todas las maquinas dibujan la luz segun el estado de red
+        ApplyLightState();
+    }
+
+    private void UpdateOwner()
+    {
         if (Input.GetButtonDown(toggleButton))
             Toggle();
 
-        if (_isOn)
+        if (netIsOn.Value)
         {
             _battery -= drainPerSecond * Time.deltaTime;
             if (_battery <= 0f)
             {
                 _battery = 0f;
-                _isOn = false;
+                netIsOn.Value = false;
             }
         }
         else if (rechargeWhenOff && _battery < maxBattery)
@@ -62,29 +80,29 @@ public class Flashlight : MonoBehaviour
             _battery = Mathf.Min(maxBattery, _battery + rechargePerSecond * Time.deltaTime);
         }
 
-        ApplyLightState();
+        bool low = _battery <= lowBatteryThreshold;
+        if (netLowBattery.Value != low)
+            netLowBattery.Value = low;
     }
 
     private void Toggle()
     {
-        if (!_isOn && _battery <= 0f) return; // sin bateria no enciende
-        _isOn = !_isOn;
-        Debug.Log("Linterna: " + (_isOn ? "ENCENDIDA" : "APAGADA"));
+        if (!netIsOn.Value && _battery <= 0f) return; // sin bateria no enciende
+        netIsOn.Value = !netIsOn.Value;
     }
 
-    // Aplica el estado de la luz cada frame segun _isOn (y el parpadeo si hay poca bateria)
+    // Aplica el estado de la luz cada frame (y el parpadeo si hay poca bateria)
     private void ApplyLightState()
     {
         if (spotLight == null) return;
 
-        if (!_isOn)
+        if (!netIsOn.Value)
         {
             spotLight.enabled = false;
             return;
         }
 
-        // Encendida: con poca bateria parpadea y baja de intensidad
-        if (_battery <= lowBatteryThreshold)
+        if (netLowBattery.Value)
         {
             _flickerTimer -= Time.deltaTime;
             if (_flickerTimer <= 0f)
@@ -103,5 +121,5 @@ public class Flashlight : MonoBehaviour
 
     // Utiles para un futuro indicador en el HUD
     public float GetBatteryRatio() => _battery / maxBattery;
-    public bool IsOn() => _isOn;
+    public bool IsOn() => netIsOn.Value;
 }

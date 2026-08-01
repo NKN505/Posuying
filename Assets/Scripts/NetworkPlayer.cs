@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -11,12 +12,17 @@ public class NetworkPlayer : NetworkBehaviour
     public static PlayerController LocalPlayer { get; private set; }
     public static Inventory LocalInventory { get; private set; }
 
+    // Todos los jugadores de la partida (los enemigos persiguen al mas cercano)
+    public static readonly List<PlayerController> AllPlayers = new List<PlayerController>();
+
     public override void OnNetworkSpawn()
     {
         var controller = GetComponent<PlayerController>();
+
+        if (controller != null && !AllPlayers.Contains(controller))
+            AllPlayers.Add(controller);
         var combat = GetComponent<PlayerCombat>();
         var inventory = GetComponent<Inventory>();
-        var flashlight = GetComponentInChildren<Flashlight>(true);
         var cam = GetComponentInChildren<Camera>(true);
 
         if (IsOwner)
@@ -38,10 +44,11 @@ public class NetworkPlayer : NetworkBehaviour
             // pero no lo controlamos ni miramos por su camara.
             gameObject.name = "Player (remoto " + OwnerClientId + ")";
 
+            // OJO: la linterna NO se desactiva. Necesita seguir corriendo para
+            // mostrar la luz que enciende su dueno (lo lee de una variable de red).
             if (controller != null) controller.enabled = false;
             if (combat != null) combat.enabled = false;
             if (inventory != null) inventory.enabled = false;
-            if (flashlight != null) flashlight.enabled = false;
 
             if (cam != null)
             {
@@ -54,7 +61,7 @@ public class NetworkPlayer : NetworkBehaviour
 
     // NGO crea al jugador en el origen: lo llevamos a un punto de spawn del mapa.
     // Con NetworkTransform en modo Owner, este movimiento se replica al resto.
-    private void MoveToSpawnPoint()
+    public void MoveToSpawnPoint()
     {
         if (SpawnManager.Instance == null) return;
 
@@ -74,6 +81,10 @@ public class NetworkPlayer : NetworkBehaviour
 
     public override void OnNetworkDespawn()
     {
+        var controller = GetComponent<PlayerController>();
+        if (controller != null)
+            AllPlayers.Remove(controller);
+
         if (IsOwner)
         {
             LocalPlayer = null;
