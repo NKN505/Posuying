@@ -2,24 +2,20 @@ using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
-// Interfaz minima para crear o unirse a una partida.
-// Se dibuja con OnGUI para no depender de un Canvas: basta con poner
-// este script en el objeto NetworkManager de la escena.
+// Menu rapido DENTRO de la partida (tecla Escape): estado, codigo, abrir/cerrar
+// la partida y desconectar.
 //
-// Dos modos:
-//  - LOCAL: por IP. Util para probar en el mismo PC.
-//  - ONLINE: por codigo de partida (Relay), para jugar desde casas distintas.
+// La pantalla inicial (crear / buscar / codigo / opciones) la lleva MainMenuUI,
+// que es una interfaz de Canvas en condiciones.
 //
-// Mientras el menu esta abierto se libera el raton y se ignora el input del
-// jugador, para poder pulsar los botones sin que la camara se mueva.
+// Este script tambien manda sobre el cursor y sobre si el jugador puede moverse.
 public class NetworkUI : MonoBehaviour
 {
-    [Header("Conexion local (mismo PC / LAN)")]
-    [Tooltip("IP del host. 127.0.0.1 = este mismo PC")]
+    [Header("Conexion local (pruebas en el mismo PC, sin Relay)")]
     public string joinIp = "127.0.0.1";
     public ushort port = 7777;
 
-    [Header("Conexion online (codigo de partida)")]
+    [Header("Referencias")]
     public OnlineSession onlineSession;
 
     [Header("Teclas")]
@@ -30,14 +26,10 @@ public class NetworkUI : MonoBehaviour
     // Lo consulta PlayerController para no moverse mientras el menu esta abierto
     public static bool MenuOpen { get; private set; }
 
-    private string _codeInput = "";
+    private const float ReferenceHeight = 1080f;
+
     private bool _menuOpen = true;
     private bool _wasConnected = false;
-
-    // Opciones de pantalla (solo antes de entrar en partida)
-    private bool _showOptions = false;
-    private int _resIndex = -1;
-    private bool _fullscreen = true;
 
     void Awake()
     {
@@ -45,24 +37,22 @@ public class NetworkUI : MonoBehaviour
             onlineSession = GetComponent<OnlineSession>();
     }
 
-
     void Update()
     {
         bool connected = IsConnected();
 
         if (!connected)
         {
-            // Sin partida, el menu siempre visible
+            // Fuera de partida manda el menu principal: cursor libre
             _menuOpen = true;
 
+            // Atajos de partida local para pruebas rapidas en un mismo PC
             if (Input.GetKeyDown(hostKey)) StartHost();
             else if (Input.GetKeyDown(clientKey)) StartClient();
         }
         else
         {
-            // Al entrar en partida cerramos el menu para empezar a jugar
-            if (!_wasConnected) _menuOpen = false;
-
+            if (!_wasConnected) _menuOpen = false;   // al entrar, a jugar
             if (Input.GetKeyDown(menuKey)) _menuOpen = !_menuOpen;
         }
 
@@ -70,40 +60,33 @@ public class NetworkUI : MonoBehaviour
         MenuOpen = _menuOpen;
         UIState.NetMenuOpen = _menuOpen;
 
-        // El cursor se libera si hay CUALQUIER ventana abierta (menu o inventario)
         bool freeCursor = UIState.BlocksGameplay;
         Cursor.lockState = freeCursor ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = freeCursor;
     }
 
-    // Resolucion para la que estan pensados los tamanos del panel
-    private const float ReferenceHeight = 1080f;
-
     void OnGUI()
     {
-        // El panel se dibuja en pixeles crudos, asi que lo escalamos a mano
-        // para que se vea igual de grande en cualquier resolucion.
+        // Fuera de partida no dibujamos nada: se ve el menu principal
+        if (!IsConnected()) return;
+
         Matrix4x4 previousMatrix = GUI.matrix;
         float scale = Screen.height / ReferenceHeight;
         GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
 
-        DrawGui();
+        DrawInGame();
 
         GUI.matrix = previousMatrix;
     }
 
-    private void DrawGui()
+    private void DrawInGame()
     {
-        if (NetworkManager.Singleton == null)
-        {
-            GUI.Label(new Rect(10, 10, 400, 24), "Falta el objeto NetworkManager en la escena.");
-            return;
-        }
+        var nm = NetworkManager.Singleton;
+        if (nm == null) return;
 
-        // Menu cerrado: solo una linea de ayuda con el codigo de partida
         if (!_menuOpen)
         {
-            string hint = menuKey + " = menu de red";
+            string hint = menuKey + " = menu";
             if (onlineSession != null && !string.IsNullOrEmpty(onlineSession.JoinCode))
                 hint += "   |   CODIGO: " + onlineSession.JoinCode;
 
@@ -111,101 +94,7 @@ public class NetworkUI : MonoBehaviour
             return;
         }
 
-        GUILayout.BeginArea(new Rect(10, 10, 330, 620));
-
-        if (IsConnected()) DrawStatus();
-        else DrawStartButtons();
-
-        GUILayout.EndArea();
-    }
-
-    private void DrawStartButtons()
-    {
-        GUILayout.Label("<b>POSUYING - COOP</b>", RichLabel(15));
-
-        // ---------- ONLINE ----------
-        GUILayout.Space(8);
-        GUILayout.Label("<b>Jugar por internet</b>", RichLabel());
-
-        if (onlineSession == null)
-        {
-            GUILayout.Label("Falta el componente OnlineSession.");
-        }
-        else if (onlineSession.Busy)
-        {
-            GUILayout.Label(onlineSession.Status);
-        }
-        else
-        {
-            if (GUILayout.Button("CREAR PARTIDA ONLINE", GUILayout.Height(32)))
-                onlineSession.CreateOnlineGame();
-
-            GUILayout.Space(4);
-            GUILayout.Label("Codigo de tu companero:");
-            _codeInput = GUILayout.TextField(_codeInput, 10);
-
-            if (GUILayout.Button("UNIRSE CON CODIGO", GUILayout.Height(32)))
-                onlineSession.JoinOnlineGame(_codeInput);
-
-            if (!string.IsNullOrEmpty(onlineSession.Status))
-                GUILayout.Label(onlineSession.Status);
-        }
-
-        // ---------- LOCAL ----------
-        GUILayout.Space(12);
-        GUILayout.Label("<b>Jugar en este PC / red local</b>", RichLabel());
-
-        GUILayout.Label("IP del host:");
-        joinIp = GUILayout.TextField(joinIp);
-
-        if (GUILayout.Button("Host local  [" + hostKey + "]"))
-            StartHost();
-
-        if (GUILayout.Button("Cliente local  [" + clientKey + "]"))
-            StartClient();
-
-        // ---------- OPCIONES ----------
-        GUILayout.Space(12);
-        if (GUILayout.Button(_showOptions ? "Opciones  v" : "Opciones  >"))
-            _showOptions = !_showOptions;
-
-        if (_showOptions)
-            DrawOptions();
-    }
-
-    private void DrawOptions()
-    {
-        // Primera vez: partimos de lo que hay guardado
-        if (_resIndex < 0)
-        {
-            _resIndex = GameSettings.IndexOfCurrent();
-            _fullscreen = GameSettings.SavedFullscreen;
-        }
-
-        var resolutions = GameSettings.Resolutions;
-        Vector2Int res = resolutions[Mathf.Clamp(_resIndex, 0, resolutions.Count - 1)];
-
-        GUILayout.Label("Resolucion:");
-
-        GUILayout.BeginHorizontal();
-        if (GUILayout.Button("<", GUILayout.Width(30)))
-            _resIndex = (_resIndex - 1 + resolutions.Count) % resolutions.Count;
-
-        GUILayout.Label(res.x + " x " + res.y, CenteredLabel());
-
-        if (GUILayout.Button(">", GUILayout.Width(30)))
-            _resIndex = (_resIndex + 1) % resolutions.Count;
-        GUILayout.EndHorizontal();
-
-        _fullscreen = GUILayout.Toggle(_fullscreen, " Pantalla completa");
-
-        if (GUILayout.Button("Aplicar", GUILayout.Height(26)))
-            GameSettings.Apply(res, _fullscreen);
-    }
-
-    private void DrawStatus()
-    {
-        var nm = NetworkManager.Singleton;
+        GUILayout.BeginArea(new Rect(10, 10, 320, 420));
 
         string rol = nm.IsHost ? "HOST" : (nm.IsServer ? "SERVIDOR" : "CLIENTE");
         GUILayout.Label("<b>" + rol + "</b>", RichLabel(15));
@@ -214,11 +103,6 @@ public class NetworkUI : MonoBehaviour
         if (nm.IsServer)
             GUILayout.Label("Jugadores conectados: " + nm.ConnectedClientsIds.Count);
 
-        if (onlineSession != null && !string.IsNullOrEmpty(onlineSession.CurrentProfile))
-            GUILayout.Label("Perfil: " + onlineSession.CurrentProfile);
-
-
-        // Codigo de partida bien visible, para poder pasarselo al companero
         if (onlineSession != null && !string.IsNullOrEmpty(onlineSession.JoinCode))
         {
             GUILayout.Space(6);
@@ -228,13 +112,29 @@ public class NetworkUI : MonoBehaviour
                 GUIUtility.systemCopyBuffer = onlineSession.JoinCode;
         }
 
+        // Solo el host decide si puede entrar gente con la partida empezada
+        if (onlineSession != null && onlineSession.IsHost)
+        {
+            GUILayout.Space(8);
+            bool locked = onlineSession.IsGameLocked;
+
+            GUILayout.Label(locked
+                ? "Partida CERRADA (no entra nadie mas)"
+                : "Partida ABIERTA (se puede entrar en marcha)");
+
+            if (GUILayout.Button(locked ? "Abrir partida" : "Cerrar partida", GUILayout.Height(26)))
+                onlineSession.SetGameLocked(!locked);
+        }
+
         GUILayout.Space(8);
         if (GUILayout.Button("Seguir jugando  [" + menuKey + "]", GUILayout.Height(26)))
             _menuOpen = false;
 
         GUILayout.Space(4);
-        if (GUILayout.Button("Desconectar", GUILayout.Height(28)))
+        if (GUILayout.Button("Salir de la partida", GUILayout.Height(28)))
             Disconnect();
+
+        GUILayout.EndArea();
     }
 
     private void Disconnect()
@@ -245,24 +145,20 @@ public class NetworkUI : MonoBehaviour
             NetworkManager.Singleton.Shutdown();
     }
 
-    // ---------- Conexion local por IP ----------
+    // ---------- Partida local por IP (solo para pruebas en un mismo PC) ----------
 
     private void StartHost()
     {
         ApplyConnectionData();
-        if (NetworkManager.Singleton.StartHost())
-            Debug.Log("Partida creada como HOST en el puerto " + port);
-        else
-            Debug.LogError("No se pudo crear la partida como host");
+        if (!NetworkManager.Singleton.StartHost())
+            Debug.LogError("No se pudo crear la partida local");
     }
 
     private void StartClient()
     {
         ApplyConnectionData();
-        if (NetworkManager.Singleton.StartClient())
-            Debug.Log("Conectando a " + joinIp + ":" + port + " ...");
-        else
-            Debug.LogError("No se pudo iniciar el cliente");
+        if (!NetworkManager.Singleton.StartClient())
+            Debug.LogError("No se pudo iniciar el cliente local");
     }
 
     private void ApplyConnectionData()
@@ -281,10 +177,5 @@ public class NetworkUI : MonoBehaviour
     private GUIStyle RichLabel(int size = 13)
     {
         return new GUIStyle(GUI.skin.label) { richText = true, fontSize = size };
-    }
-
-    private GUIStyle CenteredLabel()
-    {
-        return new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter };
     }
 }
