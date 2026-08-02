@@ -480,6 +480,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1431227678622161872}
+    - targetCorrespondingSourceObject: {fileID: 100000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1293033140140450826}
   m_SourcePrefab: {fileID: 100100000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
 --- !u!1 &8706869791174135810 stripped
 GameObject:
@@ -610,10 +613,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa82e770732830d4b8d094d6fb6407f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  database: {fileID: 11400000, guid: 162debf0a9b023d489be4888842e61bc, type: 2}
   hotbarSize: 5
   backpackSize: 24
-  slots: []
-  selectedIndex: 0
   useKey: 9
 --- !u!114 &2537126146830909993
 MonoBehaviour:
@@ -692,6 +695,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 66786baacde7195468ae1a257b685ab1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1293033140140450826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8706869791174135810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 15bf456294478e0458f60b31d81e30a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1

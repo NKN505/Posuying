@@ -1,12 +1,12 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// Inventario amplio que se abre con TAB (estilo Minecraft):
-// arriba la mochila en cuadricula, abajo el cinturon, y se mueven objetos
-// cogiendolos con un clic y soltandolos con otro clic.
+// Inventario amplio que se abre con TAB: arriba la mochila en cuadricula,
+// abajo el cinturon.
 //
-// Construye toda la interfaz por codigo: basta con poner este componente
-// en un objeto del Canvas y asignarle (o dejar que encuentre) el Canvas.
+// Como el contenido lo manda el servidor, mover objetos es en dos pasos:
+// un clic elige el hueco de origen (se marca) y el siguiente clic elige el
+// destino. El servidor decide si se mueve, se apila o se intercambia.
 public class InventoryPanel : MonoBehaviour
 {
     [Header("Referencias")]
@@ -25,20 +25,15 @@ public class InventoryPanel : MonoBehaviour
     public Color slotColor = new Color(1f, 1f, 1f, 0.12f);
     public Color hotbarSlotColor = new Color(1f, 1f, 1f, 0.22f);
     public Color selectedColor = new Color(1f, 1f, 0.3f, 0.6f);
+    public Color sourceColor = new Color(0.3f, 0.8f, 1f, 0.7f);
 
     private RectTransform _root;
     private Image[] _bgs;
     private Image[] _icons;
     private Text[] _counts;
+    private Text _hint;
 
-    // Objeto "en la mano" mientras lo movemos de un hueco a otro
-    private ItemData _heldItem;
-    private int _heldCount;
-    private int _heldFrom = -1;   // hueco del que salio, para poder devolverlo
-    private RectTransform _heldRoot;
-    private Image _heldIcon;
-    private Text _heldCountText;
-
+    private int _sourceIndex = -1;   // hueco elegido a la espera de destino
     private bool _built;
     private bool _open;
     private Font _font;
@@ -51,12 +46,8 @@ public class InventoryPanel : MonoBehaviour
             return;
         }
 
-        // No abrir el inventario si el menu de red esta delante
         if (Input.GetKeyDown(toggleKey) && (!UIState.NetMenuOpen || _open))
             SetOpen(!_open);
-
-        if (_open && _heldItem != null)
-            _heldRoot.position = Input.mousePosition;
     }
 
     void OnDestroy()
@@ -78,7 +69,6 @@ public class InventoryPanel : MonoBehaviour
         _font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
         BuildPanel();
-        BuildHeldIcon();
 
         inventory.OnInventoryChanged += Refresh;
         Refresh();
@@ -93,17 +83,12 @@ public class InventoryPanel : MonoBehaviour
         _root.gameObject.SetActive(open);
         UIState.InventoryOpen = open;
 
-        if (!open)
-        {
-            // Si cerramos con algo en la mano, lo devolvemos al inventario
-            ReturnHeldToInventory();
-            _heldRoot.gameObject.SetActive(false);
-        }
-        else
+        _sourceIndex = -1;   // al abrir o cerrar, ninguna seleccion pendiente
+
+        if (open)
         {
             _root.SetAsLastSibling();
-            _heldRoot.SetAsLastSibling();
-            Refresh();   // por si quedo algo en la mano de la ultima vez
+            Refresh();
         }
     }
 
@@ -121,9 +106,10 @@ public class InventoryPanel : MonoBehaviour
 
         float titleH = 28f;
         float gapH = 22f;
-        float contentHeight = titleH + rows * slotSize + (rows - 1) * spacing + gapH + slotSize;
+        float hintH = 22f;
+        float contentHeight = titleH + rows * slotSize + (rows - 1) * spacing
+                              + gapH + slotSize + hintH;
 
-        // Panel de fondo, centrado en pantalla
         GameObject rootGO = new GameObject("PanelInventario", typeof(RectTransform), typeof(Image));
         _root = rootGO.GetComponent<RectTransform>();
         _root.SetParent(canvas.transform, false);
@@ -140,11 +126,10 @@ public class InventoryPanel : MonoBehaviour
 
         float topY = contentHeight / 2f;
 
-        // Titulo
         CreateLabel("Titulo", "MOCHILA", _root, new Vector2(0f, topY - titleH / 2f),
             new Vector2(contentWidth, titleH), 18, TextAnchor.MiddleCenter, Color.white);
 
-        // Cuadricula de la mochila (indices hotbar..total-1)
+        // Cuadricula de la mochila
         float gridTop = topY - titleH;
         float gridStartX = -gridWidth / 2f + slotSize / 2f;
 
@@ -158,10 +143,10 @@ public class InventoryPanel : MonoBehaviour
                 gridStartX + col * (slotSize + spacing),
                 gridTop - slotSize / 2f - row * (slotSize + spacing));
 
-            CreateSlot(slotIndex, pos, slotColor, "");
+            CreateSlot(slotIndex, pos, "");
         }
 
-        // Fila del cinturon, abajo
+        // Fila del cinturon
         float hotbarY = gridTop - rows * slotSize - (rows - 1) * spacing - gapH - slotSize / 2f;
         float hotbarStartX = -hotbarWidth / 2f + slotSize / 2f;
 
@@ -173,11 +158,17 @@ public class InventoryPanel : MonoBehaviour
         for (int i = 0; i < hotbar; i++)
         {
             Vector2 pos = new Vector2(hotbarStartX + i * (slotSize + spacing), hotbarY);
-            CreateSlot(i, pos, hotbarSlotColor, (i + 1).ToString());
+            CreateSlot(i, pos, (i + 1).ToString());
         }
+
+        // Linea de ayuda abajo del panel
+        _hint = CreateLabel("Ayuda", "", _root,
+            new Vector2(0f, -contentHeight / 2f + hintH / 2f),
+            new Vector2(contentWidth, hintH), 12, TextAnchor.MiddleCenter,
+            new Color(1f, 1f, 1f, 0.6f));
     }
 
-    private void CreateSlot(int slotIndex, Vector2 position, Color background, string keyLabel)
+    private void CreateSlot(int slotIndex, Vector2 position, string keyLabel)
     {
         GameObject slotGO = new GameObject("Slot" + slotIndex, typeof(RectTransform), typeof(Image));
         RectTransform rt = slotGO.GetComponent<RectTransform>();
@@ -186,7 +177,6 @@ public class InventoryPanel : MonoBehaviour
         rt.anchoredPosition = position;
 
         Image bg = slotGO.GetComponent<Image>();
-        bg.color = background;
         bg.raycastTarget = true;          // necesario para detectar el clic
         _bgs[slotIndex] = bg;
 
@@ -194,7 +184,6 @@ public class InventoryPanel : MonoBehaviour
         button.index = slotIndex;
         button.onClick = OnSlotClicked;
 
-        // Icono
         GameObject iconGO = new GameObject("Icon", typeof(RectTransform), typeof(Image));
         RectTransform irt = iconGO.GetComponent<RectTransform>();
         irt.SetParent(rt, false);
@@ -205,11 +194,9 @@ public class InventoryPanel : MonoBehaviour
         icon.enabled = false;
         _icons[slotIndex] = icon;
 
-        // Cantidad
         _counts[slotIndex] = CreateLabel("Count", "", rt, Vector2.zero,
             new Vector2(slotSize - 4f, slotSize - 4f), 16, TextAnchor.LowerRight, Color.white);
 
-        // Numero de tecla (solo cinturon)
         if (!string.IsNullOrEmpty(keyLabel))
             CreateLabel("Key", keyLabel, rt, Vector2.zero, new Vector2(slotSize - 4f, slotSize - 4f),
                 12, TextAnchor.UpperLeft, new Color(1f, 1f, 1f, 0.6f));
@@ -234,146 +221,52 @@ public class InventoryPanel : MonoBehaviour
         return text;
     }
 
-    private void BuildHeldIcon()
-    {
-        GameObject go = new GameObject("ObjetoEnMano", typeof(RectTransform), typeof(Image));
-        _heldRoot = go.GetComponent<RectTransform>();
-        _heldRoot.SetParent(canvas.transform, false);
-        _heldRoot.sizeDelta = new Vector2(slotSize * 0.8f, slotSize * 0.8f);
-
-        _heldIcon = go.GetComponent<Image>();
-        _heldIcon.preserveAspect = true;
-        _heldIcon.raycastTarget = false;
-
-        _heldCountText = CreateLabel("Count", "", _heldRoot, Vector2.zero,
-            new Vector2(slotSize * 0.8f, slotSize * 0.8f), 16, TextAnchor.LowerRight, Color.white);
-
-        _heldRoot.gameObject.SetActive(false);
-    }
-
     // ---------- Mover objetos ----------
 
     private void OnSlotClicked(int index)
     {
-        Inventory.Slot slot = inventory.slots[index];
-
-        if (_heldItem == null)
+        if (_sourceIndex < 0)
         {
-            // Mano vacia: cogemos lo que haya
-            if (slot.IsEmpty) return;
-
-            _heldItem = slot.item;
-            _heldCount = slot.count;
-            _heldFrom = index;
-            slot.Clear();
+            // Primer clic: elegimos de donde sacar (si hay algo)
+            if (inventory.GetSlot(index).IsEmpty) return;
+            _sourceIndex = index;
         }
-        else if (slot.IsEmpty)
+        else if (_sourceIndex == index)
         {
-            // Soltar en hueco vacio
-            slot.item = _heldItem;
-            slot.count = _heldCount;
-            ClearHeld();
-        }
-        else if (slot.item == _heldItem && slot.count < slot.item.maxStack)
-        {
-            // Mismo objeto: apilar lo que quepa
-            int space = slot.item.maxStack - slot.count;
-            int moved = Mathf.Min(space, _heldCount);
-            slot.count += moved;
-            _heldCount -= moved;
-            if (_heldCount <= 0) ClearHeld();
+            _sourceIndex = -1;   // clic en el mismo hueco: cancelar
         }
         else
         {
-            // Objeto distinto: intercambiar
-            ItemData tmpItem = slot.item;
-            int tmpCount = slot.count;
-            slot.item = _heldItem;
-            slot.count = _heldCount;
-            _heldItem = tmpItem;
-            _heldCount = tmpCount;
-            _heldFrom = index;   // si lo devolvemos, que vuelva aqui
+            // Segundo clic: el servidor decide si mover, apilar o intercambiar
+            inventory.MoveSlotServerRpc(_sourceIndex, index);
+            _sourceIndex = -1;
         }
 
-        inventory.NotifyChanged();
-    }
-
-    private void ClearHeld()
-    {
-        _heldItem = null;
-        _heldCount = 0;
-        _heldFrom = -1;
-    }
-
-    // Devuelve el objeto que llevamos en la mano SIN perderlo nunca:
-    // primero a su hueco de origen, si no a cualquier hueco libre, y si
-    // tampoco cabe se queda en la mano (reaparece al volver a abrir).
-    private void ReturnHeldToInventory()
-    {
-        if (_heldItem == null) return;
-
-        if (_heldFrom >= 0 && _heldFrom < inventory.slots.Length)
-        {
-            Inventory.Slot origin = inventory.slots[_heldFrom];
-
-            if (origin.IsEmpty)
-            {
-                origin.item = _heldItem;
-                origin.count = _heldCount;
-                ClearHeld();
-                inventory.NotifyChanged();
-                return;
-            }
-
-            // El hueco original ahora tiene lo mismo: intentamos apilar ahi
-            if (origin.item == _heldItem && origin.count < origin.item.maxStack)
-            {
-                int space = origin.item.maxStack - origin.count;
-                int moved = Mathf.Min(space, _heldCount);
-                origin.count += moved;
-                _heldCount -= moved;
-                if (_heldCount <= 0)
-                {
-                    ClearHeld();
-                    inventory.NotifyChanged();
-                    return;
-                }
-            }
-        }
-
-        // Cualquier otro hueco libre
-        int leftover = inventory.AddItem(_heldItem, _heldCount);
-
-        if (leftover <= 0)
-        {
-            ClearHeld();
-        }
-        else
-        {
-            // No cabe: lo conservamos en la mano en lugar de tirarlo
-            _heldCount = leftover;
-            Debug.LogWarning("Inventario lleno: '" + _heldItem.itemName +
-                             "' se queda en la mano hasta que hagas hueco.");
-        }
-
-        inventory.NotifyChanged();
+        Refresh();
     }
 
     private void Refresh()
     {
-        if (_bgs == null) return;
+        if (_bgs == null || inventory == null) return;
 
         for (int i = 0; i < _bgs.Length; i++)
         {
             bool isHotbar = inventory.IsHotbarSlot(i);
-            bool isSelected = isHotbar && i == inventory.selectedIndex;
-            _bgs[i].color = isSelected ? selectedColor : (isHotbar ? hotbarSlotColor : slotColor);
 
-            Inventory.Slot slot = inventory.slots[i];
-            if (slot != null && !slot.IsEmpty)
+            if (i == _sourceIndex)
+                _bgs[i].color = sourceColor;
+            else if (isHotbar && i == inventory.SelectedIndex)
+                _bgs[i].color = selectedColor;
+            else
+                _bgs[i].color = isHotbar ? hotbarSlotColor : slotColor;
+
+            Inventory.SlotData slot = inventory.GetSlot(i);
+            ItemData item = inventory.GetItemAt(i);
+
+            if (!slot.IsEmpty && item != null)
             {
-                _icons[i].enabled = slot.item.icon != null;
-                _icons[i].sprite = slot.item.icon;
+                _icons[i].enabled = item.icon != null;
+                _icons[i].sprite = item.icon;
                 _counts[i].text = slot.count > 1 ? slot.count.ToString() : "";
             }
             else
@@ -383,15 +276,11 @@ public class InventoryPanel : MonoBehaviour
             }
         }
 
-        // Objeto que llevamos en la mano
-        bool holding = _heldItem != null;
-        _heldRoot.gameObject.SetActive(holding);
-        if (holding)
+        if (_hint != null)
         {
-            _heldIcon.enabled = _heldItem.icon != null;
-            _heldIcon.sprite = _heldItem.icon;
-            _heldCountText.text = _heldCount > 1 ? _heldCount.ToString() : "";
-            _heldRoot.SetAsLastSibling();
+            _hint.text = _sourceIndex < 0
+                ? "Clic en un objeto para cogerlo"
+                : "Clic en otro hueco para moverlo (o en el mismo para cancelar)";
         }
     }
 }

@@ -34,11 +34,17 @@ public class NetworkUI : MonoBehaviour
     private bool _menuOpen = true;
     private bool _wasConnected = false;
 
+    // Opciones de pantalla (solo antes de entrar en partida)
+    private bool _showOptions = false;
+    private int _resIndex = -1;
+    private bool _fullscreen = true;
+
     void Awake()
     {
         if (onlineSession == null)
             onlineSession = GetComponent<OnlineSession>();
     }
+
 
     void Update()
     {
@@ -70,7 +76,23 @@ public class NetworkUI : MonoBehaviour
         Cursor.visible = freeCursor;
     }
 
+    // Resolucion para la que estan pensados los tamanos del panel
+    private const float ReferenceHeight = 1080f;
+
     void OnGUI()
+    {
+        // El panel se dibuja en pixeles crudos, asi que lo escalamos a mano
+        // para que se vea igual de grande en cualquier resolucion.
+        Matrix4x4 previousMatrix = GUI.matrix;
+        float scale = Screen.height / ReferenceHeight;
+        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
+
+        DrawGui();
+
+        GUI.matrix = previousMatrix;
+    }
+
+    private void DrawGui()
     {
         if (NetworkManager.Singleton == null)
         {
@@ -89,7 +111,7 @@ public class NetworkUI : MonoBehaviour
             return;
         }
 
-        GUILayout.BeginArea(new Rect(10, 10, 330, 440));
+        GUILayout.BeginArea(new Rect(10, 10, 330, 620));
 
         if (IsConnected()) DrawStatus();
         else DrawStartButtons();
@@ -141,6 +163,44 @@ public class NetworkUI : MonoBehaviour
 
         if (GUILayout.Button("Cliente local  [" + clientKey + "]"))
             StartClient();
+
+        // ---------- OPCIONES ----------
+        GUILayout.Space(12);
+        if (GUILayout.Button(_showOptions ? "Opciones  v" : "Opciones  >"))
+            _showOptions = !_showOptions;
+
+        if (_showOptions)
+            DrawOptions();
+    }
+
+    private void DrawOptions()
+    {
+        // Primera vez: partimos de lo que hay guardado
+        if (_resIndex < 0)
+        {
+            _resIndex = GameSettings.IndexOfCurrent();
+            _fullscreen = GameSettings.SavedFullscreen;
+        }
+
+        var resolutions = GameSettings.Resolutions;
+        Vector2Int res = resolutions[Mathf.Clamp(_resIndex, 0, resolutions.Count - 1)];
+
+        GUILayout.Label("Resolucion:");
+
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("<", GUILayout.Width(30)))
+            _resIndex = (_resIndex - 1 + resolutions.Count) % resolutions.Count;
+
+        GUILayout.Label(res.x + " x " + res.y, CenteredLabel());
+
+        if (GUILayout.Button(">", GUILayout.Width(30)))
+            _resIndex = (_resIndex + 1) % resolutions.Count;
+        GUILayout.EndHorizontal();
+
+        _fullscreen = GUILayout.Toggle(_fullscreen, " Pantalla completa");
+
+        if (GUILayout.Button("Aplicar", GUILayout.Height(26)))
+            GameSettings.Apply(res, _fullscreen);
     }
 
     private void DrawStatus()
@@ -153,6 +213,10 @@ public class NetworkUI : MonoBehaviour
 
         if (nm.IsServer)
             GUILayout.Label("Jugadores conectados: " + nm.ConnectedClientsIds.Count);
+
+        if (onlineSession != null && !string.IsNullOrEmpty(onlineSession.CurrentProfile))
+            GUILayout.Label("Perfil: " + onlineSession.CurrentProfile);
+
 
         // Codigo de partida bien visible, para poder pasarselo al companero
         if (onlineSession != null && !string.IsNullOrEmpty(onlineSession.JoinCode))
@@ -217,5 +281,10 @@ public class NetworkUI : MonoBehaviour
     private GUIStyle RichLabel(int size = 13)
     {
         return new GUIStyle(GUI.skin.label) { richText = true, fontSize = size };
+    }
+
+    private GUIStyle CenteredLabel()
+    {
+        return new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter };
     }
 }

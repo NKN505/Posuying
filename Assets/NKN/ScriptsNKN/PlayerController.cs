@@ -202,11 +202,22 @@ public class PlayerController : Character, IPassiveRegenerator
 
         Vector3 origin = transform.position + Vector3.up * (controller.height * 0.5f);
 
-        if (!Physics.Raycast(origin, transform.forward, climbCheckDistance, climbLayerMask))
+        if (!Physics.Raycast(origin, transform.forward, out RaycastHit wallHit,
+                             climbCheckDistance, climbLayerMask))
+            return false;
+
+        // Objetos marcados como NotClimbable no se pueden trepar
+        if (!IsClimbable(wallHit.collider))
             return false;
 
         StartCoroutine(ClimbRoutine(transform.forward));
         return true;
+    }
+
+    // Un objeto no se escala si el, o alguno de sus padres, lleva NotClimbable
+    private bool IsClimbable(Collider col)
+    {
+        return col != null && col.GetComponentInParent<NotClimbable>() == null;
     }
 
     private System.Collections.IEnumerator ClimbRoutine(Vector3 forward)
@@ -228,11 +239,17 @@ public class PlayerController : Character, IPassiveRegenerator
             // ¿Hemos superado ya el borde superior del obstaculo?
             // Rayo a la altura de los pies: cuando deja de chocar, lo hemos coronado.
             Vector3 feetRay = transform.position + Vector3.up * 0.1f;
-            if (!Physics.Raycast(feetRay, forward, climbCheckDistance + 0.2f, climbLayerMask))
+            if (!Physics.Raycast(feetRay, forward, out RaycastHit stillHit,
+                                 climbCheckDistance + 0.2f, climbLayerMask))
             {
                 cleared = true;
                 break;
             }
+
+            // Si a media subida aparece una parte no escalable (muros hechos de
+            // varias piezas), se acaba la escalada y el jugador cae.
+            if (!IsClimbable(stillHit.collider))
+                break;
 
             // Escalar consume estamina; si se agota, dejamos de subir y caemos
             if (!DrainStamina(climbStaminaPerSecond * Time.deltaTime))

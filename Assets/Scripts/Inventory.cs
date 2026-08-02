@@ -1,16 +1,38 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class Inventory : MonoBehaviour
+// Inventario del jugador, sincronizado por red.
+//
+// El SERVIDOR es el dueno del contenido (igual que la vida): los clientes piden
+// cambios con RPCs y el servidor decide. Asi los dos jugadores ven lo mismo,
+// nadie puede duplicar objetos, y el inventario sobrevive a un cambio de host.
+//
+// Los huecos son un unico array: los primeros 'hotbarSize' son el cinturon,
+// el resto la mochila.
+public class Inventory : NetworkBehaviour
 {
-    [System.Serializable]
-    public class Slot
+    // Lo que viaja por red de cada hueco: un id de objeto y una cantidad
+    public struct SlotData : INetworkSerializable, System.IEquatable<SlotData>
     {
-        public ItemData item;
+        public int itemId;
         public int count;
 
-        public bool IsEmpty => item == null || count <= 0;
-        public void Clear() { item = null; count = 0; }
+        public bool IsEmpty => itemId < 0 || count <= 0;
+
+        public static SlotData Empty => new SlotData { itemId = ItemDatabase.EmptyId, count = 0 };
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref itemId);
+            serializer.SerializeValue(ref count);
+        }
+
+        public bool Equals(SlotData other) => itemId == other.itemId && count == other.count;
     }
+
+    [Header("Catalogo")]
+    [Tooltip("Necesario para traducir ids de red a objetos")]
+    public ItemDatabase database;
 
     [Header("Configuracion")]
     [Tooltip("Huecos del cinturon (los que se ven abajo y se eligen con 1..N)")]
@@ -18,130 +40,232 @@ public class Inventory : MonoBehaviour
     [Tooltip("Huecos de la mochila (se ven al abrir el inventario con TAB)")]
     public int backpackSize = 24;
 
-    public Slot[] slots;
-    public int selectedIndex = 0;
-
     [Header("Teclas")]
     public KeyCode useKey = KeyCode.F;
 
-    // Aviso para que el HUD se refresque cuando cambia algo
+    // Contenido: solo lo escribe el servidor
+    private readonly NetworkList<SlotData> netSlots = new NetworkList<SlotData>();
+
+    // Hueco elegido del cinturon: lo escribe su dueno (no hace falta molestar al servidor)
+    private readonly NetworkVariable<int> netSelected = new NetworkVariable<int>(
+        0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    // Aviso para que la interfaz se refresque
     public System.Action OnInventoryChanged;
 
     private Character _character;
 
-    // Los primeros huecos del array son el cinturon; el resto, la mochila
     public int TotalSlots => hotbarSize + backpackSize;
     public bool IsHotbarSlot(int index) => index >= 0 && index < hotbarSize;
+    public int SelectedIndex => netSelected.Value;
+    public int SlotCount => netSlots.Count;
 
     void Awake()
     {
         _character = GetComponent<Character>();
-        EnsureSlots();
     }
 
-    private void EnsureSlots()
+    public override void OnNetworkSpawn()
     {
-        int total = TotalSlots;
-        if (slots != null && slots.Length == total) return;
+        if (IsServer)
+        {
+            // El servidor crea los huecos vacios una sola vez
+            for (int i = netSlots.Count; i < TotalSlots; i++)
+                netSlots.Add(SlotData.Empty);
+        }
 
-        Slot[] old = slots;
-        slots = new Slot[total];
-        for (int i = 0; i < total; i++)
-            slots[i] = (old != null && i < old.Length && old[i] != null) ? old[i] : new Slot();
+        netSlots.OnListChanged += OnSlotsChanged;
+        netSelected.OnValueChanged += OnSelectedChanged;
+
+        OnInventoryChanged?.Invoke();
     }
+
+    public override void OnNetworkDespawn()
+    {
+        netSlots.OnListChanged -= OnSlotsChanged;
+        netSelected.OnValueChanged -= OnSelectedChanged;
+    }
+
+    private void OnSlotsChanged(NetworkListEvent<SlotData> _) => OnInventoryChanged?.Invoke();
+    private void OnSelectedChanged(int _, int __) => OnInventoryChanged?.Invoke();
 
     void Update()
     {
-        // Con el inventario o el menu de red abiertos, el raton es para la interfaz
-        if (UIState.BlocksGameplay) return;
+        // Solo el dueno maneja su inventario, y no mientras hay una ventana abierta
+        if (!IsOwner || UIState.BlocksGameplay) return;
 
-        // Seleccion por teclas numericas 1..N (solo cinturon)
         for (int i = 0; i < hotbarSize; i++)
         {
             if (Input.GetKeyDown(KeyCode.Alpha1 + i))
                 SelectSlot(i);
         }
 
-        // Seleccion por rueda del raton (mouseScrollDelta no depende del Input Manager)
         float scroll = Input.mouseScrollDelta.y;
-        if (scroll > 0f) SelectSlot(selectedIndex - 1);
-        else if (scroll < 0f) SelectSlot(selectedIndex + 1);
+        if (scroll > 0f) SelectSlot(SelectedIndex - 1);
+        else if (scroll < 0f) SelectSlot(SelectedIndex + 1);
 
-        // Usar el objeto seleccionado
         if (Input.GetKeyDown(useKey))
-            UseSelected();
+            UseSelectedServerRpc();
     }
 
-    // La seleccion solo se mueve por el cinturon
+    // ---------- Lectura (para la interfaz) ----------
+
+    public SlotData GetSlot(int index)
+    {
+        if (index < 0 || index >= netSlots.Count) return SlotData.Empty;
+        return netSlots[index];
+    }
+
+    public ItemData GetItemAt(int index)
+    {
+        if (database == null) return null;
+        return database.GetItem(GetSlot(index).itemId);
+    }
+
+    // ---------- Acciones del jugador ----------
+
     public void SelectSlot(int index)
     {
-        selectedIndex = ((index % hotbarSize) + hotbarSize) % hotbarSize;
-        OnInventoryChanged?.Invoke();
+        if (!IsOwner) return;
+        netSelected.Value = ((index % hotbarSize) + hotbarSize) % hotbarSize;
     }
 
-    // Para que la interfaz avise cuando mueve objetos entre huecos
-    public void NotifyChanged() => OnInventoryChanged?.Invoke();
+    // Mover o intercambiar dos huecos (lo pide la interfaz, lo hace el servidor)
+    [ServerRpc]
+    public void MoveSlotServerRpc(int from, int to)
+    {
+        if (from == to) return;
+        if (from < 0 || from >= netSlots.Count || to < 0 || to >= netSlots.Count) return;
 
-    // Anade objetos al inventario. Devuelve cuantos NO cupieron (0 = todo entro).
+        SlotData origin = netSlots[from];
+        SlotData target = netSlots[to];
+
+        if (origin.IsEmpty) return;
+
+        if (target.IsEmpty)
+        {
+            netSlots[to] = origin;
+            netSlots[from] = SlotData.Empty;
+            return;
+        }
+
+        // Mismo objeto: apilar lo que quepa
+        if (target.itemId == origin.itemId && database != null)
+        {
+            ItemData item = database.GetItem(target.itemId);
+            int maxStack = item != null ? Mathf.Max(1, item.maxStack) : 1;
+
+            if (target.count < maxStack)
+            {
+                int moved = Mathf.Min(maxStack - target.count, origin.count);
+                target.count += moved;
+                origin.count -= moved;
+
+                netSlots[to] = target;
+                netSlots[from] = origin.count > 0 ? origin : SlotData.Empty;
+                return;
+            }
+        }
+
+        // Objetos distintos (o pila llena): intercambiar
+        netSlots[to] = origin;
+        netSlots[from] = target;
+    }
+
+    [ServerRpc]
+    public void UseSelectedServerRpc()
+    {
+        UseSlot(SelectedIndex);
+    }
+
+    // ---------- Logica del servidor ----------
+
+    // Anade objetos. Solo servidor. Devuelve cuantos NO cupieron.
     public int AddItem(ItemData item, int amount = 1)
     {
-        if (item == null || amount <= 0) return amount;
-
-        // 1) Rellenar stacks existentes del mismo item
-        for (int i = 0; i < slots.Length && amount > 0; i++)
+        if (!IsServer || item == null || amount <= 0) return amount;
+        if (database == null)
         {
-            if (!slots[i].IsEmpty && slots[i].item == item && slots[i].count < item.maxStack)
-            {
-                int space = item.maxStack - slots[i].count;
-                int toAdd = Mathf.Min(space, amount);
-                slots[i].count += toAdd;
-                amount -= toAdd;
-            }
+            Debug.LogError("El inventario no tiene catalogo (ItemDatabase) asignado.");
+            return amount;
         }
 
-        // 2) Ocupar huecos vacios
-        for (int i = 0; i < slots.Length && amount > 0; i++)
+        int id = database.GetId(item);
+        if (id < 0) return amount;
+
+        int maxStack = Mathf.Max(1, item.maxStack);
+
+        // 1) Rellenar pilas existentes del mismo objeto
+        for (int i = 0; i < netSlots.Count && amount > 0; i++)
         {
-            if (slots[i].IsEmpty)
-            {
-                int toAdd = Mathf.Min(item.maxStack, amount);
-                slots[i].item = item;
-                slots[i].count = toAdd;
-                amount -= toAdd;
-            }
+            SlotData slot = netSlots[i];
+            if (slot.IsEmpty || slot.itemId != id || slot.count >= maxStack) continue;
+
+            int toAdd = Mathf.Min(maxStack - slot.count, amount);
+            slot.count += toAdd;
+            netSlots[i] = slot;
+            amount -= toAdd;
         }
 
-        OnInventoryChanged?.Invoke();
-        return amount; // lo que sobro (inventario lleno)
+        // 2) Ocupar huecos vacios (primero el cinturon, que va antes en la lista)
+        for (int i = 0; i < netSlots.Count && amount > 0; i++)
+        {
+            if (!netSlots[i].IsEmpty) continue;
+
+            int toAdd = Mathf.Min(maxStack, amount);
+            netSlots[i] = new SlotData { itemId = id, count = toAdd };
+            amount -= toAdd;
+        }
+
+        return amount;
     }
 
-    public void UseSelected()
-    {
-        Slot slot = slots[selectedIndex];
-        if (slot.IsEmpty) return;
+    // ---------- Guardado / restauracion (migracion de host) ----------
 
-        switch (slot.item.type)
+    public System.Collections.Generic.List<Vector2Int> ExportSlots()
+    {
+        var list = new System.Collections.Generic.List<Vector2Int>();
+        for (int i = 0; i < netSlots.Count; i++)
+            list.Add(new Vector2Int(netSlots[i].itemId, netSlots[i].count));
+        return list;
+    }
+
+    public void ImportSlots(System.Collections.Generic.List<Vector2Int> list)
+    {
+        if (!IsServer || list == null) return;
+
+        for (int i = 0; i < netSlots.Count && i < list.Count; i++)
+            netSlots[i] = new SlotData { itemId = list[i].x, count = list[i].y };
+    }
+
+    private void UseSlot(int index)
+    {
+        if (!IsServer) return;
+
+        SlotData slot = GetSlot(index);
+        if (slot.IsEmpty || database == null) return;
+
+        ItemData item = database.GetItem(slot.itemId);
+        if (item == null) return;
+
+        switch (item.type)
         {
             case ItemType.Consumable:
-                if (_character != null && slot.item.healAmount > 0f)
+                if (_character != null && item.healAmount > 0f)
                 {
-                    _character.RequestHeal(slot.item.healAmount);
+                    _character.Heal(item.healAmount);   // ya estamos en el servidor
+
                     slot.count--;
-                    if (slot.count <= 0) slot.Clear();
-                    OnInventoryChanged?.Invoke();
+                    netSlots[index] = slot.count > 0 ? slot : SlotData.Empty;
                 }
                 break;
 
             case ItemType.Weapon:
-                // De momento solo lo anunciamos; equipar el arma se puede ampliar mas adelante
-                Debug.Log("Arma seleccionada: " + slot.item.itemName);
+                Debug.Log("Arma seleccionada: " + item.itemName);
                 break;
 
             case ItemType.Generic:
-                // Objetos de mision (llaves, piezas): por ahora no hacen nada al usar
                 break;
         }
     }
-
-    public Slot GetSelectedSlot() => slots[selectedIndex];
 }

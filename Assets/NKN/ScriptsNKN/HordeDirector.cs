@@ -127,6 +127,7 @@ public class HordeDirector : MonoBehaviour
 
         EnemyBehaviour enemy = Instantiate(prefab, pos, Quaternion.identity);
         enemy.alwaysAggro = true;              // va siempre a por el jugador
+        enemy.prefabIndex = GetIndexOfPrefab(prefab);
         enemy.gameObject.SetActive(true);      // por si el prefab quedo desactivado
 
         // Compensa el pivote del modelo para que no aparezca enterrado
@@ -160,6 +161,69 @@ public class HordeDirector : MonoBehaviour
         }
         return null;
     }
+
+    // ---------- Catalogo de prefabs (indice unico para comunes + especiales) ----------
+
+    private int CommonCount => commonPrefabs != null ? commonPrefabs.Length : 0;
+
+    public EnemyBehaviour GetPrefabByIndex(int index)
+    {
+        if (index < 0) return null;
+        if (index < CommonCount) return commonPrefabs[index];
+
+        int specialIndex = index - CommonCount;
+        if (specialPrefabs != null && specialIndex < specialPrefabs.Length)
+            return specialPrefabs[specialIndex];
+
+        return null;
+    }
+
+    public int GetIndexOfPrefab(EnemyBehaviour prefab)
+    {
+        if (prefab == null) return -1;
+
+        for (int i = 0; i < CommonCount; i++)
+            if (commonPrefabs[i] == prefab) return i;
+
+        if (specialPrefabs != null)
+            for (int i = 0; i < specialPrefabs.Length; i++)
+                if (specialPrefabs[i] == prefab) return CommonCount + i;
+
+        return -1;
+    }
+
+    // Recrea un enemigo tal y como estaba antes de cambiar de host
+    public EnemyBehaviour RestoreEnemy(int prefabIndex, Vector3 position, float yaw,
+                                       float health, float maxHealth)
+    {
+        EnemyBehaviour prefab = GetPrefabByIndex(prefabIndex);
+        if (prefab == null) return null;
+
+        EnemyBehaviour enemy = Instantiate(prefab, position, Quaternion.Euler(0f, yaw, 0f));
+        enemy.alwaysAggro = true;
+        enemy.prefabIndex = prefabIndex;
+        enemy.gameObject.SetActive(true);
+
+        NavMeshAgent na = enemy.GetComponent<NavMeshAgent>();
+        if (na != null) na.baseOffset = agentBaseOffset;
+
+        NetworkObject netObj = enemy.GetComponent<NetworkObject>();
+        if (netObj == null)
+        {
+            Destroy(enemy.gameObject);
+            return null;
+        }
+        netObj.Spawn();
+
+        enemy.SetMaxHealth(maxHealth);
+        enemy.SetHealth(health);
+
+        _alive.Add(enemy);
+        return enemy;
+    }
+
+    // Los enemigos vivos, para poder fotografiarlos al guardar el mundo
+    public IReadOnlyList<EnemyBehaviour> AliveEnemies => _alive;
 
     private EnemyBehaviour PickPrefab()
     {

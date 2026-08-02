@@ -113,13 +113,15 @@ public class InventoryHUD : MonoBehaviour
     {
         for (int i = 0; i < _bgs.Length; i++)
         {
-            _bgs[i].color = (i == inventory.selectedIndex) ? selectedColor : normalColor;
+            _bgs[i].color = (i == inventory.SelectedIndex) ? selectedColor : normalColor;
 
-            Inventory.Slot slot = inventory.slots[i];
-            if (slot != null && !slot.IsEmpty)
+            Inventory.SlotData slot = inventory.GetSlot(i);
+            ItemData item = inventory.GetItemAt(i);
+
+            if (!slot.IsEmpty && item != null)
             {
-                _icons[i].enabled = slot.item.icon != null;
-                _icons[i].sprite = slot.item.icon;
+                _icons[i].enabled = item.icon != null;
+                _icons[i].sprite = item.icon;
                 _counts[i].text = slot.count > 1 ? slot.count.ToString() : "";
             }
             else
