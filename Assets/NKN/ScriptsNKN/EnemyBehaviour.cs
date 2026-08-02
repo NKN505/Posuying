@@ -9,6 +9,10 @@ public abstract class EnemyBehaviour : Character
     [Tooltip("Si esta activo, el enemigo va siempre a por el jugador (no patrulla). Lo usan los enemigos de horda.")]
     public bool alwaysAggro = false;
 
+    // De que prefab del HordeDirector salio. Lo necesita el guardado del mundo
+    // para poder recrearlo igual si cambia el host.
+    [System.NonSerialized] public int prefabIndex = -1;
+
     [Header("Daño")]
     public float damageAmount = 10f;
     public float damageCooldown = 1f;

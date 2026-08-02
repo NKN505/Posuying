@@ -26,6 +26,13 @@ public class HealPickup : NetworkBehaviour
 
     private void OnTakenChanged(bool previous, bool current) => ApplyTaken(current);
 
+    // Para el guardado del mundo al migrar de host
+    public bool IsTaken => taken.Value;
+    public void SetTaken(bool value)
+    {
+        if (IsServer) taken.Value = value;
+    }
+
     private void ApplyTaken(bool isTaken)
     {
         foreach (var r in GetComponentsInChildren<Renderer>(true))

@@ -27,6 +27,13 @@ public class ItemPickup : NetworkBehaviour
 
     private void OnTakenChanged(bool previous, bool current) => ApplyTaken(current);
 
+    // Para el guardado del mundo al migrar de host
+    public bool IsTaken => taken.Value;
+    public void SetTaken(bool value)
+    {
+        if (IsServer) taken.Value = value;
+    }
+
     private void ApplyTaken(bool isTaken)
     {
         foreach (var r in GetComponentsInChildren<Renderer>(true))
@@ -41,23 +48,19 @@ public class ItemPickup : NetworkBehaviour
         if (!IsServer || taken.Value) return;
         if (!other.CompareTag("Player")) return;
 
-        NetworkObject playerObject = other.GetComponent<NetworkObject>();
-        if (playerObject == null) return;
+        // El inventario vive en el servidor, asi que lo anadimos aqui directamente
+        Inventory inv = other.GetComponent<Inventory>();
+        if (inv == null) return;
 
-        // No hace falta mandar el ItemData por la red: este mismo objeto existe
-        // en todas las maquinas, asi que cada una ya sabe que item es.
-        GiveItemClientRpc(playerObject.OwnerClientId);
+        int leftover = inv.AddItem(item, amount);
+
+        if (leftover > 0)
+        {
+            // No le cabia: el objeto se queda en el suelo
+            amount = leftover;
+            return;
+        }
+
         taken.Value = true;
-    }
-
-    [ClientRpc]
-    private void GiveItemClientRpc(ulong targetClientId)
-    {
-        // Solo lo guarda el jugador que lo ha recogido
-        if (NetworkManager.Singleton.LocalClientId != targetClientId) return;
-
-        Inventory inv = NetworkPlayer.LocalInventory;
-        if (inv != null)
-            inv.AddItem(item, amount);
     }
 }
