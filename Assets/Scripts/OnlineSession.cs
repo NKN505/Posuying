@@ -13,8 +13,28 @@ using UnityEngine;
 // por eso aqui NO se llama a StartHost() ni StartClient().
 public class OnlineSession : MonoBehaviour
 {
-    [Tooltip("Jugadores maximos en la partida (incluido el host)")]
+    // Todas las partidas del juego comparten este tipo. Es lo que permite
+    // encontrarlas al listar: por defecto el SDK pone un GUID aleatorio y
+    // entonces ninguna partida veria a las demas.
+    public const string SessionType = "posuying";
+
+    [Tooltip("Jugadores maximos por defecto (se puede cambiar al crear la partida)")]
     public int maxPlayers = 4;
+
+    // Ajustes elegidos al crear una partida
+    public class GameConfig
+    {
+        public string name = "Partida";
+        public int maxPlayers = 4;
+        public bool isPrivate = false;
+        public string password = "";
+    }
+
+    // Partidas encontradas al buscar
+    public System.Collections.Generic.IList<ISessionInfo> AvailableSessions { get; private set; }
+        = new System.Collections.Generic.List<ISessionInfo>();
+
+    public bool IsHost => _session != null && _session.IsHost;
 
     [Header("Perfil de identidad")]
     [Tooltip("Dejar vacio para que se elija solo. Dos instancias con perfiles distintos " +
@@ -86,7 +106,9 @@ public class OnlineSession : MonoBehaviour
         }
     }
 
-    public async void CreateOnlineGame()
+    public void CreateOnlineGame() => CreateOnlineGame(new GameConfig { maxPlayers = maxPlayers });
+
+    public async void CreateOnlineGame(GameConfig config)
     {
         if (Busy) return;
         Busy = true;
@@ -101,14 +123,27 @@ public class OnlineSession : MonoBehaviour
             {
                 Status = "Creando partida...";
 
-                var options = new SessionOptions { MaxPlayers = maxPlayers }
+                var options = new SessionOptions
+                {
+                    Name = string.IsNullOrWhiteSpace(config.name) ? "Partida" : config.name.Trim(),
+                    MaxPlayers = Mathf.Max(2, config.maxPlayers),
+                    IsPrivate = config.isPrivate,
+                    Type = SessionType
+                };
+
+                if (!string.IsNullOrWhiteSpace(config.password))
+                    options.Password = config.password.Trim();
+
+                options = options
                     .WithRelayNetwork()
                     .WithHostMigration(new WorldMigrationHandler());
 
                 _session = await MultiplayerService.Instance.CreateSessionAsync(options);
 
                 JoinCode = _session.Code;
-                Status = "Partida creada: pasale el codigo a tu companero";
+                Status = config.isPrivate
+                    ? "Partida privada creada: pasa el codigo a tus companeros"
+                    : "Partida creada y visible en la lista";
             }
             catch (System.Exception e)
             {
@@ -118,6 +153,87 @@ public class OnlineSession : MonoBehaviour
         }
 
         Busy = false;
+    }
+
+    // ---------- Buscar partidas ----------
+
+    public async void RefreshSessionList()
+    {
+        if (Busy) return;
+        Busy = true;
+        Status = "Buscando partidas...";
+
+        if (await EnsureSignedInAsync())
+        {
+            try
+            {
+                var query = new QuerySessionsOptions { Count = 25 };
+                QuerySessionsResults results = await MultiplayerService.Instance
+                    .QuerySessionsAsync(query);
+
+                AvailableSessions = results.Sessions;
+                Status = AvailableSessions.Count == 0
+                    ? "No hay partidas abiertas ahora mismo"
+                    : AvailableSessions.Count + " partida(s) encontradas";
+            }
+            catch (System.Exception e)
+            {
+                Status = "No se pudo buscar: " + e.Message;
+                Debug.LogException(e);
+            }
+        }
+
+        Busy = false;
+    }
+
+    public async void JoinSessionById(string sessionId, string password = "")
+    {
+        if (Busy || string.IsNullOrEmpty(sessionId)) return;
+
+        Busy = true;
+        Status = "Entrando en la partida...";
+
+        await EnsureNetworkStoppedAsync();
+
+        if (await EnsureSignedInAsync())
+        {
+            try
+            {
+                var joinOptions = new JoinSessionOptions()
+                    .WithHostMigration(new WorldMigrationHandler());
+
+                if (!string.IsNullOrWhiteSpace(password))
+                    joinOptions.Password = password.Trim();
+
+                _session = await MultiplayerService.Instance
+                    .JoinSessionByIdAsync(sessionId, joinOptions);
+
+                JoinCode = _session.Code;
+                Status = "Conectado";
+            }
+            catch (System.Exception e)
+            {
+                Status = "No se pudo entrar: " + e.Message;
+                Debug.LogException(e);
+            }
+        }
+
+        Busy = false;
+    }
+
+    // ---------- Abrir / cerrar la partida (hotjoin) ----------
+
+    public bool IsGameLocked => _session != null && _session.IsLocked;
+
+    public void SetGameLocked(bool locked)
+    {
+        if (_session is IHostSession host)
+        {
+            host.IsLocked = locked;
+            Status = locked
+                ? "Partida cerrada: no puede entrar nadie mas"
+                : "Partida abierta: se puede entrar sobre la marcha";
+        }
     }
 
     public async void JoinOnlineGame(string code)
