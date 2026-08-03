@@ -19353,6 +19353,10 @@ PrefabInstance:
       propertyPath: m_TagString
       value: Player
       objectReference: {fileID: 0}
+    - target: {fileID: 100044, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 400000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
       propertyPath: m_LocalPosition.x
       value: -35.910286
@@ -19522,7 +19526,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fpArms: {fileID: 1310365850}
-  genSWAT: {fileID: 2048538266}
+  bodyTP: {fileID: 2048538266}
 --- !u!1001 &2070446473
 PrefabInstance:
   m_ObjectHideFlags: 0
