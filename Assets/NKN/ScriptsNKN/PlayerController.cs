@@ -322,8 +322,18 @@ public class PlayerController : Character, IPassiveRegenerator
 
         Debug.Log("Jugador muerto - reapareciendo");
 
+        // Avisar a todos de quien ha caido
+        var nameComponent = GetComponent<PlayerName>();
+        AnnounceDeathClientRpc(nameComponent != null ? nameComponent.Name : "Un jugador");
+
         FullRestore();        // el servidor devuelve la vida al maximo
         RespawnClientRpc();   // y avisa al dueno para que se mueva al punto de spawn
+    }
+
+    [ClientRpc]
+    private void AnnounceDeathClientRpc(string playerName)
+    {
+        Notifications.Show(playerName + " ha caido");
     }
 
     // La posicion del jugador la manda su dueno (NetworkTransform en modo Owner),

@@ -116,6 +116,17 @@ public class MainMenuUI : MonoBehaviour
             y -= 52f;
         }
 
+        // Nombre del jugador: se guarda solo y vale para crear y para unirse
+        Label("lNombre", "Tu nombre:", panel, new Vector2(-w / 2f + 70f, y - 20f),
+            new Vector2(120f, 24f), 14, TextAnchor.MiddleLeft, Color.white);
+
+        InputField playerName = Input("nombreJugador", PlayerProfile.Name, panel,
+            new Vector2(40f, y - 20f), new Vector2(w - 180f, 30f), false);
+        playerName.characterLimit = PlayerProfile.MaxLength;
+        playerName.onEndEdit.AddListener(value => PlayerProfile.Name = value);
+
+        y -= 46f;
+
         // Pestanas
         string[] names = { "CREAR", "BUSCAR", "CODIGO", "OPCIONES" };
         float tabW = (w - 40f) / names.Length;
@@ -133,8 +144,20 @@ public class MainMenuUI : MonoBehaviour
         _content = NewRect("Contenido", panel, new Vector2(w - 40f, panelSize.y - usedTop - 54f));
         _content.anchoredPosition = new Vector2(0f, -usedTop / 2f + 4f);
 
-        _status = Label("Estado", "", panel, new Vector2(0f, -panelSize.y / 2f + 22f),
-            new Vector2(w - 40f, 36f), 13, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.8f));
+        _status = Label("Estado", "", panel, new Vector2(-50f, -panelSize.y / 2f + 22f),
+            new Vector2(w - 160f, 36f), 13, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.8f));
+
+        Button("SALIR", panel, new Vector2(w / 2f - 60f, -panelSize.y / 2f + 24f),
+            new Vector2(96f, 30f), QuitGame, new Color(0.35f, 0.1f, 0.1f, 1f));
+    }
+
+    private void QuitGame()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;   // en el editor, salir del Play
+#else
+        Application.Quit();
+#endif
     }
 
     private void BuildBackground()
@@ -189,7 +212,7 @@ public class MainMenuUI : MonoBehaviour
         _nameInput = Input("nombre", "Partida de " + SystemInfo.deviceName, _content,
             new Vector2(0f, y - 30f), new Vector2(w, 34f), false);
 
-        y -= 78f;
+        y -= 66f;
         Label("l2", "Jugadores maximos", _content, new Vector2(0f, y), new Vector2(w, 22f),
             14, TextAnchor.MiddleLeft, Color.white);
 
@@ -208,7 +231,7 @@ public class MainMenuUI : MonoBehaviour
             playersLabel.text = _maxPlayers.ToString();
         });
 
-        y -= 78f;
+        y -= 66f;
         Text privacy = null;
         privacy = Label("priv", PrivacyText(), _content, new Vector2(0f, y), new Vector2(w, 22f),
             14, TextAnchor.MiddleLeft, Color.white);
@@ -219,13 +242,17 @@ public class MainMenuUI : MonoBehaviour
             privacy.text = PrivacyText();
         });
 
-        y -= 50f;
+        y -= 44f;
         Label("l3", "Contrasena (opcional)", _content, new Vector2(0f, y), new Vector2(w, 22f),
             14, TextAnchor.MiddleLeft, Color.white);
         _passwordInput = Input("pass", "", _content, new Vector2(0f, y - 30f),
             new Vector2(w, 34f), true);
 
-        Button("CREAR PARTIDA", _content, new Vector2(0f, -_content.sizeDelta.y / 2f + 30f),
+        // El boton va debajo del campo, siguiendo el flujo (antes se anclaba al
+        // fondo del panel y acababa montandose encima de la contrasena)
+        y -= 70f;
+
+        Button("CREAR PARTIDA", _content, new Vector2(0f, y),
             new Vector2(240f, 42f), () =>
             {
                 onlineSession.CreateOnlineGame(new OnlineSession.GameConfig
