@@ -5333,7 +5333,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &524179550
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17435,6 +17435,8 @@ GameObject:
   - component: {fileID: 1945602596}
   - component: {fileID: 1945602595}
   - component: {fileID: 1945602600}
+  - component: {fileID: 1945602602}
+  - component: {fileID: 1945602601}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -17566,6 +17568,45 @@ MonoBehaviour:
   panelColor: {r: 0.05, g: 0.06, b: 0.09, a: 0.88}
   accentColor: {r: 0.55, g: 0.12, b: 0.12, a: 1}
   buttonColor: {r: 1, g: 1, b: 1, a: 0.14}
+--- !u!114 &1945602601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945602594}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e7ac7cbf2ea2dbc4189244b65208dde0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  canvas: {fileID: 0}
+  anchorPosition: {x: 20, y: -50}
+  rowWidth: 220
+  rowHeight: 34
+  backgroundColor: {r: 0, g: 0, b: 0, a: 0.45}
+  barBackColor: {r: 0, g: 0, b: 0, a: 0.6}
+  ownColor: {r: 1, g: 0.95, b: 0.6, a: 1}
+  otherColor: {r: 1, g: 1, b: 1, a: 1}
+--- !u!114 &1945602602
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945602594}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75e2960c52b7600459a230641d644dc9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxMessages: 5
+  duration: 5
+  fadeTime: 1
+  canvas: {fileID: 0}
+  fontSize: 18
+  lineHeight: 26
+  topMargin: 60
 --- !u!1001 &1950135907
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -18,7 +18,9 @@ public class HUD : MonoBehaviour
 
         if (player == null) return;
 
-        healthText.text = "Vida: " + Mathf.Max(0, Mathf.RoundToInt(player.GetHealth()));
+        // La vida se ve en la lista de jugadores; este texto es opcional
+        if (healthText != null)
+            healthText.text = "Vida: " + Mathf.Max(0, Mathf.RoundToInt(player.GetHealth()));
 
         if (staminaBar != null)
             staminaBar.fillAmount = player.GetStamina() / player.GetMaxStamina();

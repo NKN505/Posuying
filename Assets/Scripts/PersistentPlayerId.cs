@@ -1,6 +1,7 @@
 using Unity.Collections;
 using Unity.Netcode;
 using Unity.Services.Authentication;
+using Unity.Services.Core;
 using UnityEngine;
 
 // Identificador estable de cada jugador, que sobrevive a un cambio de host.
@@ -48,10 +49,21 @@ public class PersistentPlayerId : NetworkBehaviour
 
     private string ResolveLocalId()
     {
-        // Id de la cuenta de Unity; si no estamos identificados (partida local por IP)
-        // usamos uno propio guardado en el equipo.
-        if (AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn)
-            return AuthenticationService.Instance.PlayerId;
+        // Id de la cuenta de Unity. OJO: en partida local (F1/F2) los servicios de
+        // Unity ni se inicializan, y solo con acceder a AuthenticationService.Instance
+        // salta una excepcion, asi que hay que comprobarlo y protegerlo.
+        try
+        {
+            if (UnityServices.State == ServicesInitializationState.Initialized &&
+                AuthenticationService.Instance.IsSignedIn)
+            {
+                return AuthenticationService.Instance.PlayerId;
+            }
+        }
+        catch (System.Exception)
+        {
+            // Sin servicios disponibles: seguimos con el id local de abajo
+        }
 
         const string key = "local_player_id";
         if (!PlayerPrefs.HasKey(key))

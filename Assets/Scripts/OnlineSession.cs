@@ -139,6 +139,7 @@ public class OnlineSession : MonoBehaviour
                     .WithHostMigration(new WorldMigrationHandler());
 
                 _session = await MultiplayerService.Instance.CreateSessionAsync(options);
+                HookSessionEvents();
 
                 JoinCode = _session.Code;
                 Status = config.isPrivate
@@ -207,6 +208,7 @@ public class OnlineSession : MonoBehaviour
 
                 _session = await MultiplayerService.Instance
                     .JoinSessionByIdAsync(sessionId, joinOptions);
+                HookSessionEvents();
 
                 JoinCode = _session.Code;
                 Status = "Conectado";
@@ -265,6 +267,7 @@ public class OnlineSession : MonoBehaviour
 
                 _session = await MultiplayerService.Instance
                     .JoinSessionByCodeAsync(cleanCode, joinOptions);
+                HookSessionEvents();
 
                 JoinCode = _session.Code;
                 Status = "Conectado";
@@ -291,6 +294,8 @@ public class OnlineSession : MonoBehaviour
     {
         if (_session == null) return;
 
+        UnhookSessionEvents();
+
         try { await _session.LeaveAsync(); }
         catch (System.Exception e) { Debug.LogException(e); }
 
@@ -300,6 +305,56 @@ public class OnlineSession : MonoBehaviour
     }
 
     public bool HasSession => _session != null;
+
+    // ---------- Avisos de la sesion ----------
+
+    private void HookSessionEvents()
+    {
+        if (_session == null) return;
+
+        _session.SessionHostChanged += OnHostChanged;
+        _session.PlayerHasLeft += OnPlayerLeftSession;
+    }
+
+    private void UnhookSessionEvents()
+    {
+        if (_session == null) return;
+
+        _session.SessionHostChanged -= OnHostChanged;
+        _session.PlayerHasLeft -= OnPlayerLeftSession;
+    }
+
+    private void OnHostChanged(string hostId)
+    {
+        string who = ResolvePlayerName(hostId);
+        Notifications.Show(who + " es ahora el anfitrion");
+    }
+
+    private void OnPlayerLeftSession(string playerId)
+    {
+        // El aviso normal de salida lo da PlayerName al desaparecer su personaje.
+        // Aqui solo cubrimos el caso de que se fuera sin llegar a aparecer.
+        Debug.Log("Ha salido de la sesion el jugador " + playerId);
+    }
+
+    // El id de sesion es el mismo que guarda PersistentPlayerId, asi que
+    // podemos traducirlo al nombre visible del jugador.
+    private string ResolvePlayerName(string sessionPlayerId)
+    {
+        foreach (var player in NetworkPlayer.AllPlayers)
+        {
+            if (player == null) continue;
+
+            var id = player.GetComponent<PersistentPlayerId>();
+            if (id != null && id.Id == sessionPlayerId)
+            {
+                var name = player.GetComponent<PlayerName>();
+                return name != null ? name.Name : "Otro jugador";
+            }
+        }
+
+        return "Otro jugador";
+    }
 
     // Elige el perfil por orden de prioridad:
     //   1) argumento de arranque  -profile <nombre>   (para lanzar 2 builds a la vez)
