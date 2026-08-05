@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class Character : MonoBehaviour{
+public abstract class Character : MonoBehaviour{
 
 /*
     Este script define la logica comun de movimientos,
