@@ -18,17 +18,22 @@ public class InventoryHUD : MonoBehaviour
     private Image[] _icons;
     private Text[] _counts;
 
-    void Start()
+    private bool _built = false;
+
+    void Update()
     {
-        if (inventory == null || container == null)
-        {
-            Debug.LogWarning("InventoryHUD: falta asignar inventory o container.");
-            return;
-        }
+        if (_built) return;
+
+        // En red el inventario llega con el jugador local, que aparece al conectar
+        if (inventory == null)
+            inventory = NetworkPlayer.LocalInventory;
+
+        if (inventory == null || container == null) return;
 
         BuildSlots();
         inventory.OnInventoryChanged += Refresh;
         Refresh();
+        _built = true;
     }
 
     void OnDestroy()
@@ -39,7 +44,7 @@ public class InventoryHUD : MonoBehaviour
 
     void BuildSlots()
     {
-        int n = inventory.slotCount;
+        int n = inventory.hotbarSize;   // abajo solo se ve el cinturon
         _bgs = new Image[n];
         _icons = new Image[n];
         _counts = new Text[n];
@@ -108,13 +113,15 @@ public class InventoryHUD : MonoBehaviour
     {
         for (int i = 0; i < _bgs.Length; i++)
         {
-            _bgs[i].color = (i == inventory.selectedIndex) ? selectedColor : normalColor;
+            _bgs[i].color = (i == inventory.SelectedIndex) ? selectedColor : normalColor;
 
-            Inventory.Slot slot = inventory.slots[i];
-            if (slot != null && !slot.IsEmpty)
+            Inventory.SlotData slot = inventory.GetSlot(i);
+            ItemData item = inventory.GetItemAt(i);
+
+            if (!slot.IsEmpty && item != null)
             {
-                _icons[i].enabled = slot.item.icon != null;
-                _icons[i].sprite = slot.item.icon;
+                _icons[i].enabled = item.icon != null;
+                _icons[i].sprite = item.icon;
                 _counts[i].text = slot.count > 1 ? slot.count.ToString() : "";
             }
             else

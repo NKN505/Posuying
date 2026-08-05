@@ -12,17 +12,24 @@ public class PlayerCombat : MonoBehaviour
     public float shootRange = 50f;
     public float shootCooldown = 0.3f;
 
+    [Tooltip("Camara de ESTE jugador. Si se deja vacia se busca entre sus hijos.")]
+    public Camera playerCamera;
+
     private float _meleeTimer = 0f;
     private float _shootTimer = 0f;
     private Camera _cam;
 
     void Start()
     {
-        _cam = Camera.main;
+        // Su propia camara, no Camera.main (que en red puede ser la de otro jugador)
+        _cam = playerCamera != null ? playerCamera : GetComponentInChildren<Camera>(true);
     }
 
     void Update()
     {
+        // Con una ventana abierta, los clics son para la interfaz (no disparar)
+        if (UIState.BlocksGameplay) return;
+
         if (_meleeTimer > 0f) _meleeTimer -= Time.deltaTime;
         if (_shootTimer > 0f) _shootTimer -= Time.deltaTime;
 
@@ -43,7 +50,8 @@ public class PlayerCombat : MonoBehaviour
             EnemyBehaviour enemy = hit.collider.GetComponentInParent<EnemyBehaviour>();
             if (enemy != null)
             {
-                enemy.TakeDamage(meleeDamage);
+                // El dano lo aplica el servidor (RequestDamage se encarga de pedirlo)
+                enemy.RequestDamage(meleeDamage);
                 Debug.Log("Golpe melee a " + hit.collider.name);
             }
         }
@@ -59,7 +67,7 @@ public class PlayerCombat : MonoBehaviour
             EnemyBehaviour enemy = hit.collider.GetComponentInParent<EnemyBehaviour>();
             if (enemy != null)
             {
-                enemy.TakeDamage(shootDamage);
+                enemy.RequestDamage(shootDamage);
                 Debug.Log("Disparo a " + hit.collider.name);
             }
         }
