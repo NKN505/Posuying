@@ -6,6 +6,12 @@ public abstract class EnemyBehaviour : Character
     [Header("IA")]
     public float detectionRadius = 10f;
     public float patrolRadius = 20f;
+    [Tooltip("Si esta activo, el enemigo va siempre a por el jugador (no patrulla). Lo usan los enemigos de horda.")]
+    public bool alwaysAggro = false;
+
+    // De que prefab del HordeDirector salio. Lo necesita el guardado del mundo
+    // para poder recrearlo igual si cambia el host.
+    [System.NonSerialized] public int prefabIndex = -1;
 
     [Header("Daño")]
     public float damageAmount = 10f;
@@ -27,27 +33,68 @@ public abstract class EnemyBehaviour : Character
         SetIsJumping(false);
 
         agent = GetComponent<NavMeshAgent>();
-        player = GameObject.FindWithTag("Player")?.transform;
+    }
 
-        SetNewPatrolTarget();
+    public override void OnNetworkSpawn()
+    {
+        base.OnNetworkSpawn();
+
+        if (IsServer)
+        {
+            // Solo el servidor mueve a los enemigos
+            SetNewPatrolTarget();
+        }
+        else if (agent != null)
+        {
+            // En los clientes el enemigo se mueve por NetworkTransform.
+            // Si dejaramos el NavMeshAgent activo, pelearia contra la posicion recibida.
+            agent.enabled = false;
+        }
     }
 
     protected override void Update()
     {
         base.Update();
 
+        // La IA es autoridad del servidor: los clientes solo ven el resultado
+        if (!IsServer) return;
+
         if (_damageTimer > 0f) _damageTimer -= Time.deltaTime;
 
+        UpdateNearestPlayer();
         if (player == null) return;
 
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
-        state = distanceToPlayer < detectionRadius ? State.Chasing : State.Patrolling;
+        state = (alwaysAggro || distanceToPlayer < detectionRadius) ? State.Chasing : State.Patrolling;
 
         switch (state)
         {
             case State.Patrolling: Patrol(); break;
             case State.Chasing:   Chase();   break;
         }
+    }
+
+    // Con varios jugadores, el enemigo va a por el que tenga mas cerca
+    protected void UpdateNearestPlayer()
+    {
+        Transform nearest = null;
+        float nearestSqr = float.MaxValue;
+
+        var players = NetworkPlayer.AllPlayers;
+        for (int i = 0; i < players.Count; i++)
+        {
+            var p = players[i];
+            if (p == null) continue;
+
+            float sqr = (p.transform.position - transform.position).sqrMagnitude;
+            if (sqr < nearestSqr)
+            {
+                nearestSqr = sqr;
+                nearest = p.transform;
+            }
+        }
+
+        player = nearest;
     }
 
     protected virtual void Patrol()
@@ -57,6 +104,14 @@ public abstract class EnemyBehaviour : Character
     }
 
     protected abstract void Chase();
+
+    // Los enemigos se destruyen al morir. Al hacerlo en el servidor sobre un objeto
+    // de red, Netcode se encarga de eliminarlo tambien en todos los clientes.
+    protected override void Die()
+    {
+        if (!IsServer) return;
+        Destroy(gameObject);
+    }
 
     protected void SetNewPatrolTarget()
     {
@@ -68,6 +123,9 @@ public abstract class EnemyBehaviour : Character
 
     void OnTriggerStay(Collider other)
     {
+        // El dano a los jugadores solo lo aplica el servidor
+        if (!IsServer) return;
+
         if (other.CompareTag("Player") && _damageTimer <= 0f)
         {
             Character playerChar = other.GetComponent<Character>();
@@ -75,7 +133,6 @@ public abstract class EnemyBehaviour : Character
             {
                 playerChar.TakeDamage(damageAmount);
                 _damageTimer = damageCooldown;
-                Debug.Log("Daño infligido: " + damageAmount);
             }
         }
     }
