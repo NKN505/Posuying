@@ -51,6 +51,8 @@ public class MainMenuUI : MonoBehaviour
     // Opciones
     private int _resIndex = -1;
     private bool _fullscreen = true;
+    private bool _vsync = true;
+    private int _fpsIndex = 1;
 
     void Update()
     {
@@ -361,45 +363,101 @@ public class MainMenuUI : MonoBehaviour
         {
             _resIndex = GameSettings.IndexOfCurrent();
             _fullscreen = GameSettings.SavedFullscreen;
+            _vsync = GameSettings.VSyncEnabled;
+            _fpsIndex = System.Array.IndexOf(GameSettings.FpsOptions, GameSettings.TargetFps);
+            if (_fpsIndex < 0) _fpsIndex = 1;   // 60 FPS
         }
 
         var list = GameSettings.Resolutions;
+        float labelW = 150f;
+        float right = w / 2f - 110f;
 
-        Label("l7", "Resolucion", _content, new Vector2(0f, 70f), new Vector2(w, 24f),
-            16, TextAnchor.MiddleCenter, Color.white);
+        // --- Resolucion ---
+        float y = 116f;
+        Label("l7", "Resolucion", _content, new Vector2(-w / 2f + labelW / 2f, y),
+            new Vector2(labelW, 24f), 14, TextAnchor.MiddleLeft, Color.white);
 
-        Text resLabel = Label("res", "", _content, new Vector2(0f, 34f), new Vector2(220f, 30f),
-            16, TextAnchor.MiddleCenter, Color.white);
+        Text resLabel = Label("res", "", _content, new Vector2(right, y), new Vector2(130f, 26f),
+            15, TextAnchor.MiddleCenter, Color.white);
         resLabel.text = list[Mathf.Clamp(_resIndex, 0, list.Count - 1)].x + " x " +
                         list[Mathf.Clamp(_resIndex, 0, list.Count - 1)].y;
 
-        Button("<", _content, new Vector2(-140f, 34f), new Vector2(40f, 30f), () =>
+        Button("<", _content, new Vector2(right - 90f, y), new Vector2(34f, 26f), () =>
         {
             _resIndex = (_resIndex - 1 + list.Count) % list.Count;
             resLabel.text = list[_resIndex].x + " x " + list[_resIndex].y;
         });
 
-        Button(">", _content, new Vector2(140f, 34f), new Vector2(40f, 30f), () =>
+        Button(">", _content, new Vector2(right + 90f, y), new Vector2(34f, 26f), () =>
         {
             _resIndex = (_resIndex + 1) % list.Count;
             resLabel.text = list[_resIndex].x + " x " + list[_resIndex].y;
         });
 
-        Text fsLabel = null;
-        fsLabel = Label("fs", FullscreenText(), _content, new Vector2(0f, -10f),
-            new Vector2(w, 24f), 14, TextAnchor.MiddleCenter, Color.white);
+        // --- Ventana / pantalla completa ---
+        y -= 46f;
+        Label("l8", "Pantalla", _content, new Vector2(-w / 2f + labelW / 2f, y),
+            new Vector2(labelW, 24f), 14, TextAnchor.MiddleLeft, Color.white);
 
-        Button("Cambiar", _content, new Vector2(0f, -44f), new Vector2(160f, 30f), () =>
+        Text fsLabel = null;
+        fsLabel = Label("fs", FullscreenText(), _content, new Vector2(right, y),
+            new Vector2(200f, 24f), 14, TextAnchor.MiddleCenter, Color.white);
+
+        Button("Cambiar", _content, new Vector2(right + 120f, y), new Vector2(90f, 26f), () =>
         {
             _fullscreen = !_fullscreen;
             fsLabel.text = FullscreenText();
         });
 
-        Button("APLICAR", _content, new Vector2(0f, -100f), new Vector2(200f, 38f),
-            () => GameSettings.Apply(list[_resIndex], _fullscreen), accentColor);
+        // --- VSync ---
+        y -= 46f;
+        Label("l9", "VSync", _content, new Vector2(-w / 2f + labelW / 2f, y),
+            new Vector2(labelW, 24f), 14, TextAnchor.MiddleLeft, Color.white);
+
+        Text vsyncLabel = null;
+        vsyncLabel = Label("vsync", VSyncText(), _content, new Vector2(right, y),
+            new Vector2(200f, 24f), 14, TextAnchor.MiddleCenter, Color.white);
+
+        Button("Cambiar", _content, new Vector2(right + 120f, y), new Vector2(90f, 26f), () =>
+        {
+            _vsync = !_vsync;
+            vsyncLabel.text = VSyncText();
+        });
+
+        // --- Limite de FPS ---
+        y -= 46f;
+        Label("l10", "Limite de FPS", _content, new Vector2(-w / 2f + labelW / 2f, y),
+            new Vector2(labelW, 24f), 14, TextAnchor.MiddleLeft, Color.white);
+
+        Text fpsLabel = Label("fps", GameSettings.FpsLabel(GameSettings.FpsOptions[_fpsIndex]),
+            _content, new Vector2(right, y), new Vector2(130f, 26f), 15,
+            TextAnchor.MiddleCenter, Color.white);
+
+        Button("<", _content, new Vector2(right - 90f, y), new Vector2(34f, 26f), () =>
+        {
+            _fpsIndex = (_fpsIndex - 1 + GameSettings.FpsOptions.Length) % GameSettings.FpsOptions.Length;
+            fpsLabel.text = GameSettings.FpsLabel(GameSettings.FpsOptions[_fpsIndex]);
+        });
+
+        Button(">", _content, new Vector2(right + 90f, y), new Vector2(34f, 26f), () =>
+        {
+            _fpsIndex = (_fpsIndex + 1) % GameSettings.FpsOptions.Length;
+            fpsLabel.text = GameSettings.FpsLabel(GameSettings.FpsOptions[_fpsIndex]);
+        });
+
+        Label("l11", "(con VSync activado manda el monitor)", _content,
+            new Vector2(0f, y - 28f), new Vector2(w, 20f), 11, TextAnchor.MiddleCenter,
+            new Color(1f, 1f, 1f, 0.55f));
+
+        Button("APLICAR", _content, new Vector2(0f, y - 66f), new Vector2(200f, 38f), () =>
+        {
+            GameSettings.Apply(list[_resIndex], _fullscreen);
+            GameSettings.ApplyPerformance(_vsync, GameSettings.FpsOptions[_fpsIndex]);
+        }, accentColor);
     }
 
     private string FullscreenText() => _fullscreen ? "Pantalla completa" : "En ventana";
+    private string VSyncText() => _vsync ? "Activado" : "Desactivado";
 
     // ---------- Constructores de interfaz ----------
 
