@@ -36,6 +36,18 @@ public class OnlineSession : MonoBehaviour
 
     public bool IsHost => _session != null && _session.IsHost;
 
+    // True mientras se rehace la conexion tras un cambio de anfitrion
+    public bool IsMigrating { get; private set; }
+
+    private const float MigrationTimeout = 30f;
+    private float _migrationStart;
+
+    // Al perder la conexion no podemos concluir nada de inmediato: en una migracion
+    // Netcode tambien te desconecta. Esperamos un poco a ver si vuelve.
+    private const float ReconnectGrace = 15f;
+    private float _disconnectedAt = -1f;
+    private bool _leavingOnPurpose;
+
     [Header("Perfil de identidad")]
     [Tooltip("Dejar vacio para que se elija solo. Dos instancias con perfiles distintos " +
              "cuentan como jugadores distintos, y asi puedes probar en un mismo PC.")]
@@ -294,14 +306,22 @@ public class OnlineSession : MonoBehaviour
     {
         if (_session == null) return;
 
+        _leavingOnPurpose = true;   // que no lo confunda con una caida
         UnhookSessionEvents();
 
+        // Si sale el anfitrion, dejar la sesion es lo que dispara la migracion
+        // en los demas jugadores.
         try { await _session.LeaveAsync(); }
         catch (System.Exception e) { Debug.LogException(e); }
 
         _session = null;
         JoinCode = "";
+        IsMigrating = false;
+        _disconnectedAt = -1f;
         Status = "Desconectado";
+
+        await EnsureNetworkStoppedAsync();
+        _leavingOnPurpose = false;
     }
 
     public bool HasSession => _session != null;
@@ -314,6 +334,9 @@ public class OnlineSession : MonoBehaviour
 
         _session.SessionHostChanged += OnHostChanged;
         _session.PlayerHasLeft += OnPlayerLeftSession;
+        _session.SessionMigrated += OnSessionMigrated;
+        _session.RemovedFromSession += OnRemovedFromSession;
+        _session.Deleted += OnSessionDeleted;
     }
 
     private void UnhookSessionEvents()
@@ -322,12 +345,138 @@ public class OnlineSession : MonoBehaviour
 
         _session.SessionHostChanged -= OnHostChanged;
         _session.PlayerHasLeft -= OnPlayerLeftSession;
+        _session.SessionMigrated -= OnSessionMigrated;
+        _session.RemovedFromSession -= OnRemovedFromSession;
+        _session.Deleted -= OnSessionDeleted;
+    }
+
+    // Nos han sacado de la sesion (por ejemplo al migrar el host).
+    // Hay que soltar la sesion vieja o al intentar volver a entrar Unity dira
+    // que ya somos miembros y nos rechazara.
+    private void OnRemovedFromSession()
+    {
+        Debug.Log("Nos han sacado de la sesion: limpiando estado local.");
+        ClearSessionState("Te han sacado de la partida");
+    }
+
+    private void OnSessionDeleted()
+    {
+        Debug.Log("La sesion ya no existe: limpiando estado local.");
+        ClearSessionState("La partida se ha cerrado");
+    }
+
+    private async void ClearSessionState(string message)
+    {
+        UnhookSessionEvents();
+
+        _session = null;
+        JoinCode = "";
+        IsMigrating = false;
+        Busy = false;
+        _disconnectedAt = -1f;
+        Status = message;
+
+        // Dejar Netcode apagado para poder volver a entrar limpiamente
+        await EnsureNetworkStoppedAsync();
     }
 
     private void OnHostChanged(string hostId)
     {
         string who = ResolvePlayerName(hostId);
         Notifications.Show(who + " es ahora el anfitrion");
+    }
+
+    // Al cambiar de anfitrion la conexion se rehace: todos salen y vuelven a entrar.
+    // No es un fallo, pero sin avisar parece que el juego se ha colgado.
+    private void OnSessionMigrated()
+    {
+        IsMigrating = true;
+        _migrationStart = Time.time;
+        Status = "Cambiando de anfitrion...";
+        Notifications.Show("Cambiando de anfitrion: reconectando...");
+    }
+
+    // ---------- Vigilancia de la conexion ----------
+
+    void Start()
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null) return;
+
+        nm.OnClientDisconnectCallback += OnNetcodeDisconnect;
+        nm.OnTransportFailure += OnTransportFailure;
+    }
+
+    void OnDestroy()
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null) return;
+
+        nm.OnClientDisconnectCallback -= OnNetcodeDisconnect;
+        nm.OnTransportFailure -= OnTransportFailure;
+    }
+
+    private void OnNetcodeDisconnect(ulong clientId)
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null) return;
+
+        // Si seguimos dentro es que se fue OTRO jugador: no es asunto nuestro
+        if (nm.IsServer || nm.IsConnectedClient) return;
+
+        BeginReconnectWatch();
+    }
+
+    private void OnTransportFailure() => BeginReconnectWatch();
+
+    private void BeginReconnectWatch()
+    {
+        if (_leavingOnPurpose || _session == null) return;   // salida voluntaria: normal
+        if (_disconnectedAt >= 0f) return;                   // ya estabamos vigilando
+
+        _disconnectedAt = Time.time;
+        Status = "Conexion perdida: intentando volver...";
+    }
+
+    void Update()
+    {
+        var nm = NetworkManager.Singleton;
+        bool backInGame = nm != null && (nm.IsConnectedClient || (nm.IsServer && nm.IsListening));
+
+        // 1) Cambio de anfitrion en curso
+        if (IsMigrating)
+        {
+            if (backInGame)
+            {
+                IsMigrating = false;
+                _disconnectedAt = -1f;
+                Status = "Reconectado";
+                Notifications.Show("Reconectado a la partida");
+            }
+            else if (Time.time - _migrationStart > MigrationTimeout)
+            {
+                IsMigrating = false;
+                ClearSessionState("No se pudo reconectar tras el cambio de anfitrion");
+            }
+            return;
+        }
+
+        // 2) Nos hemos quedado sin conexion sin que sea una migracion
+        if (_disconnectedAt < 0f) return;
+
+        if (backInGame)
+        {
+            _disconnectedAt = -1f;   // volvio sola
+            Status = "Reconectado";
+            return;
+        }
+
+        if (Time.time - _disconnectedAt > ReconnectGrace)
+        {
+            _disconnectedAt = -1f;
+            Notifications.Show("Se ha perdido la conexion con la partida");
+            ClearSessionState("Se ha perdido la conexion");
+        }
     }
 
     private void OnPlayerLeftSession(string playerId)
