@@ -67,16 +67,39 @@ public class NetworkUI : MonoBehaviour
 
     void OnGUI()
     {
+        bool migrating = onlineSession != null && onlineSession.IsMigrating;
+
         // Fuera de partida no dibujamos nada: se ve el menu principal
-        if (!IsConnected()) return;
+        if (!IsConnected() && !migrating) return;
 
         Matrix4x4 previousMatrix = GUI.matrix;
         float scale = Screen.height / ReferenceHeight;
         GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
 
-        DrawInGame();
+        if (migrating) DrawMigrationBanner();
+        else DrawInGame();
 
         GUI.matrix = previousMatrix;
+    }
+
+    // Cartel a media pantalla mientras se rehace la conexion
+    private void DrawMigrationBanner()
+    {
+        var style = new GUIStyle(GUI.skin.label)
+        {
+            richText = true,
+            fontSize = 30,
+            alignment = TextAnchor.MiddleCenter
+        };
+
+        float w = 900f;
+        float h = 120f;
+        float x = (ReferenceHeight * ((float)Screen.width / Screen.height) - w) / 2f;
+        float y = ReferenceHeight / 2f - h / 2f;
+
+        GUI.Box(new Rect(x, y, w, h), GUIContent.none);
+        GUI.Label(new Rect(x, y, w, h),
+            "<b>CAMBIANDO DE ANFITRION</b>\nReconectando...", style);
     }
 
     private void DrawInGame()
@@ -94,44 +117,63 @@ public class NetworkUI : MonoBehaviour
             return;
         }
 
-        GUILayout.BeginArea(new Rect(10, 10, 320, 420));
+        // Panel centrado en pantalla
+        float refWidth = ReferenceHeight * ((float)Screen.width / Screen.height);
+        float panelW = 460f;
+        float panelH = 430f;
+        Rect panel = new Rect((refWidth - panelW) / 2f, (ReferenceHeight - panelH) / 2f,
+                              panelW, panelH);
+
+        // Fondo oscuro para que se lea sobre el juego
+        Color previousColor = GUI.color;
+        GUI.color = new Color(0f, 0f, 0f, 0.85f);
+        GUI.DrawTexture(panel, Texture2D.whiteTexture);
+        GUI.color = previousColor;
+
+        GUIStyle buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 17 };
+
+        GUILayout.BeginArea(new Rect(panel.x + 24f, panel.y + 20f, panelW - 48f, panelH - 40f));
 
         string rol = nm.IsHost ? "HOST" : (nm.IsServer ? "SERVIDOR" : "CLIENTE");
-        GUILayout.Label("<b>" + rol + "</b>", RichLabel(15));
-        GUILayout.Label("Mi id de cliente: " + nm.LocalClientId);
+        GUILayout.Label("<b>" + rol + "</b>", RichLabel(26));
+
+        GUILayout.Space(4);
+        GUILayout.Label("Mi id de cliente: " + nm.LocalClientId, RichLabel(15));
 
         if (nm.IsServer)
-            GUILayout.Label("Jugadores conectados: " + nm.ConnectedClientsIds.Count);
+            GUILayout.Label("Jugadores conectados: " + nm.ConnectedClientsIds.Count, RichLabel(15));
 
         if (onlineSession != null && !string.IsNullOrEmpty(onlineSession.JoinCode))
         {
-            GUILayout.Space(6);
-            GUILayout.Label("<b>CODIGO: " + onlineSession.JoinCode + "</b>", RichLabel(18));
+            GUILayout.Space(14);
+            GUILayout.Label("<b>CODIGO: " + onlineSession.JoinCode + "</b>", RichLabel(24));
 
-            if (GUILayout.Button("Copiar codigo"))
+            if (GUILayout.Button("Copiar codigo", buttonStyle, GUILayout.Height(34)))
                 GUIUtility.systemCopyBuffer = onlineSession.JoinCode;
         }
 
         // Solo el host decide si puede entrar gente con la partida empezada
         if (onlineSession != null && onlineSession.IsHost)
         {
-            GUILayout.Space(8);
+            GUILayout.Space(14);
             bool locked = onlineSession.IsGameLocked;
 
             GUILayout.Label(locked
                 ? "Partida CERRADA (no entra nadie mas)"
-                : "Partida ABIERTA (se puede entrar en marcha)");
+                : "Partida ABIERTA (se puede entrar en marcha)", RichLabel(15));
 
-            if (GUILayout.Button(locked ? "Abrir partida" : "Cerrar partida", GUILayout.Height(26)))
+            if (GUILayout.Button(locked ? "Abrir partida" : "Cerrar partida",
+                                 buttonStyle, GUILayout.Height(36)))
                 onlineSession.SetGameLocked(!locked);
         }
 
-        GUILayout.Space(8);
-        if (GUILayout.Button("Seguir jugando  [" + menuKey + "]", GUILayout.Height(26)))
+        GUILayout.FlexibleSpace();
+
+        if (GUILayout.Button("Seguir jugando  [" + menuKey + "]", buttonStyle, GUILayout.Height(40)))
             _menuOpen = false;
 
-        GUILayout.Space(4);
-        if (GUILayout.Button("Salir de la partida", GUILayout.Height(28)))
+        GUILayout.Space(8);
+        if (GUILayout.Button("Salir de la partida", buttonStyle, GUILayout.Height(40)))
             Disconnect();
 
         GUILayout.EndArea();

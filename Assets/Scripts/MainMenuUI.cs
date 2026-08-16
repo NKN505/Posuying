@@ -49,10 +49,11 @@ public class MainMenuUI : MonoBehaviour
     private string _selectedSessionId = "";
 
     // Opciones
+    private enum OptionsTab { General, Graficos, Audio }
+    private OptionsTab _optionsTab = OptionsTab.General;
+
     private int _resIndex = -1;
     private bool _fullscreen = true;
-    private bool _vsync = true;
-    private int _fpsIndex = 1;
 
     void Update()
     {
@@ -62,8 +63,13 @@ public class MainMenuUI : MonoBehaviour
             return;
         }
 
-        bool inGame = NetworkManager.Singleton != null &&
-                      (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer);
+        // Durante la migracion tampoco mostramos el menu: estamos "en partida",
+        // solo que rehaciendo la conexion
+        bool migrating = onlineSession != null && onlineSession.IsMigrating;
+
+        bool inGame = migrating ||
+                      (NetworkManager.Singleton != null &&
+                       (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer));
 
         if (_root.gameObject.activeSelf == inGame)
             _root.gameObject.SetActive(!inGame);
@@ -117,17 +123,6 @@ public class MainMenuUI : MonoBehaviour
                 26, TextAnchor.MiddleCenter, Color.white);
             y -= 52f;
         }
-
-        // Nombre del jugador: se guarda solo y vale para crear y para unirse
-        Label("lNombre", "Tu nombre:", panel, new Vector2(-w / 2f + 70f, y - 20f),
-            new Vector2(120f, 24f), 14, TextAnchor.MiddleLeft, Color.white);
-
-        InputField playerName = Input("nombreJugador", PlayerProfile.Name, panel,
-            new Vector2(40f, y - 20f), new Vector2(w - 180f, 30f), false);
-        playerName.characterLimit = PlayerProfile.MaxLength;
-        playerName.onEndEdit.AddListener(value => PlayerProfile.Name = value);
-
-        y -= 46f;
 
         // Pestanas
         string[] names = { "CREAR", "BUSCAR", "CODIGO", "OPCIONES" };
@@ -357,107 +352,178 @@ public class MainMenuUI : MonoBehaviour
 
     private void BuildOptionsTab()
     {
-        float w = _content.sizeDelta.x;
+        GameSettings.Load();
 
         if (_resIndex < 0)
         {
-            _resIndex = GameSettings.IndexOfCurrent();
+            _resIndex = GameSettings.IndexOfCurrentResolution();
             _fullscreen = GameSettings.SavedFullscreen;
-            _vsync = GameSettings.VSyncEnabled;
-            _fpsIndex = System.Array.IndexOf(GameSettings.FpsOptions, GameSettings.TargetFps);
-            if (_fpsIndex < 0) _fpsIndex = 1;   // 60 FPS
         }
 
-        var list = GameSettings.Resolutions;
-        float labelW = 150f;
-        float right = w / 2f - 110f;
+        float w = _content.sizeDelta.x;
+        float top = _content.sizeDelta.y / 2f;
 
-        // --- Resolucion ---
-        float y = 116f;
-        Label("l7", "Resolucion", _content, new Vector2(-w / 2f + labelW / 2f, y),
-            new Vector2(labelW, 24f), 14, TextAnchor.MiddleLeft, Color.white);
+        // Sub-pestanas de categoria
+        string[] names = { "GENERAL", "GRAFICOS", "AUDIO" };
+        float tabW = 130f;
 
-        Text resLabel = Label("res", "", _content, new Vector2(right, y), new Vector2(130f, 26f),
-            15, TextAnchor.MiddleCenter, Color.white);
-        resLabel.text = list[Mathf.Clamp(_resIndex, 0, list.Count - 1)].x + " x " +
-                        list[Mathf.Clamp(_resIndex, 0, list.Count - 1)].y;
-
-        Button("<", _content, new Vector2(right - 90f, y), new Vector2(34f, 26f), () =>
+        for (int i = 0; i < names.Length; i++)
         {
-            _resIndex = (_resIndex - 1 + list.Count) % list.Count;
-            resLabel.text = list[_resIndex].x + " x " + list[_resIndex].y;
-        });
+            OptionsTab tab = (OptionsTab)i;
+            float x = -tabW * 1.05f + i * tabW * 1.05f;
+            Color color = _optionsTab == tab ? accentColor : buttonColor;
 
-        Button(">", _content, new Vector2(right + 90f, y), new Vector2(34f, 26f), () =>
+            Button(names[i], _content, new Vector2(x, top - 16f), new Vector2(tabW, 28f),
+                () => { _optionsTab = tab; ShowTab(Tab.Opciones); }, color);
+        }
+
+        switch (_optionsTab)
         {
-            _resIndex = (_resIndex + 1) % list.Count;
-            resLabel.text = list[_resIndex].x + " x " + list[_resIndex].y;
-        });
+            case OptionsTab.General: BuildGeneralOptions(); break;
+            case OptionsTab.Graficos: BuildGraphicsOptions(); break;
+            case OptionsTab.Audio: BuildAudioOptions(); break;
+        }
 
-        // --- Ventana / pantalla completa ---
-        y -= 46f;
-        Label("l8", "Pantalla", _content, new Vector2(-w / 2f + labelW / 2f, y),
-            new Vector2(labelW, 24f), 14, TextAnchor.MiddleLeft, Color.white);
-
-        Text fsLabel = null;
-        fsLabel = Label("fs", FullscreenText(), _content, new Vector2(right, y),
-            new Vector2(200f, 24f), 14, TextAnchor.MiddleCenter, Color.white);
-
-        Button("Cambiar", _content, new Vector2(right + 120f, y), new Vector2(90f, 26f), () =>
+        Button("APLICAR", _content, new Vector2(0f, -top + 24f), new Vector2(200f, 34f), () =>
         {
-            _fullscreen = !_fullscreen;
-            fsLabel.text = FullscreenText();
-        });
-
-        // --- VSync ---
-        y -= 46f;
-        Label("l9", "VSync", _content, new Vector2(-w / 2f + labelW / 2f, y),
-            new Vector2(labelW, 24f), 14, TextAnchor.MiddleLeft, Color.white);
-
-        Text vsyncLabel = null;
-        vsyncLabel = Label("vsync", VSyncText(), _content, new Vector2(right, y),
-            new Vector2(200f, 24f), 14, TextAnchor.MiddleCenter, Color.white);
-
-        Button("Cambiar", _content, new Vector2(right + 120f, y), new Vector2(90f, 26f), () =>
-        {
-            _vsync = !_vsync;
-            vsyncLabel.text = VSyncText();
-        });
-
-        // --- Limite de FPS ---
-        y -= 46f;
-        Label("l10", "Limite de FPS", _content, new Vector2(-w / 2f + labelW / 2f, y),
-            new Vector2(labelW, 24f), 14, TextAnchor.MiddleLeft, Color.white);
-
-        Text fpsLabel = Label("fps", GameSettings.FpsLabel(GameSettings.FpsOptions[_fpsIndex]),
-            _content, new Vector2(right, y), new Vector2(130f, 26f), 15,
-            TextAnchor.MiddleCenter, Color.white);
-
-        Button("<", _content, new Vector2(right - 90f, y), new Vector2(34f, 26f), () =>
-        {
-            _fpsIndex = (_fpsIndex - 1 + GameSettings.FpsOptions.Length) % GameSettings.FpsOptions.Length;
-            fpsLabel.text = GameSettings.FpsLabel(GameSettings.FpsOptions[_fpsIndex]);
-        });
-
-        Button(">", _content, new Vector2(right + 90f, y), new Vector2(34f, 26f), () =>
-        {
-            _fpsIndex = (_fpsIndex + 1) % GameSettings.FpsOptions.Length;
-            fpsLabel.text = GameSettings.FpsLabel(GameSettings.FpsOptions[_fpsIndex]);
-        });
-
-        Label("l11", "(con VSync activado manda el monitor)", _content,
-            new Vector2(0f, y - 28f), new Vector2(w, 20f), 11, TextAnchor.MiddleCenter,
-            new Color(1f, 1f, 1f, 0.55f));
-
-        Button("APLICAR", _content, new Vector2(0f, y - 66f), new Vector2(200f, 38f), () =>
-        {
-            GameSettings.Apply(list[_resIndex], _fullscreen);
-            GameSettings.ApplyPerformance(_vsync, GameSettings.FpsOptions[_fpsIndex]);
+            GameSettings.ApplyResolution(GameSettings.Resolutions[_resIndex], _fullscreen);
+            GameSettings.SaveAndApply();
         }, accentColor);
     }
 
-    private string FullscreenText() => _fullscreen ? "Pantalla completa" : "En ventana";
-    private string VSyncText() => _vsync ? "Activado" : "Desactivado";
+    // ---------- Categorias ----------
+
+    private void BuildGeneralOptions()
+    {
+        float w = _content.sizeDelta.x;
+
+        // Nombre del jugador
+        float y = RowY(0);
+        Label("lname", "Tu nombre", _content, new Vector2(-w / 2f + 85f, y),
+            new Vector2(170f, 22f), 14, TextAnchor.MiddleLeft, Color.white);
+
+        InputField nameField = Input("nombreJugador", PlayerProfile.Name, _content,
+            new Vector2(w / 2f - 130f, y), new Vector2(220f, 28f), false);
+        nameField.characterLimit = PlayerProfile.MaxLength;
+        nameField.onEndEdit.AddListener(value => PlayerProfile.Name = value);
+
+        StepRow(1, "Sensibilidad raton", () => GameSettings.MouseSensitivity.ToString("0.00"),
+            () => GameSettings.MouseSensitivity = Mathf.Max(0.25f, GameSettings.MouseSensitivity - 0.25f),
+            () => GameSettings.MouseSensitivity = Mathf.Min(5f, GameSettings.MouseSensitivity + 0.25f));
+
+        ToggleRow(2, "Invertir eje Y", () => GameSettings.OnOff(GameSettings.InvertY),
+            () => GameSettings.InvertY = !GameSettings.InvertY);
+
+        StepRow(3, "Campo de vision", () => Mathf.RoundToInt(GameSettings.FieldOfView) + " grados",
+            () => GameSettings.FieldOfView = Mathf.Max(60f, GameSettings.FieldOfView - 5f),
+            () => GameSettings.FieldOfView = Mathf.Min(110f, GameSettings.FieldOfView + 5f));
+    }
+
+    private void BuildGraphicsOptions()
+    {
+        var list = GameSettings.Resolutions;
+
+        StepRow(0, "Resolucion",
+            () => list[Mathf.Clamp(_resIndex, 0, list.Count - 1)].x + " x " +
+                  list[Mathf.Clamp(_resIndex, 0, list.Count - 1)].y,
+            () => _resIndex = (_resIndex - 1 + list.Count) % list.Count,
+            () => _resIndex = (_resIndex + 1) % list.Count);
+
+        ToggleRow(1, "Pantalla", () => _fullscreen ? "Completa" : "En ventana",
+            () => _fullscreen = !_fullscreen);
+
+        StepRow(2, "Calidad", () => QualitySettings.names[Mathf.Clamp(GameSettings.QualityLevel, 0, QualitySettings.names.Length - 1)],
+            () => GameSettings.QualityLevel = Mathf.Max(0, GameSettings.QualityLevel - 1),
+            () => GameSettings.QualityLevel = Mathf.Min(QualitySettings.names.Length - 1, GameSettings.QualityLevel + 1));
+
+        ToggleRow(3, "VSync", () => GameSettings.OnOff(GameSettings.VSync),
+            () => GameSettings.VSync = !GameSettings.VSync);
+
+        StepRow(4, "Limite de FPS", () => GameSettings.FpsLabel(GameSettings.TargetFps),
+            () => GameSettings.TargetFps = StepFps(-1),
+            () => GameSettings.TargetFps = StepFps(1));
+
+        StepRow(5, "Distancia sombras", () => Mathf.RoundToInt(GameSettings.ShadowDistance) + " m",
+            () => GameSettings.ShadowDistance = Mathf.Max(10f, GameSettings.ShadowDistance - 10f),
+            () => GameSettings.ShadowDistance = Mathf.Min(100f, GameSettings.ShadowDistance + 10f));
+
+        StepRow(6, "Escala de render", () => GameSettings.Percent(GameSettings.RenderScale),
+            () => GameSettings.RenderScale = Mathf.Max(0.5f, GameSettings.RenderScale - 0.1f),
+            () => GameSettings.RenderScale = Mathf.Min(1f, GameSettings.RenderScale + 0.1f));
+
+        ToggleRow(7, "Contador de FPS", () => GameSettings.OnOff(GameSettings.ShowFps),
+            () => GameSettings.ShowFps = !GameSettings.ShowFps);
+    }
+
+    private void BuildAudioOptions()
+    {
+        StepRow(0, "Volumen general", () => GameSettings.Percent(GameSettings.MasterVolume),
+            () => GameSettings.MasterVolume = Mathf.Max(0f, GameSettings.MasterVolume - 0.1f),
+            () => GameSettings.MasterVolume = Mathf.Min(1f, GameSettings.MasterVolume + 0.1f));
+
+        StepRow(1, "Musica", () => GameSettings.Percent(GameSettings.MusicVolume),
+            () => GameSettings.MusicVolume = Mathf.Max(0f, GameSettings.MusicVolume - 0.1f),
+            () => GameSettings.MusicVolume = Mathf.Min(1f, GameSettings.MusicVolume + 0.1f));
+
+        StepRow(2, "Efectos", () => GameSettings.Percent(GameSettings.SfxVolume),
+            () => GameSettings.SfxVolume = Mathf.Max(0f, GameSettings.SfxVolume - 0.1f),
+            () => GameSettings.SfxVolume = Mathf.Min(1f, GameSettings.SfxVolume + 0.1f));
+
+        Label("aviso", "El juego aun no tiene sonidos: musica y efectos\nquedan guardados para cuando los haya.",
+            _content, new Vector2(0f, RowY(4)), new Vector2(_content.sizeDelta.x, 40f),
+            12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
+    }
+
+    // ---------- Filas reutilizables ----------
+
+    private float RowY(int index) => _content.sizeDelta.y / 2f - 58f - index * 32f;
+
+    // Fila con < valor >
+    private void StepRow(int index, string label, System.Func<string> read,
+        System.Action previous, System.Action next)
+    {
+        float w = _content.sizeDelta.x;
+        float y = RowY(index);
+        float right = w / 2f - 105f;
+
+        Label("l_" + label, label, _content, new Vector2(-w / 2f + 85f, y),
+            new Vector2(170f, 22f), 14, TextAnchor.MiddleLeft, Color.white);
+
+        Text value = Label("v_" + label, read(), _content, new Vector2(right, y),
+            new Vector2(120f, 24f), 14, TextAnchor.MiddleCenter, Color.white);
+
+        Button("<", _content, new Vector2(right - 82f, y), new Vector2(30f, 24f),
+            () => { previous(); value.text = read(); });
+
+        Button(">", _content, new Vector2(right + 82f, y), new Vector2(30f, 24f),
+            () => { next(); value.text = read(); });
+    }
+
+    // Fila con boton de Cambiar
+    private void ToggleRow(int index, string label, System.Func<string> read, System.Action toggle)
+    {
+        float w = _content.sizeDelta.x;
+        float y = RowY(index);
+        float right = w / 2f - 105f;
+
+        Label("l_" + label, label, _content, new Vector2(-w / 2f + 85f, y),
+            new Vector2(170f, 22f), 14, TextAnchor.MiddleLeft, Color.white);
+
+        Text value = Label("v_" + label, read(), _content, new Vector2(right - 40f, y),
+            new Vector2(140f, 24f), 14, TextAnchor.MiddleCenter, Color.white);
+
+        Button("Cambiar", _content, new Vector2(right + 82f, y), new Vector2(84f, 24f),
+            () => { toggle(); value.text = read(); });
+    }
+
+    private int StepFps(int direction)
+    {
+        int index = System.Array.IndexOf(GameSettings.FpsOptions, GameSettings.TargetFps);
+        if (index < 0) index = 1;
+
+        index = (index + direction + GameSettings.FpsOptions.Length) % GameSettings.FpsOptions.Length;
+        return GameSettings.FpsOptions[index];
+    }
 
     // ---------- Constructores de interfaz ----------
 
