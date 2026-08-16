@@ -53,7 +53,15 @@ public class NetworkUI : MonoBehaviour
         else
         {
             if (!_wasConnected) _menuOpen = false;   // al entrar, a jugar
-            if (Input.GetKeyDown(menuKey)) _menuOpen = !_menuOpen;
+
+            // Con las opciones abiertas, Escape las cierra en vez de volver al juego
+            if (Input.GetKeyDown(menuKey))
+            {
+                if (MainMenuUI.Instance != null && MainMenuUI.Instance.OptionsOverlayOpen)
+                    MainMenuUI.Instance.CloseOptionsOverlay();
+                else
+                    _menuOpen = !_menuOpen;
+            }
         }
 
         _wasConnected = connected;
@@ -107,6 +115,9 @@ public class NetworkUI : MonoBehaviour
         var nm = NetworkManager.Singleton;
         if (nm == null) return;
 
+        // Con las opciones abiertas manda esa pantalla: aqui no dibujamos nada
+        if (MainMenuUI.Instance != null && MainMenuUI.Instance.OptionsOverlayOpen) return;
+
         if (!_menuOpen)
         {
             string hint = menuKey + " = menu";
@@ -120,7 +131,7 @@ public class NetworkUI : MonoBehaviour
         // Panel centrado en pantalla
         float refWidth = ReferenceHeight * ((float)Screen.width / Screen.height);
         float panelW = 460f;
-        float panelH = 430f;
+        float panelH = 540f;   // hay que dejar sitio a todos los botones
         Rect panel = new Rect((refWidth - panelW) / 2f, (ReferenceHeight - panelH) / 2f,
                               panelW, panelH);
 
@@ -169,6 +180,14 @@ public class NetworkUI : MonoBehaviour
 
         GUILayout.FlexibleSpace();
 
+        // Reutiliza la pantalla de opciones del menu principal como capa encima
+        if (MainMenuUI.Instance != null &&
+            GUILayout.Button("Opciones", buttonStyle, GUILayout.Height(38)))
+        {
+            MainMenuUI.Instance.OpenOptionsOverlay();
+        }
+
+        GUILayout.Space(8);
         if (GUILayout.Button("Seguir jugando  [" + menuKey + "]", buttonStyle, GUILayout.Height(40)))
             _menuOpen = false;
 

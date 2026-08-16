@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
@@ -29,6 +30,12 @@ public class MainMenuUI : MonoBehaviour
     public Color panelColor = new Color(0.05f, 0.06f, 0.09f, 0.88f);
     public Color accentColor = new Color(0.55f, 0.12f, 0.12f, 1f);
     public Color buttonColor = new Color(1f, 1f, 1f, 0.14f);
+
+    // Para que el menu de Escape pueda abrir las opciones estando en partida
+    public static MainMenuUI Instance { get; private set; }
+    public bool OptionsOverlayOpen { get; private set; }
+
+    private readonly List<GameObject> _tabButtons = new List<GameObject>();
 
     private RectTransform _root;
     private RectTransform _content;
@@ -71,11 +78,31 @@ public class MainMenuUI : MonoBehaviour
                       (NetworkManager.Singleton != null &&
                        (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer));
 
-        if (_root.gameObject.activeSelf == inGame)
-            _root.gameObject.SetActive(!inGame);
+        // Se ve fuera de partida, o dentro si han abierto las opciones desde Escape
+        bool show = !inGame || OptionsOverlayOpen;
+
+        if (_root.gameObject.activeSelf != show)
+            _root.gameObject.SetActive(show);
 
         if (!inGame && _status != null && onlineSession != null)
             _status.text = onlineSession.Busy ? onlineSession.Status + " ..." : onlineSession.Status;
+    }
+
+    void Awake()
+    {
+        Instance = this;
+    }
+
+    // Lo llama el menu de Escape para abrir las opciones sin salir de la partida
+    public void OpenOptionsOverlay()
+    {
+        OptionsOverlayOpen = true;
+        ShowTab(Tab.Opciones);
+    }
+
+    public void CloseOptionsOverlay()
+    {
+        OptionsOverlayOpen = false;
     }
 
     private void TryBuild()
@@ -132,8 +159,10 @@ public class MainMenuUI : MonoBehaviour
         {
             Tab tab = (Tab)i;
             float x = -w / 2f + 20f + tabW * i + tabW / 2f;
-            Button(names[i], panel, new Vector2(x, y - 18f), new Vector2(tabW - 6f, 32f),
-                () => ShowTab(tab));
+            Button button = Button(names[i], panel, new Vector2(x, y - 18f),
+                new Vector2(tabW - 6f, 32f), () => ShowTab(tab));
+
+            _tabButtons.Add(button.gameObject);
         }
 
         float usedTop = top - (y - 40f);
@@ -183,7 +212,14 @@ public class MainMenuUI : MonoBehaviour
 
     private void ShowTab(Tab tab)
     {
+        // En partida solo tienen sentido las opciones: crear o buscar otra
+        // partida desde aqui no aplica
+        if (OptionsOverlayOpen) tab = Tab.Opciones;
+
         _tab = tab;
+
+        foreach (var button in _tabButtons)
+            if (button != null) button.SetActive(!OptionsOverlayOpen);
 
         foreach (Transform child in _content)
             Destroy(child.gameObject);
@@ -384,11 +420,20 @@ public class MainMenuUI : MonoBehaviour
             case OptionsTab.Audio: BuildAudioOptions(); break;
         }
 
-        Button("APLICAR", _content, new Vector2(0f, -top + 24f), new Vector2(200f, 34f), () =>
+        // En partida el boton comparte fila con el de volver
+        float applyX = OptionsOverlayOpen ? -110f : 0f;
+
+        Button("APLICAR", _content, new Vector2(applyX, -top + 24f), new Vector2(200f, 34f), () =>
         {
             GameSettings.ApplyResolution(GameSettings.Resolutions[_resIndex], _fullscreen);
             GameSettings.SaveAndApply();
         }, accentColor);
+
+        if (OptionsOverlayOpen)
+        {
+            Button("VOLVER AL JUEGO", _content, new Vector2(110f, -top + 24f),
+                new Vector2(200f, 34f), CloseOptionsOverlay);
+        }
     }
 
     // ---------- Categorias ----------
@@ -436,23 +481,24 @@ public class MainMenuUI : MonoBehaviour
             () => GameSettings.QualityLevel = Mathf.Max(0, GameSettings.QualityLevel - 1),
             () => GameSettings.QualityLevel = Mathf.Min(QualitySettings.names.Length - 1, GameSettings.QualityLevel + 1));
 
-        ToggleRow(3, "VSync", () => GameSettings.OnOff(GameSettings.VSync),
-            () => GameSettings.VSync = !GameSettings.VSync);
-
-        StepRow(4, "Limite de FPS", () => GameSettings.FpsLabel(GameSettings.TargetFps),
+        StepRow(3, "Fotogramas", () => GameSettings.FpsLabel(GameSettings.TargetFps),
             () => GameSettings.TargetFps = StepFps(-1),
             () => GameSettings.TargetFps = StepFps(1));
 
-        StepRow(5, "Distancia sombras", () => Mathf.RoundToInt(GameSettings.ShadowDistance) + " m",
+        StepRow(4, "Distancia sombras", () => Mathf.RoundToInt(GameSettings.ShadowDistance) + " m",
             () => GameSettings.ShadowDistance = Mathf.Max(10f, GameSettings.ShadowDistance - 10f),
             () => GameSettings.ShadowDistance = Mathf.Min(100f, GameSettings.ShadowDistance + 10f));
 
-        StepRow(6, "Escala de render", () => GameSettings.Percent(GameSettings.RenderScale),
+        StepRow(5, "Escala de render", () => GameSettings.Percent(GameSettings.RenderScale),
             () => GameSettings.RenderScale = Mathf.Max(0.5f, GameSettings.RenderScale - 0.1f),
             () => GameSettings.RenderScale = Mathf.Min(1f, GameSettings.RenderScale + 0.1f));
 
-        ToggleRow(7, "Contador de FPS", () => GameSettings.OnOff(GameSettings.ShowFps),
+        ToggleRow(6, "Contador de FPS", () => GameSettings.OnOff(GameSettings.ShowFps),
             () => GameSettings.ShowFps = !GameSettings.ShowFps);
+
+        Label("nota_fps", "\"VSync\" sincroniza con tu monitor; para bajar consumo,\nelige un limite concreto (60, 75...).",
+            _content, new Vector2(0f, RowY(7) - 6f), new Vector2(_content.sizeDelta.x, 40f),
+            11, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
     }
 
     private void BuildAudioOptions()

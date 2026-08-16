@@ -27,11 +27,13 @@ public static class GameSettings
     private const string KeySfx = "opt_vol_sfx";
 
     // ---------- Valores disponibles ----------
-    public static readonly int[] FpsOptions = { 30, 60, 75, 90, 120, 144, 0 };   // 0 = sin limite
+    // Un unico control para los fotogramas: VSync y limite manual se excluyen
+    // entre si (con VSync activo Unity ignora el limite), asi que van juntos.
+    //   -1 = VSync (lo marca el monitor)    0 = sin limite
+    public static readonly int[] FpsOptions = { -1, 30, 60, 75, 90, 120, 144, 0 };
 
     // ---------- Valores actuales ----------
-    public static bool VSync = true;
-    public static int TargetFps = 60;
+    public static int TargetFps = -1;   // VSync por defecto
     public static int QualityLevel = 1;
     public static float ShadowDistance = 50f;
     public static float RenderScale = 1f;
@@ -64,8 +66,7 @@ public static class GameSettings
     {
         if (_loaded) return;
 
-        VSync = PlayerPrefs.GetInt(KeyVSync, 1) == 1;
-        TargetFps = PlayerPrefs.GetInt(KeyFps, 60);
+        TargetFps = PlayerPrefs.GetInt(KeyFps, -1);   // -1 = VSync
         QualityLevel = PlayerPrefs.GetInt(KeyQuality, QualitySettings.GetQualityLevel());
         ShadowDistance = PlayerPrefs.GetFloat(KeyShadowDistance, 50f);
         RenderScale = PlayerPrefs.GetFloat(KeyRenderScale, 1f);
@@ -84,7 +85,6 @@ public static class GameSettings
 
     public static void Save()
     {
-        PlayerPrefs.SetInt(KeyVSync, VSync ? 1 : 0);
         PlayerPrefs.SetInt(KeyFps, TargetFps);
         PlayerPrefs.SetInt(KeyQuality, QualityLevel);
         PlayerPrefs.SetFloat(KeyShadowDistance, ShadowDistance);
@@ -115,9 +115,11 @@ public static class GameSettings
         if (QualityLevel >= 0 && QualityLevel < QualitySettings.names.Length)
             QualitySettings.SetQualityLevel(QualityLevel, true);
 
-        // Sin limite de fotogramas la GPU se queda al 100% sin motivo
-        QualitySettings.vSyncCount = VSync ? 1 : 0;
-        Application.targetFrameRate = (VSync || TargetFps <= 0) ? -1 : TargetFps;
+        // Sin limite de fotogramas la GPU se queda al 100% sin motivo.
+        // Con vSyncCount > 0 Unity ignora targetFrameRate, por eso son excluyentes.
+        bool useVSync = TargetFps == -1;
+        QualitySettings.vSyncCount = useVSync ? 1 : 0;
+        Application.targetFrameRate = (useVSync || TargetFps <= 0) ? -1 : TargetFps;
 
         // En URP la distancia de sombras y la escala viven en el perfil, no en QualitySettings
         UniversalRenderPipelineAsset urp =
@@ -201,7 +203,12 @@ public static class GameSettings
 
     // ---------- Textos para la interfaz ----------
 
-    public static string FpsLabel(int fps) => fps <= 0 ? "Sin limite" : fps + " FPS";
+    public static string FpsLabel(int fps)
+    {
+        if (fps == -1) return "VSync (monitor)";
+        if (fps <= 0) return "Sin limite";
+        return fps + " FPS";
+    }
     public static string OnOff(bool value) => value ? "Activado" : "Desactivado";
     public static string Percent(float value) => Mathf.RoundToInt(value * 100f) + "%";
 }
