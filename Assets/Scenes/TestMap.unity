@@ -12729,7 +12729,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 330585546}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1347157828
 PrefabInstance:
@@ -17468,6 +17468,7 @@ GameObject:
   - component: {fileID: 1945602600}
   - component: {fileID: 1945602602}
   - component: {fileID: 1945602601}
+  - component: {fileID: 1945602603}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -17638,6 +17639,21 @@ MonoBehaviour:
   fontSize: 18
   lineHeight: 26
   topMargin: 60
+--- !u!114 &1945602603
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945602594}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 117deeea608bcca48b91465c20e291d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  canvas: {fileID: 0}
+  anchorPosition: {x: -20, y: -20}
+  refreshInterval: 0.25
 --- !u!1001 &1950135907
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21608,3 +21624,4 @@ SceneRoots:
   - {fileID: 2012002109}
   - {fileID: 711044512}
   - {fileID: 1226476474}
+  - {fileID: 1340551372}

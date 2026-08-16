@@ -76,6 +76,20 @@ public class PlayerController : Character, IPassiveRegenerator
         standingCameraPos = cameraTransform.localPosition;
 
         _fallPeakY = transform.position.y;
+
+        ApplyCameraSettings();
+        GameSettings.Changed += ApplyCameraSettings;   // si cambia el FOV en opciones
+    }
+
+    void OnDestroy()
+    {
+        GameSettings.Changed -= ApplyCameraSettings;
+    }
+
+    private void ApplyCameraSettings()
+    {
+        if (playerCamera != null)
+            playerCamera.fieldOfView = GameSettings.FieldOfView;
     }
 
     protected override void Update(){
@@ -94,8 +108,11 @@ public class PlayerController : Character, IPassiveRegenerator
             RequestDamage(GetHealth());
 
         // MOVIMIENTO DE CAMARA (siempre activo, incluso escalando)
-        float mouseX = Input.GetAxis("Mouse X");
-        float mouseY = Input.GetAxis("Mouse Y");
+        float sensitivity = GameSettings.MouseSensitivity;
+        float invert = GameSettings.InvertY ? -1f : 1f;
+
+        float mouseX = Input.GetAxis("Mouse X") * sensitivity;
+        float mouseY = Input.GetAxis("Mouse Y") * sensitivity * invert;
 
         transform.Rotate(0, mouseX, 0);
 
