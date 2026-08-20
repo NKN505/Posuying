@@ -45,6 +45,20 @@ public class PlayerController : Character, IPassiveRegenerator
     [Tooltip("Dano por cada metro caido por encima del umbral seguro")]
     public float fallDamagePerMeter = 40f;
 
+    [Header("Animacion")]
+    [Tooltip("Animator del cuerpo en tercera persona. Si se deja vacio se busca en este GameObject y sus hijos.")]
+    public Animator animator;
+    [Tooltip("Suavizado de los parametros de locomocion. Mas alto = mas suave pero con mas retardo.")]
+    public float animatorDampTime = 0.1f;
+
+    // Hashes cacheados: evita convertir el string a hash en cada frame
+    private static readonly int HashMoveX = Animator.StringToHash("MoveX");
+    private static readonly int HashMoveZ = Animator.StringToHash("MoveZ");
+    private static readonly int HashDie = Animator.StringToHash("Die");
+    private static readonly int HashJump = Animator.StringToHash("Jump");
+    private static readonly int HashIsGrounded = Animator.StringToHash("IsGrounded");
+    private static readonly int HashCrouch = Animator.StringToHash("Crouch");
+
     private bool _isStillCrouching = false;
 
     private bool _wasGrounded = true;
@@ -75,6 +89,9 @@ public class PlayerController : Character, IPassiveRegenerator
         standingCenter = controller.center;
         standingCameraPos = cameraTransform.localPosition;
 
+        if (animator == null)
+            animator = GetComponentInChildren<Animator>(true);
+
         _fallPeakY = transform.position.y;
 
         ApplyCameraSettings();
@@ -100,6 +117,7 @@ public class PlayerController : Character, IPassiveRegenerator
         if (UIState.BlocksGameplay)
         {
             ApplyGravity();
+            UpdateAnimator(0f, 0f);   // menu abierto: el cuerpo vuelve a reposo
             return;
         }
 
@@ -121,7 +139,11 @@ public class PlayerController : Character, IPassiveRegenerator
 
         cameraTransform.localRotation = Quaternion.Euler(pitch, 0, 0);
 
-        if (isClimbing) return;
+        if (isClimbing)
+        {
+            UpdateAnimator(0f, 0f);   // escalando: la locomocion no debe mezclarse
+            return;
+        }
 
         ApplyGravity();
 
@@ -129,10 +151,21 @@ public class PlayerController : Character, IPassiveRegenerator
         {
             // El salto cuesta estamina; solo si estamos en el suelo y hay suficiente
             if (controller.isGrounded && ConsumeStamina(jumpStaminaCost))
+            {
                 Jump();
+
+                // El estado Jump del Animator se entra por este trigger. Sin esta
+                // linea el estado existe pero nunca se alcanza.
+                if (animator != null && animator.isActiveAndEnabled)
+                    animator.SetTrigger(HashJump);
+            }
         }
 
-        if (isClimbing) return;
+        if (isClimbing)
+        {
+            UpdateAnimator(0f, 0f);
+            return;
+        }
 
         bool wantsToCrouch = Input.GetButton("Crouch");
 
@@ -152,15 +185,49 @@ public class PlayerController : Character, IPassiveRegenerator
         SetIsSprinting(sprinting);
         UpdateCrouch(wantsToCrouch);
 
+        // El estado Kneeling del Animator se entra con este bool. QUE clip suene
+        // ahi lo decide el override del arma equipada, no este script.
+        if (animator != null && animator.isActiveAndEnabled)
+            animator.SetBool(HashCrouch, wantsToCrouch);
+
         Vector3 move = transform.right * movex + transform.forward * movez;
 
         controller.Move(move * GetSpeed() * Time.deltaTime);
+
+        // Alimentar el blend tree con la velocidad REAL en m/s, en espacio local:
+        // X = desplazamiento lateral, Z = adelante/atras. Se usan los mismos valores
+        // que mueven al CharacterController, asi que los umbrales del blend tree
+        // coinciden exactamente con la velocidad del personaje y los pies no patinan.
+        float currentSpeed = GetSpeed();
+        UpdateAnimator(movex * currentSpeed, movez * currentSpeed);
 
         // Condicion de regeneracion pasiva (leida por Character via IPassiveRegenerator)
         _isStillCrouching = wantsToCrouch && !isMoving;
 
         TrackFall();
 
+    }
+
+    // Escribe los parametros de locomocion en el Animator.
+    // Parametros esperados en el Animator Controller: MoveX (Float) y MoveZ (Float).
+    private void UpdateAnimator(float moveX, float moveZ)
+    {
+        if (animator == null || !animator.isActiveAndEnabled) return;
+
+        animator.SetFloat(HashMoveX, moveX, animatorDampTime, Time.deltaTime);
+        animator.SetFloat(HashMoveZ, moveZ, animatorDampTime, Time.deltaTime);
+        animator.SetBool(HashIsGrounded, controller.isGrounded);
+    }
+
+    // Hook para la fase de ragdoll: dispara el estado Death del Animator.
+    // Aun no se llama desde ningun sitio; al respawn ser inmediato, engancharlo
+    // ahora haria que la animacion de muerte se solape con el teletransporte.
+    public void PlayDeathAnimation()
+    {
+        if (animator == null || !animator.isActiveAndEnabled) return;
+
+        UpdateAnimator(0f, 0f);
+        animator.SetTrigger(HashDie);
     }
 
     private void TrackFall()
