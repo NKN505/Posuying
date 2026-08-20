@@ -12,9 +12,9 @@ TagManager:
   - 
   - Water
   - UI
-  - 'PlayerBody '
-  - 'FPArms '
-  - 
+  - PlayerBody
+  - FPArms
+  - LocalPlayerBody
   - 
   - 
   - 
