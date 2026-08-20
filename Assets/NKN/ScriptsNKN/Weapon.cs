@@ -1,6 +1,30 @@
 using UnityEngine;
 
+/// <summary>
+/// Como se sostiene el arma. Decide QUE SET de animaciones usa el cuerpo.
+/// Es un enum y no booleanos a proposito: con booleanos serian posibles
+/// estados invalidos (pistola y fusil a la vez) y cada arma nueva obligaria
+/// a tocar todas las demas.
+/// </summary>
+public enum WeaponGrip
+{
+    Unarmed   = 0,   // manos vacias
+    OneHanded = 1,   // pistola 
+    TwoHanded = 2,   // fusil, escopeta, rifle
+    Melee     = 3,   // cuchillo
+}
+
 public abstract class Weapon : MonoBehaviour{
+
+    // ---------------------------
+    // ANIMACION
+    // ---------------------------
+
+    [Header("Animacion")]
+    [Tooltip("Set de animaciones de cuerpo que usa esta arma. Por defecto Unarmed " +
+             "a proposito: si se olvida ponerlo, el personaje anima con las manos " +
+             "vacias, que es un fallo evidente, en vez de con un arma que no lleva.")]
+    [SerializeField] private WeaponGrip grip = WeaponGrip.Unarmed;
 
     // ---------------------------
     // APUNTADO Y ZOOM (comun a todas las armas)
@@ -177,6 +201,11 @@ public abstract class Weapon : MonoBehaviour{
     public bool GetCanAim()
     {
         return canAim;
+    }
+
+    public WeaponGrip GetGrip()
+    {
+        return grip;
     }
 
     public Camera GetPlayerCamera()

@@ -55,6 +55,9 @@ public class PlayerController : Character, IPassiveRegenerator
     private static readonly int HashMoveX = Animator.StringToHash("MoveX");
     private static readonly int HashMoveZ = Animator.StringToHash("MoveZ");
     private static readonly int HashDie = Animator.StringToHash("Die");
+    private static readonly int HashJump = Animator.StringToHash("Jump");
+    private static readonly int HashIsGrounded = Animator.StringToHash("IsGrounded");
+    private static readonly int HashCrouch = Animator.StringToHash("Crouch");
 
     private bool _isStillCrouching = false;
 
@@ -148,7 +151,14 @@ public class PlayerController : Character, IPassiveRegenerator
         {
             // El salto cuesta estamina; solo si estamos en el suelo y hay suficiente
             if (controller.isGrounded && ConsumeStamina(jumpStaminaCost))
+            {
                 Jump();
+
+                // El estado Jump del Animator se entra por este trigger. Sin esta
+                // linea el estado existe pero nunca se alcanza.
+                if (animator != null && animator.isActiveAndEnabled)
+                    animator.SetTrigger(HashJump);
+            }
         }
 
         if (isClimbing)
@@ -174,6 +184,11 @@ public class PlayerController : Character, IPassiveRegenerator
         SetIsCrouching(wantsToCrouch);
         SetIsSprinting(sprinting);
         UpdateCrouch(wantsToCrouch);
+
+        // El estado Kneeling del Animator se entra con este bool. QUE clip suene
+        // ahi lo decide el override del arma equipada, no este script.
+        if (animator != null && animator.isActiveAndEnabled)
+            animator.SetBool(HashCrouch, wantsToCrouch);
 
         Vector3 move = transform.right * movex + transform.forward * movez;
 
@@ -201,6 +216,7 @@ public class PlayerController : Character, IPassiveRegenerator
 
         animator.SetFloat(HashMoveX, moveX, animatorDampTime, Time.deltaTime);
         animator.SetFloat(HashMoveZ, moveZ, animatorDampTime, Time.deltaTime);
+        animator.SetBool(HashIsGrounded, controller.isGrounded);
     }
 
     // Hook para la fase de ragdoll: dispara el estado Death del Animator.
