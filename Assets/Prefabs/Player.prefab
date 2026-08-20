@@ -659,6 +659,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c56d20317ef5744b8ef44a6ca8650d1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  grip: 1
   weaponHolder: {fileID: 7366486578103245004}
   hipPosition: {fileID: 7101111555815957243}
   aimPosition: {fileID: 3114804804596206893}
@@ -735,7 +736,7 @@ PrefabInstance:
     - target: {fileID: 9500000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
       propertyPath: m_Controller
       value: 
-      objectReference: {fileID: 9100000, guid: d1379ccfc2ec002439b887bdac6ed8e9, type: 2}
+      objectReference: {fileID: 9100000, guid: aeabf5bd1faa345449552efd38b5498a, type: 2}
     - target: {fileID: 9500000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
       propertyPath: m_CullingMode
       value: 0
