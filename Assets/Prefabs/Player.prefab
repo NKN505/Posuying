@@ -572,6 +572,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 744b9f4a43d835d41b06367fee405e99, type: 3}
+--- !u!1 &1399953025827846560 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100000, guid: 744b9f4a43d835d41b06367fee405e99, type: 3}
+  m_PrefabInstance: {fileID: 1399953025827749632}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &1399953025827874176 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: 744b9f4a43d835d41b06367fee405e99, type: 3}
@@ -748,7 +753,7 @@ PrefabInstance:
     - target: {fileID: 13700000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 1befca3c56e7be04da2e142a800cf645, type: 2}
+      objectReference: {fileID: 2100000, guid: f21f789fe9e99ad45bff213152f3a8f3, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -1035,16 +1040,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
---- !u!4 &8706869791174167586 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 400000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
-  m_PrefabInstance: {fileID: 8706869791174039202}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1399953025827874180 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 100000, guid: 744b9f4a43d835d41b06367fee405e99, type: 3}
-  m_PrefabInstance: {fileID: 1399953025827749632}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &8706869791174135900
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1057,7 +1052,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c6e5a6d8a5e4e64da942b8460bd520a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  fpArms: {fileID: 1399953025827874180}
+  ShowTopMostFoldoutHeaderGroup: 1
+  fpArms: {fileID: 1399953025827846560}
   fpExtras:
   - {fileID: 6105391438753564156}
   bodyTP: {fileID: 8706869791174135810}
@@ -1065,3 +1061,8 @@ MonoBehaviour:
   configureOwnerCamera: 1
   onlyRenderers: 1
   excludeCameraHierarchy: 1
+--- !u!4 &8706869791174167586 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 400000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
+  m_PrefabInstance: {fileID: 8706869791174039202}
+  m_PrefabAsset: {fileID: 0}
