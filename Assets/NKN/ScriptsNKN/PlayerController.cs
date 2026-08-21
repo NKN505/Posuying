@@ -192,7 +192,13 @@ public class PlayerController : Character, IPassiveRegenerator
 
         Vector3 move = transform.right * movex + transform.forward * movez;
 
-        controller.Move(move * GetSpeed() * Time.deltaTime);
+        // OJO: controller.Move(Vector3.zero) pone isGrounded a FALSE. Si se llama
+        // cada frame estando quieto, el Animator recibe IsGrounded = false y el
+        // estado Jump nunca encuentra su salida: el cuerpo se queda congelado en
+        // la pose de aterrizaje hasta que te mueves. Por eso solo se mueve cuando
+        // hay desplazamiento real; la caida ya la aplica ApplyGravity().
+        if (move.sqrMagnitude > 0f)
+            controller.Move(move * GetSpeed() * Time.deltaTime);
 
         // Alimentar el blend tree con la velocidad REAL en m/s, en espacio local:
         // X = desplazamiento lateral, Z = adelante/atras. Se usan los mismos valores
