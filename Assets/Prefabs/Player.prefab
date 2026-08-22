@@ -664,7 +664,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c56d20317ef5744b8ef44a6ca8650d1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  grip: 1
+  grip: 2
   weaponHolder: {fileID: 7366486578103245004}
   hipPosition: {fileID: 7101111555815957243}
   aimPosition: {fileID: 3114804804596206893}
@@ -797,6 +797,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8706869791174135900}
+    - targetCorrespondingSourceObject: {fileID: 100000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7801331187878126042}
   m_SourcePrefab: {fileID: 100100000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
 --- !u!1 &8706869791174135810 stripped
 GameObject:
@@ -879,7 +882,7 @@ MonoBehaviour:
   staminaRegenDelay: 1.5
   playerCamera: {fileID: 0}
   crouchHeight: 1
-  crouchCameraY: 1
+  crouchCameraY: 1.3
   climbCheckDistance: 0.7
   climbMaxHeight: 3
   climbBaseSpeed: 3
@@ -1061,6 +1064,25 @@ MonoBehaviour:
   configureOwnerCamera: 1
   onlyRenderers: 1
   excludeCameraHierarchy: 1
+--- !u!114 &7801331187878126042
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8706869791174135810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 579453a0d31e7334a9bb8e95045e81d6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animator: {fileID: 0}
+  controllerBase: {fileID: 9100000, guid: aeabf5bd1faa345449552efd38b5498a, type: 2}
+  setUnarmed: {fileID: 22100000, guid: b0e82ca0f1fdd8c4488579c7f5650da5, type: 2}
+  setOneHanded: {fileID: 0}
+  setTwoHanded: {fileID: 22100000, guid: 2b9f29ff33bbf79458c660edade8d4ca, type: 2}
+  setMelee: {fileID: 22100000, guid: 9231296d59e9abf4f9135f41804bd539, type: 2}
+  weaponHolder: {fileID: 7366486578103245004}
 --- !u!4 &8706869791174167586 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
