@@ -42,6 +42,18 @@ public class InventoryHUD : MonoBehaviour
             inventory.OnInventoryChanged -= Refresh;
     }
 
+    // El panel del inventario decide que hacer: coger, soltar, apilar o cambiar
+    private void OnHotbarSlotClicked(int index)
+    {
+        if (_panel == null)
+            _panel = FindFirstObjectByType<InventoryPanel>();
+
+        if (_panel != null)
+            _panel.HandleSlotClick(index);
+    }
+
+    private InventoryPanel _panel;
+
     void BuildSlots()
     {
         int n = inventory.hotbarSize;   // abajo solo se ve el cinturon
@@ -64,7 +76,14 @@ public class InventoryHUD : MonoBehaviour
             rt.anchoredPosition = new Vector2(startX + i * (slotSize + spacing), 0f);
             Image bg = slotGO.GetComponent<Image>();
             bg.color = normalColor;
+            bg.raycastTarget = true;
             _bgs[i] = bg;
+
+            // Con el inventario abierto, estos huecos tambien se pueden pulsar
+            // para mover objetos entre la mochila y el cinturon.
+            var button = slotGO.AddComponent<InventorySlotButton>();
+            button.index = i;
+            button.onClick = OnHotbarSlotClicked;
 
             // Icono del objeto
             GameObject iconGO = new GameObject("Icon", typeof(RectTransform), typeof(Image));
@@ -74,6 +93,7 @@ public class InventoryHUD : MonoBehaviour
             irt.anchoredPosition = Vector2.zero;
             Image icon = iconGO.GetComponent<Image>();
             icon.preserveAspect = true;
+            icon.raycastTarget = false;   // que el clic llegue al fondo del hueco
             icon.enabled = false;
             _icons[i] = icon;
 

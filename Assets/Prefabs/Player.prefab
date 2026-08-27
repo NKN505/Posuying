@@ -934,7 +934,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   database: {fileID: 11400000, guid: 162debf0a9b023d489be4888842e61bc, type: 2}
-  hotbarSize: 5
+  hotbarSize: 4
   backpackSize: 24
   useKey: 9
 --- !u!114 &2537126146830909993
