@@ -86,6 +86,11 @@ public abstract class EnemyBehaviour : Character
             var p = players[i];
             if (p == null) continue;
 
+            // A los abatidos se les deja en paz: ya no son una amenaza y ademas
+            // asi el companero puede acercarse a levantarlos
+            var downed = p.GetComponent<PlayerDownedState>();
+            if (downed != null && !downed.CanAct) continue;
+
             float sqr = (p.transform.position - transform.position).sqrMagnitude;
             if (sqr < nearestSqr)
             {
@@ -125,6 +130,10 @@ public abstract class EnemyBehaviour : Character
     {
         // El dano a los jugadores solo lo aplica el servidor
         if (!IsServer) return;
+
+        // Tampoco se remata a quien ya esta en el suelo
+        var downedTarget = other.GetComponent<PlayerDownedState>();
+        if (downedTarget != null && !downedTarget.CanAct) return;
 
         if (other.CompareTag("Player") && _damageTimer <= 0f)
         {
