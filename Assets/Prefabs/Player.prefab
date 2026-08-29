@@ -664,7 +664,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c56d20317ef5744b8ef44a6ca8650d1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  grip: 2
+  grip: 0
   weaponHolder: {fileID: 7366486578103245004}
   hipPosition: {fileID: 7101111555815957243}
   aimPosition: {fileID: 3114804804596206893}
