@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Multiplayer;
@@ -47,6 +48,7 @@ public class OnlineSession : MonoBehaviour
     private const float ReconnectGrace = 15f;
     private float _disconnectedAt = -1f;
     private bool _leavingOnPurpose;
+    private bool _wasHost;
 
     [Header("Perfil de identidad")]
     [Tooltip("Dejar vacio para que se elija solo. Dos instancias con perfiles distintos " +
@@ -65,12 +67,28 @@ public class OnlineSession : MonoBehaviour
     // pulso "Cliente local" y se quedo intentando conectar). Lo apagamos antes.
     private async Task EnsureNetworkStoppedAsync()
     {
+        // MUY IMPORTANTE: si hay una sesion del SDK viva, NO se puede llamar a
+        // NetworkManager.Shutdown(). El SDK lo detecta como un apagado "por fuera"
+        // y aborta su propio arranque con "Failed to start the network manager",
+        // dejando la red inservible hasta reiniciar. Se sale por la sesion.
+        if (_session != null)
+        {
+            try { await _session.LeaveAsync(); }
+            catch (System.Exception e) { Debug.LogWarning("Al salir de la sesion: " + e.Message); }
+
+            UnhookSessionEvents();
+            _session = null;
+            return;
+        }
+
         var nm = NetworkManager.Singleton;
         if (nm == null) return;
 
         if (!nm.IsListening && !nm.IsClient && !nm.IsServer) return;
 
-        Debug.Log("Habia una conexion previa abierta: se cierra antes de continuar.");
+        // Aqui no hay sesion: solo puede venir de una partida local (F1/F2),
+        // que si se apaga con Shutdown porque el SDK no esta involucrado.
+        Debug.Log("Cerrando una partida local previa.");
         nm.Shutdown();
 
         // Netcode necesita frames completos para soltarlo todo, no basta con ceder el turno
@@ -85,6 +103,21 @@ public class OnlineSession : MonoBehaviour
 
         if (nm.IsListening || nm.IsClient || nm.IsServer)
             Debug.LogWarning("Netcode sigue activo tras el apagado; la conexion puede fallar.");
+    }
+
+    // Las partidas locales (F1/F2) fijan el puerto 7777 en el transporte. Si en el
+    // mismo equipo hay otra instancia usandolo, la siguiente no consigue arrancar
+    // la red. Para las partidas online no necesitamos puerto fijo: que lo elija
+    // el sistema (0) y asi nunca chocan dos instancias.
+    private void FreeLocalPort()
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null) return;
+
+        var transport = nm.GetComponent<UnityTransport>();
+        if (transport == null) return;
+
+        transport.SetConnectionData("0.0.0.0", 0);
     }
 
     // Unity exige identificarse antes de usar Relay (basta con un login anonimo)
@@ -128,6 +161,7 @@ public class OnlineSession : MonoBehaviour
         Status = "Conectando con Unity...";
 
         await EnsureNetworkStoppedAsync();
+        FreeLocalPort();
 
         if (await EnsureSignedInAsync())
         {
@@ -151,6 +185,7 @@ public class OnlineSession : MonoBehaviour
                     .WithHostMigration(new WorldMigrationHandler());
 
                 _session = await MultiplayerService.Instance.CreateSessionAsync(options);
+                _wasHost = true;   // haber sido host es lo que ensucia la red
                 HookSessionEvents();
 
                 JoinCode = _session.Code;
@@ -160,12 +195,27 @@ public class OnlineSession : MonoBehaviour
             }
             catch (System.Exception e)
             {
-                Status = "Error al crear la partida: " + e.Message;
-                Debug.LogException(e);
+                HandleNetworkError(e, "Error al crear la partida: ");
             }
         }
 
         Busy = false;
+    }
+
+    // Si Netcode se ha quedado en mal estado, reintentar no sirve de nada:
+    // hay que reconstruirlo entero (destruir el NetworkManager y recargar).
+    private void HandleNetworkError(System.Exception e, string prefix)
+    {
+        Debug.LogException(e);
+
+        if (NetworkReset.LooksLikeBrokenNetwork(e.Message))
+        {
+            Status = "La red se quedo en mal estado: reiniciandola...";
+            NetworkReset.HardReset(e.Message);
+            return;
+        }
+
+        Status = prefix + e.Message;
     }
 
     // ---------- Buscar partidas ----------
@@ -207,6 +257,7 @@ public class OnlineSession : MonoBehaviour
         Status = "Entrando en la partida...";
 
         await EnsureNetworkStoppedAsync();
+        FreeLocalPort();
 
         if (await EnsureSignedInAsync())
         {
@@ -227,8 +278,7 @@ public class OnlineSession : MonoBehaviour
             }
             catch (System.Exception e)
             {
-                Status = "No se pudo entrar: " + e.Message;
-                Debug.LogException(e);
+                HandleNetworkError(e, "No se pudo entrar: ");
             }
         }
 
@@ -264,6 +314,7 @@ public class OnlineSession : MonoBehaviour
         Status = "Conectando con Unity...";
 
         await EnsureNetworkStoppedAsync();
+        FreeLocalPort();
 
         if (await EnsureSignedInAsync())
         {
@@ -294,8 +345,7 @@ public class OnlineSession : MonoBehaviour
             }
             catch (System.Exception e)
             {
-                Status = "No se pudo entrar: " + e.Message;
-                Debug.LogException(e);
+                HandleNetworkError(e, "No se pudo entrar: ");
             }
         }
 
@@ -320,7 +370,9 @@ public class OnlineSession : MonoBehaviour
         _disconnectedAt = -1f;
         Status = "Desconectado";
 
-        await EnsureNetworkStoppedAsync();
+        // El SDK ya apaga Netcode al dejar la sesion. Hacerlo tambien nosotros
+        // es justo lo que rompia la siguiente conexion.
+        _wasHost = false;
         _leavingOnPurpose = false;
     }
 
@@ -376,8 +428,10 @@ public class OnlineSession : MonoBehaviour
         _disconnectedAt = -1f;
         Status = message;
 
-        // Dejar Netcode apagado para poder volver a entrar limpiamente
-        await EnsureNetworkStoppedAsync();
+        // Nos han sacado: el SDK ya ha desmontado la red por su cuenta.
+        // No tocamos NetworkManager para no romper la siguiente conexion.
+        _wasHost = false;
+        await Task.Yield();
     }
 
     private void OnHostChanged(string hostId)

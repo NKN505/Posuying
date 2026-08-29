@@ -25,6 +25,7 @@ public class MatchManager : NetworkBehaviour
     public bool MatchOver => netMatchOver.Value;
 
     private bool _livesReady;
+    private bool _startedAsCoop;
 
     void Awake()
     {
@@ -33,14 +34,43 @@ public class MatchManager : NetworkBehaviour
 
     void Update()
     {
-        if (!IsServer || _livesReady) return;
+        if (!IsServer) return;
 
         // Las vidas se fijan cuando ya hay alguien jugando: antes no sabemos
         // si la partida es en solitario o acompanada.
         if (NetworkPlayer.AllPlayers.Count == 0) return;
 
-        netLives.Value = NetworkManager.ConnectedClientsIds.Count <= 1 ? soloLives : coopLives;
-        _livesReady = true;
+        bool isCoop = NetworkManager.ConnectedClientsIds.Count > 1;
+
+        if (!_livesReady)
+        {
+            netLives.Value = isCoop ? coopLives : soloLives;
+            _startedAsCoop = isCoop;
+            _livesReady = true;
+            return;
+        }
+
+        // Si empezaste solo y luego entra alguien, el equipo gana las vidas de
+        // diferencia. No se reponen las ya gastadas ni se pasa del tope de coop,
+        // asi que entrar y salir no sirve para farmear vidas.
+        if (isCoop && !_startedAsCoop)
+        {
+            _startedAsCoop = true;
+
+            int bonus = Mathf.Max(0, coopLives - soloLives);
+            int before = netLives.Value;
+            netLives.Value = Mathf.Min(coopLives, before + bonus);
+
+            if (netLives.Value > before)
+                AnnounceBonusClientRpc(netLives.Value - before, netLives.Value);
+        }
+    }
+
+    [ClientRpc]
+    private void AnnounceBonusClientRpc(int gained, int total)
+    {
+        Notifications.Show("Ha entrado un companero: +" + gained +
+                           " vidas de equipo (ahora " + total + ")");
     }
 
     // Gasta una vida. Devuelve false si ya no quedaba ninguna.
@@ -92,7 +122,10 @@ public class MatchManager : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        netLives.Value = NetworkManager.ConnectedClientsIds.Count <= 1 ? soloLives : coopLives;
+        bool isCoop = NetworkManager.ConnectedClientsIds.Count > 1;
+
+        netLives.Value = isCoop ? coopLives : soloLives;
+        _startedAsCoop = isCoop;
         netMatchOver.Value = false;
 
         // Todos vuelven a estar en pie y en su punto de aparicion

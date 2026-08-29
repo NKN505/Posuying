@@ -342,11 +342,24 @@ public class MainMenuUI : MonoBehaviour
 
             bool joinable = !info.IsLocked && info.AvailableSlots > 0;
 
+            bool needsPassword = info.HasPassword;
+
             Button(text, _content, new Vector2(0f, y), new Vector2(w, 36f), () =>
             {
                 _selectedSessionId = id;
-                if (joinable)
-                    onlineSession.JoinSessionById(id, _joinPasswordInput != null ? _joinPasswordInput.text : "");
+                if (!joinable) return;
+
+                string typed = _joinPasswordInput != null ? _joinPasswordInput.text : "";
+
+                // Intentar entrar sin la contrasena deja la red en mal estado y
+                // luego ya no se puede entrar en ninguna partida. Mejor no intentarlo.
+                if (needsPassword && string.IsNullOrWhiteSpace(typed))
+                {
+                    _status.text = "Esa partida pide contrasena: escribela abajo y vuelve a pulsar";
+                    return;
+                }
+
+                onlineSession.JoinSessionById(id, typed);
             }, joinable ? buttonColor : new Color(1f, 0.3f, 0.3f, 0.15f));
 
             y -= 42f;
