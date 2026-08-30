@@ -48,7 +48,6 @@ public class OnlineSession : MonoBehaviour
     private const float ReconnectGrace = 15f;
     private float _disconnectedAt = -1f;
     private bool _leavingOnPurpose;
-    private bool _wasHost;
 
     [Header("Perfil de identidad")]
     [Tooltip("Dejar vacio para que se elija solo. Dos instancias con perfiles distintos " +
@@ -185,7 +184,6 @@ public class OnlineSession : MonoBehaviour
                     .WithHostMigration(new WorldMigrationHandler());
 
                 _session = await MultiplayerService.Instance.CreateSessionAsync(options);
-                _wasHost = true;   // haber sido host es lo que ensucia la red
                 HookSessionEvents();
 
                 JoinCode = _session.Code;
@@ -372,7 +370,6 @@ public class OnlineSession : MonoBehaviour
 
         // El SDK ya apaga Netcode al dejar la sesion. Hacerlo tambien nosotros
         // es justo lo que rompia la siguiente conexion.
-        _wasHost = false;
         _leavingOnPurpose = false;
     }
 
@@ -430,7 +427,6 @@ public class OnlineSession : MonoBehaviour
 
         // Nos han sacado: el SDK ya ha desmontado la red por su cuenta.
         // No tocamos NetworkManager para no romper la siguiente conexion.
-        _wasHost = false;
         await Task.Yield();
     }
 
