@@ -15,15 +15,25 @@ public class EnemyHealthBar : MonoBehaviour
     private static Camera _shared;
     private static int _resolvedFrame = -1;
 
-    void Update()
+    // OJO: LateUpdate, no Update.
+    //
+    // La barra es HIJA del enemigo, asi que hereda su rotacion. Unity ejecuta
+    // primero todos los Update() y DESPUES mueve y rota a los personajes (la
+    // navegacion y el CharacterController). Si orientaramos la barra en Update,
+    // el movimiento posterior del padre desharia esa orientacion en el mismo
+    // frame: unos pocos grados en los enemigos que giran suave (no se nota) y
+    // un bandazo entero en el saltarin, que se mueve a saltos.
+    //
+    // LateUpdate corre cuando ya se ha movido todo, asi que la orientacion es
+    // la ultima palabra y no depende del orden de ejecucion de los scripts.
+    void LateUpdate()
     {
         if (enemy == null || !enemy.gameObject.activeSelf) return;
 
         Transform cam = ActiveCamera();
         if (cam == null) return;
 
-        transform.LookAt(cam);
-        transform.Rotate(0, 180f, 0);
+        FaceCamera(cam);
 
         if (fillBar == null) return;
 
@@ -78,6 +88,29 @@ public class EnemyHealthBar : MonoBehaviour
 
         _shared = Camera.main;
         return _shared != null ? _shared.transform : null;
+    }
+
+    // Orienta la barra hacia la camara, pero SOLO girando sobre el eje Y.
+    //
+    // Antes se usaba LookAt, que apunta a la POSICION de la camara, altura
+    // incluida. Con un enemigo a tu misma altura apenas se nota, pero con uno
+    // que salta muy por encima de ti la barra tiene que inclinarse para
+    // "mirarte": se escorza y se ve como una linea torcida. Ese era el caso del
+    // saltarin, el unico enemigo que se eleva de verdad.
+    //
+    // Anulando la componente vertical, la barra siempre queda horizontal y
+    // legible, este el enemigo por los aires o en un piso de arriba.
+    private void FaceCamera(Transform cam)
+    {
+        // Del observador hacia la barra: asi la cara visible del Canvas queda
+        // mirando a la camara y no hace falta el giro de 180 grados de antes.
+        Vector3 away = transform.position - cam.position;
+        away.y = 0f;
+
+        // Justo encima o debajo de la camara no hay direccion horizontal valida
+        if (away.sqrMagnitude < 0.0001f) return;
+
+        transform.rotation = Quaternion.LookRotation(away, Vector3.up);
     }
 
     private static bool IsUsable(Camera cam)
