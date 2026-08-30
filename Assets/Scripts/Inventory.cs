@@ -35,8 +35,9 @@ public class Inventory : NetworkBehaviour
     public ItemDatabase database;
 
     [Header("Configuracion")]
-    [Tooltip("Huecos del cinturon (los que se ven abajo y se eligen con 1..N)")]
-    public int hotbarSize = 5;
+    [Tooltip("Huecos del cinturon (los que se ven abajo y se eligen con 1..N). " +
+             "Son 4 para que encajen con la cruceta del mando.")]
+    public int hotbarSize = 4;
     [Tooltip("Huecos de la mochila (se ven al abrir el inventario con TAB)")]
     public int backpackSize = 24;
 

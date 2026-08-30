@@ -63,6 +63,7 @@ public class PlayerController : Character, IPassiveRegenerator
 
     private bool _wasGrounded = true;
     private float _fallPeakY;
+    private PlayerDownedState _downedState;
 
     float IPassiveRegenerator.RegenDelay => regenDelay;
     float IPassiveRegenerator.RegenAmountPerSecond => regenAmountPerSecond;
@@ -93,14 +94,18 @@ public class PlayerController : Character, IPassiveRegenerator
             animator = GetComponentInChildren<Animator>(true);
 
         _fallPeakY = transform.position.y;
+        _downedState = GetComponent<PlayerDownedState>();
 
         ApplyCameraSettings();
         GameSettings.Changed += ApplyCameraSettings;   // si cambia el FOV en opciones
     }
 
-    void OnDestroy()
+    // Con override, no con un metodo propio: si lo ocultamos, Netcode se queda
+    // sin hacer su propia limpieza al destruirse el objeto.
+    public override void OnDestroy()
     {
         GameSettings.Changed -= ApplyCameraSettings;
+        base.OnDestroy();
     }
 
     private void ApplyCameraSettings()
@@ -138,6 +143,14 @@ public class PlayerController : Character, IPassiveRegenerator
         pitch = Mathf.Clamp(pitch, -90f, 90f);
 
         cameraTransform.localRotation = Quaternion.Euler(pitch, 0, 0);
+
+        // Abatido o eliminado: puede mirar alrededor, pero no moverse ni disparar
+        if (_downedState != null && !_downedState.CanAct)
+        {
+            ApplyGravity();
+            UpdateAnimator(0f, 0f);
+            return;
+        }
 
         if (isClimbing)
         {
@@ -406,18 +419,45 @@ public class PlayerController : Character, IPassiveRegenerator
     }
 
     // La muerte la decide el SERVIDOR (es quien lleva la vida).
+    // Ya no se reaparece al instante: se queda ABATIDO, y de ahi le levantan
+    // los companeros o gasta una vida del equipo.
     protected override void Die()
     {
         if (!IsServer) return;
 
-        Debug.Log("Jugador muerto - reapareciendo");
-
-        // Avisar a todos de quien ha caido
         var nameComponent = GetComponent<PlayerName>();
-        AnnounceDeathClientRpc(nameComponent != null ? nameComponent.Name : "Un jugador");
+        string playerName = nameComponent != null ? nameComponent.Name : "Un jugador";
+
+        var downed = GetComponent<PlayerDownedState>();
+        if (downed != null && !downed.IsOut)
+        {
+            // Si ya estaba abatido no hay nada que anunciar: los golpes que siga
+            // recibiendo no deben repetir el aviso una y otra vez.
+            if (downed.IsDowned) return;
+
+            AnnounceDownClientRpc(playerName);
+            downed.GoDown();
+            return;
+        }
+
+        // Sin sistema de abatidos: comportamiento antiguo
+        AnnounceDeathClientRpc(playerName);
+        RespawnNow();
+    }
+
+    // Devuelve al jugador a la vida y a su punto de aparicion (solo servidor)
+    public void RespawnNow()
+    {
+        if (!IsServer) return;
 
         FullRestore();        // el servidor devuelve la vida al maximo
         RespawnClientRpc();   // y avisa al dueno para que se mueva al punto de spawn
+    }
+
+    [ClientRpc]
+    private void AnnounceDownClientRpc(string playerName)
+    {
+        Notifications.Show(playerName + " esta abatido");
     }
 
     [ClientRpc]
