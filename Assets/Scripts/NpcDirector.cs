@@ -20,8 +20,6 @@ public class NpcDirector : MonoBehaviour
     [Header("Poblacion")]
     [Tooltip("Cada cuanto comprueba si falta alguno (segundos)")]
     public float checkInterval = 3f;
-    [Tooltip("Vida de cada NPC")]
-    public float npcHealth = 300f;
 
     [Header("Aparicion")]
     [Tooltip("Cuanto se separan del punto de aparicion elegido")]
@@ -98,8 +96,26 @@ public class NpcDirector : MonoBehaviour
         }
 
         netObject.Spawn();
-        npc.SetMaxHealth(npcHealth);   // despues de Spawn: antes no existe en la red
+        npc.SetMaxHealth(PlayerMaxHealth());   // despues de Spawn: antes no existe en la red
         return true;
+    }
+
+    // Los NPC aguantan lo mismo que un jugador. Se copia en vez de fijarlo en el
+    // Inspector para que no se quede desfasado si algun dia cambia la del jugador.
+    private float PlayerMaxHealth()
+    {
+        var players = NetworkPlayer.AllPlayers;
+
+        for (int i = 0; i < players.Count; i++)
+        {
+            var player = players[i];
+            if (player == null) continue;
+
+            float max = player.GetMaxHealth();
+            if (max > 0f) return max;
+        }
+
+        return 1000f;   // sin jugadores todavia: el valor de siempre
     }
 
     private void RemoveOne()

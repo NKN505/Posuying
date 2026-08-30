@@ -14717,7 +14717,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   npcPrefab: {fileID: -7796512670335858178, guid: 53387be7eee59314d8211820dcd86e67, type: 3}
   checkInterval: 3
-  npcHealth: 300
   spawnSpread: 6
   navSampleRadius: 8
   placementTries: 10
@@ -17608,6 +17607,7 @@ GameObject:
   - component: {fileID: 1945602601}
   - component: {fileID: 1945602603}
   - component: {fileID: 1945602604}
+  - component: {fileID: 1945602605}
   m_Layer: 5
   m_Name: Canvas
   m_TagString: Untagged
@@ -17759,6 +17759,7 @@ MonoBehaviour:
   barBackColor: {r: 0, g: 0, b: 0, a: 0.6}
   ownColor: {r: 1, g: 0.95, b: 0.6, a: 1}
   otherColor: {r: 1, g: 1, b: 1, a: 1}
+  npcColor: {r: 0.7, g: 1, b: 0.75, a: 1}
 --- !u!114 &1945602602
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17808,7 +17809,7 @@ MonoBehaviour:
   canvas: {fileID: 0}
   heightOffset: 0.45
   defaultHeight: 1.8
-  maxDistance: 40
+  viewDistance: 150
   fullSizeDistance: 8
   maxFontSize: 20
   minFontSize: 11
@@ -17817,6 +17818,32 @@ MonoBehaviour:
   npcColor: {r: 0.7, g: 1, b: 0.75, a: 1}
   downedSuffix: ' (abatido)'
   fleeingSuffix: ' (huyendo)'
+--- !u!114 &1945602605
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945602594}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2513b31ce0a5164438cd795cd54c2567, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  canvas: {fileID: 0}
+  anchorPosition: {x: 20, y: 20}
+  diameter: 180
+  borderWidth: 3
+  dotSize: 7
+  playerDotSize: 9
+  selfDotSize: 10
+  backgroundColor: {r: 0, g: 0, b: 0, a: 0.5}
+  borderColor: {r: 1, g: 1, b: 1, a: 0.25}
+  playerColor: {r: 0.35, g: 0.6, b: 1, a: 1}
+  npcColor: {r: 0.4, g: 1, b: 0.5, a: 1}
+  enemyColor: {r: 1, g: 0.3, b: 0.25, a: 1}
+  selfColor: {r: 1, g: 0.95, b: 0.6, a: 1}
+  rotateWithPlayer: 1
 --- !u!1001 &1950135907
 PrefabInstance:
   m_ObjectHideFlags: 0

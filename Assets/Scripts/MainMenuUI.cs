@@ -484,6 +484,14 @@ public class MainMenuUI : MonoBehaviour
         StepRow(5, "Cuantos NPC", () => GameSettings.NpcCount.ToString(),
             () => GameSettings.NpcCount = Mathf.Max(1, GameSettings.NpcCount - 1),
             () => GameSettings.NpcCount = Mathf.Min(8, GameSettings.NpcCount + 1));
+
+        // El minimapa es cosa de cada jugador: no depende del anfitrion
+        ToggleRow(6, "Minimapa", () => GameSettings.OnOff(GameSettings.MinimapEnabled),
+            () => GameSettings.MinimapEnabled = !GameSettings.MinimapEnabled);
+
+        StepRow(7, "Alcance minimapa", () => Mathf.RoundToInt(GameSettings.MinimapRange) + " m",
+            () => GameSettings.MinimapRange = Mathf.Max(15f, GameSettings.MinimapRange - 5f),
+            () => GameSettings.MinimapRange = Mathf.Min(100f, GameSettings.MinimapRange + 5f));
     }
 
     private void BuildGraphicsOptions()

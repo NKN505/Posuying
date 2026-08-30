@@ -27,6 +27,8 @@ public static class GameSettings
     private const string KeySfx = "opt_vol_sfx";
     private const string KeyNpcs = "opt_npcs";
     private const string KeyNpcCount = "opt_npc_count";
+    private const string KeyMinimap = "opt_minimap";
+    private const string KeyMinimapRange = "opt_minimap_range";
 
     // ---------- Valores disponibles ----------
     // Un unico control para los fotogramas: VSync y limite manual se excluyen
@@ -53,6 +55,11 @@ public static class GameSettings
     // anfitrion: es el servidor quien los crea.
     public static bool NpcsEnabled = false;
     public static int NpcCount = 3;
+
+    // El minimapa es solo visual y local: cada jugador lo enciende o lo apaga
+    // por su cuenta, a diferencia de los NPC, que dependen del anfitrion.
+    public static bool MinimapEnabled = true;
+    public static float MinimapRange = 40f;
 
     // Avisa a quien dependa de un ajuste (camara del jugador, contador de FPS...)
     public static event System.Action Changed;
@@ -90,6 +97,9 @@ public static class GameSettings
         NpcsEnabled = PlayerPrefs.GetInt(KeyNpcs, 0) == 1;
         NpcCount = PlayerPrefs.GetInt(KeyNpcCount, 3);
 
+        MinimapEnabled = PlayerPrefs.GetInt(KeyMinimap, 1) == 1;
+        MinimapRange = PlayerPrefs.GetFloat(KeyMinimapRange, 40f);
+
         _loaded = true;
     }
 
@@ -111,6 +121,9 @@ public static class GameSettings
 
         PlayerPrefs.SetInt(KeyNpcs, NpcsEnabled ? 1 : 0);
         PlayerPrefs.SetInt(KeyNpcCount, NpcCount);
+
+        PlayerPrefs.SetInt(KeyMinimap, MinimapEnabled ? 1 : 0);
+        PlayerPrefs.SetFloat(KeyMinimapRange, MinimapRange);
 
         PlayerPrefs.Save();
     }

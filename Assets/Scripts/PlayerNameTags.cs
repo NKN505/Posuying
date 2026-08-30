@@ -22,8 +22,12 @@ public class PlayerNameTags : MonoBehaviour
     public float defaultHeight = 1.8f;
 
     [Header("Distancia")]
+    // OJO: campo renombrado a proposito. El anterior (maxDistance) tenia 40
+    // guardado en la escena, y cambiar el valor por defecto del codigo NO
+    // actualiza un componente que ya existe. Con otro nombre, Unity lo trata
+    // como nuevo y si coge este valor.
     [Tooltip("A partir de aqui ya no se muestra el nombre")]
-    public float maxDistance = 40f;
+    public float viewDistance = 150f;
     [Tooltip("Hasta esta distancia el nombre se ve a tamano completo")]
     public float fullSizeDistance = 8f;
 
@@ -125,7 +129,7 @@ public class PlayerNameTags : MonoBehaviour
         Vector3 head = HeadPosition(target);
 
         float distance = Vector3.Distance(cam.transform.position, head);
-        if (distance > maxDistance)
+        if (distance > viewDistance)
         {
             tag.root.SetActive(false);
             return false;
@@ -152,10 +156,10 @@ public class PlayerNameTags : MonoBehaviour
         tag.rect.anchoredPosition = local;
 
         // De cerca se lee grande, de lejos pequeno y algo transparente
-        float t = Mathf.InverseLerp(maxDistance, fullSizeDistance, distance);
+        float t = Mathf.InverseLerp(viewDistance, fullSizeDistance, distance);
         tag.label.fontSize = Mathf.RoundToInt(Mathf.Lerp(minFontSize, maxFontSize, t));
 
-        color.a = Mathf.Lerp(0.45f, 1f, t);
+        color.a = Mathf.Lerp(0.75f, 1f, t);
 
         tag.label.text = label;
         tag.label.color = color;
