@@ -166,6 +166,9 @@ public class OnlineSession : MonoBehaviour
         {
             try
             {
+                // Sin esto, cualquier cierre en seco anterior nos deja fuera de juego
+                await SessionCleanup.PurgeGhostSessionsAsync();
+
                 Status = "Creando partida...";
 
                 var options = new SessionOptions
@@ -261,6 +264,10 @@ public class OnlineSession : MonoBehaviour
         {
             try
             {
+                // Si seguimos apuntados en una partida vieja, el servidor
+                // respondera "conflicto" y el SDK se rompe con un null.
+                await SessionCleanup.PurgeGhostSessionsAsync();
+
                 var joinOptions = new JoinSessionOptions()
                     .WithHostMigration(new WorldMigrationHandler());
 
@@ -320,6 +327,8 @@ public class OnlineSession : MonoBehaviour
 
             try
             {
+                await SessionCleanup.PurgeGhostSessionsAsync();
+
                 Status = "Entrando en la partida " + cleanCode + "...";
 
                 // Tambien aqui: cualquiera de los dos puede acabar siendo el host
@@ -357,9 +366,10 @@ public class OnlineSession : MonoBehaviour
         _leavingOnPurpose = true;   // que no lo confunda con una caida
         UnhookSessionEvents();
 
-        // Si sale el anfitrion, dejar la sesion es lo que dispara la migracion
-        // en los demas jugadores.
-        try { await _session.LeaveAsync(); }
+        // Si sale el anfitrion y queda gente, esto dispara la migracion en los
+        // demas. Si no queda nadie, la partida se borra en vez de quedar
+        // huerfana en la lista.
+        try { await CloseSessionAsync(_session); }
         catch (System.Exception e) { Debug.LogException(e); }
 
         _session = null;
@@ -414,6 +424,31 @@ public class OnlineSession : MonoBehaviour
         ClearSessionState("La partida se ha cerrado");
     }
 
+    // Dejar una partida que TODAVIA nos tiene apuntados.
+    //
+    // Es distinto de ClearSessionState: alli el servidor ya nos habia sacado y
+    // solo quedaba tirar la referencia. Aqui seguimos siendo miembros, asi que
+    // hay que avisar a Unity o quedaremos como jugadores fantasma y no nos
+    // dejara entrar en ninguna otra partida.
+    private async void AbandonSession(string message)
+    {
+        var leaving = _session;
+        UnhookSessionEvents();
+        ClearSessionState(message);
+
+        if (leaving == null) return;
+
+        try { await leaving.LeaveAsync(); }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning("No se pudo salir limpiamente: " + e.Message);
+
+            // Ultimo recurso: sacarnos por el servicio de lobbies, que no
+            // necesita que la sesion local siga viva.
+            await SessionCleanup.PurgeGhostSessionsAsync();
+        }
+    }
+
     private async void ClearSessionState(string message)
     {
         UnhookSessionEvents();
@@ -450,6 +485,8 @@ public class OnlineSession : MonoBehaviour
 
     void Start()
     {
+        Application.wantsToQuit += OnWantsToQuit;
+
         var nm = NetworkManager.Singleton;
         if (nm == null) return;
 
@@ -459,11 +496,86 @@ public class OnlineSession : MonoBehaviour
 
     void OnDestroy()
     {
+        Application.wantsToQuit -= OnWantsToQuit;
+
         var nm = NetworkManager.Singleton;
         if (nm == null) return;
 
         nm.OnClientDisconnectCallback -= OnNetcodeDisconnect;
         nm.OnTransportFailure -= OnTransportFailure;
+    }
+
+    // ---------- Salir del juego sin dejar rastro ----------
+
+    private bool _readyToQuit;
+
+    // Cerrar el juego estando en una partida es lo que nos convertia en
+    // jugadores fantasma. Aqui frenamos el cierre (devolviendo false),
+    // avisamos a Unity de que salimos, y despues ya cerramos de verdad.
+    //
+    // Funciona con Alt+F4 y con la X de la ventana. Un cuelgue o un corte de
+    // luz se lo salta, claro: para eso esta la limpieza al volver a entrar.
+    private bool OnWantsToQuit()
+    {
+        if (_readyToQuit || _session == null) return true;
+
+        LeaveThenQuitAsync();
+        return false;
+    }
+
+    private async void LeaveThenQuitAsync()
+    {
+        Status = "Cerrando la partida...";
+        _leavingOnPurpose = true;
+        UnhookSessionEvents();
+
+        var leaving = _session;
+        _session = null;
+
+        try
+        {
+            // Con tope de tiempo: si el servidor no responde, preferimos que el
+            // juego cierre a que se quede colgado sin poder hacer nada.
+            var timeout = Task.Delay(3000);
+            if (await Task.WhenAny(CloseSessionAsync(leaving), timeout) == timeout)
+                Debug.LogWarning("Se agoto el tiempo al cerrar la partida.");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning("Error al cerrar la partida al salir: " + e.Message);
+        }
+
+        _readyToQuit = true;
+        Application.Quit();
+    }
+
+    // Cerrar bien una partida en la que seguimos dentro.
+    //
+    // Si somos el anfitrion y no queda nadie mas, hay que BORRARLA. Con solo
+    // salir, el lobby no muere: se queda huerfano esperando un anfitrion que ya
+    // no va a volver, y sigue apareciendo en la lista de partidas de todos.
+    private async Task CloseSessionAsync(ISession session)
+    {
+        if (session == null) return;
+
+        bool aloneAsHost = session.IsHost && session.PlayerCount <= 1;
+
+        if (aloneAsHost && session is IHostSession host)
+        {
+            try
+            {
+                await host.DeleteAsync();
+                Debug.Log("Partida borrada: no quedaba nadie mas dentro.");
+                return;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("No se pudo borrar la partida: " + e.Message);
+            }
+        }
+
+        // Hay mas gente (o no somos el anfitrion): salir y que siga sin nosotros
+        await session.LeaveAsync();
     }
 
     private void OnNetcodeDisconnect(ulong clientId)
@@ -506,7 +618,11 @@ public class OnlineSession : MonoBehaviour
             else if (Time.time - _migrationStart > MigrationTimeout)
             {
                 IsMigrating = false;
-                ClearSessionState("No se pudo reconectar tras el cambio de anfitrion");
+
+                // OJO: aqui no nos ha echado nadie, solo hemos tardado demasiado.
+                // Si soltamos la sesion sin abandonarla, seguimos apuntados en
+                // ella y no podremos entrar en ninguna otra.
+                AbandonSession("No se pudo reconectar tras el cambio de anfitrion");
             }
             return;
         }
@@ -525,7 +641,10 @@ public class OnlineSession : MonoBehaviour
         {
             _disconnectedAt = -1f;
             Notifications.Show("Se ha perdido la conexion con la partida");
-            ClearSessionState("Se ha perdido la conexion");
+
+            // Igual que en la migracion: nadie nos ha echado, asi que hay que
+            // salir de verdad y no limitarse a olvidar la sesion.
+            AbandonSession("Se ha perdido la conexion");
         }
     }
 
