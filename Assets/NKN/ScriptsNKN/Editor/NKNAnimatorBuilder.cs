@@ -51,7 +51,11 @@ public static class NKNAnimatorBuilder
                                    new[]{"walk","back"}),
     };
 
-    [MenuItem("NKN/Construir Animator del jugador")]
+    // Menu desactivado a proposito. Regenerar el controller lo reescribe
+    // entero y se lleva por delante los ajustes hechos a mano sobre
+    // AC_Player_Generado (p.ej. la transicion Jump -> Locomotion).
+    // Para volver a habilitarlo, descomenta la linea de abajo.
+    //[MenuItem("NKN/Construir Animator del jugador")]
     public static void Construir()
     {
         var clips = CargarClips();
