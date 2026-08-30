@@ -21,6 +21,8 @@ public class TeamHUD : MonoBehaviour
     public Color barBackColor = new Color(0f, 0f, 0f, 0.6f);
     public Color ownColor = new Color(1f, 0.95f, 0.6f, 1f);
     public Color otherColor = Color.white;
+    [Tooltip("Mismo verde que las etiquetas de nombre, para reconocerlos igual")]
+    public Color npcColor = new Color(0.7f, 1f, 0.75f, 1f);
 
     private class Row
     {
@@ -44,22 +46,44 @@ public class TeamHUD : MonoBehaviour
         }
 
         var players = NetworkPlayer.AllPlayers;
+        var npcs = NpcSurvivor.All;
 
         // Fuera de partida no hay nada que mostrar
         _container.gameObject.SetActive(players.Count > 0);
         if (players.Count == 0) return;
 
-        EnsureRows(players.Count);
+        EnsureRows(players.Count + npcs.Count);
 
-        for (int i = 0; i < _rows.Count; i++)
+        // Primero las personas y despues los NPC, para que la lista no baile
+        // cuando un NPC muere y vuelve a salir.
+        int filled = 0;
+
+        for (int i = 0; i < players.Count; i++)
         {
-            bool used = i < players.Count && players[i] != null;
-            _rows[i].root.SetActive(used);
-            if (!used) continue;
-
             PlayerController player = players[i];
-            UpdateRow(_rows[i], player);
+            if (player == null) continue;
+
+            var nameComponent = player.GetComponent<PlayerName>();
+            string playerName = nameComponent != null ? nameComponent.Name : "Jugador";
+
+            _rows[filled].root.SetActive(true);
+            UpdateRow(_rows[filled], playerName, player.GetHealth(), player.GetMaxHealth(),
+                      player == NetworkPlayer.LocalPlayer, false);
+            filled++;
         }
+
+        for (int i = 0; i < npcs.Count; i++)
+        {
+            NpcSurvivor npc = npcs[i];
+            if (npc == null) continue;
+
+            _rows[filled].root.SetActive(true);
+            UpdateRow(_rows[filled], npc.Name, npc.GetHealth(), npc.GetMaxHealth(), false, true);
+            filled++;
+        }
+
+        for (int i = filled; i < _rows.Count; i++)
+            _rows[i].root.SetActive(false);
     }
 
     private void TryBuild()
@@ -133,19 +157,13 @@ public class TeamHUD : MonoBehaviour
         };
     }
 
-    private void UpdateRow(Row row, PlayerController player)
+    private void UpdateRow(Row row, string label, float health, float maxHealth,
+                           bool isLocal, bool isNpc)
     {
-        var nameComponent = player.GetComponent<PlayerName>();
-        string playerName = nameComponent != null ? nameComponent.Name : "Jugador";
-
-        bool isLocal = player == NetworkPlayer.LocalPlayer;
-
-        float health = player.GetHealth();
-        float maxHealth = player.GetMaxHealth();
         float ratio = maxHealth > 0f ? Mathf.Clamp01(health / maxHealth) : 0f;
 
-        row.label.text = (isLocal ? "> " : "") + playerName + "   " + Mathf.RoundToInt(health);
-        row.label.color = isLocal ? ownColor : otherColor;
+        row.label.text = (isLocal ? "> " : "") + label + "   " + Mathf.RoundToInt(health);
+        row.label.color = isLocal ? ownColor : (isNpc ? npcColor : otherColor);
 
         Vector2 size = row.fill.sizeDelta;
         size.x = row.fullWidth * ratio;

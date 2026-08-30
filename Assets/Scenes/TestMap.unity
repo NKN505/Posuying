@@ -14686,6 +14686,57 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1856478557988811146, guid: 466621a4836aa504c87c15d88722d465, type: 3}
   m_PrefabInstance: {fileID: 1516885262}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1533947069
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1533947071}
+  - component: {fileID: 1533947070}
+  m_Layer: 0
+  m_Name: NpcDirector
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1533947070
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1533947069}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2beab77f407b8d742ba28a1417e52ffe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  npcPrefab: {fileID: -7796512670335858178, guid: 53387be7eee59314d8211820dcd86e67, type: 3}
+  checkInterval: 3
+  npcHealth: 300
+  spawnSpread: 6
+  navSampleRadius: 8
+  placementTries: 10
+  agentBaseOffset: 0
+--- !u!4 &1533947071
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1533947069}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 527.4022, y: 234.41959, z: 547.32855}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1540687200
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -17756,13 +17807,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canvas: {fileID: 0}
   heightOffset: 0.45
+  defaultHeight: 1.8
   maxDistance: 40
   fullSizeDistance: 8
   maxFontSize: 20
   minFontSize: 11
   nameColor: {r: 0.85, g: 0.95, b: 1, a: 1}
   downedColor: {r: 1, g: 0.45, b: 0.35, a: 1}
+  npcColor: {r: 0.7, g: 1, b: 0.75, a: 1}
   downedSuffix: ' (abatido)'
+  fleeingSuffix: ' (huyendo)'
 --- !u!1001 &1950135907
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -21735,3 +21789,4 @@ SceneRoots:
   - {fileID: 1226476474}
   - {fileID: 1340551372}
   - {fileID: 1310377245}
+  - {fileID: 1533947071}

@@ -475,6 +475,15 @@ public class MainMenuUI : MonoBehaviour
         StepRow(3, "Campo de vision", () => Mathf.RoundToInt(GameSettings.FieldOfView) + " grados",
             () => GameSettings.FieldOfView = Mathf.Max(60f, GameSettings.FieldOfView - 5f),
             () => GameSettings.FieldOfView = Mathf.Min(110f, GameSettings.FieldOfView + 5f));
+
+        // Los NPCs los crea el servidor, asi que aqui solo manda el anfitrion.
+        // Se puede cambiar en mitad de la partida: aparecen o desaparecen al vuelo.
+        ToggleRow(4, "Companeros NPC", () => GameSettings.OnOff(GameSettings.NpcsEnabled),
+            () => GameSettings.NpcsEnabled = !GameSettings.NpcsEnabled);
+
+        StepRow(5, "Cuantos NPC", () => GameSettings.NpcCount.ToString(),
+            () => GameSettings.NpcCount = Mathf.Max(1, GameSettings.NpcCount - 1),
+            () => GameSettings.NpcCount = Mathf.Min(8, GameSettings.NpcCount + 1));
     }
 
     private void BuildGraphicsOptions()

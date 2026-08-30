@@ -25,6 +25,8 @@ public static class GameSettings
     private const string KeyMaster = "opt_vol_master";
     private const string KeyMusic = "opt_vol_music";
     private const string KeySfx = "opt_vol_sfx";
+    private const string KeyNpcs = "opt_npcs";
+    private const string KeyNpcCount = "opt_npc_count";
 
     // ---------- Valores disponibles ----------
     // Un unico control para los fotogramas: VSync y limite manual se excluyen
@@ -46,6 +48,11 @@ public static class GameSettings
     public static float MasterVolume = 1f;
     public static float MusicVolume = 1f;
     public static float SfxVolume = 1f;
+
+    // Supervivientes controlados por la maquina. Solo cuenta el ajuste del
+    // anfitrion: es el servidor quien los crea.
+    public static bool NpcsEnabled = false;
+    public static int NpcCount = 3;
 
     // Avisa a quien dependa de un ajuste (camara del jugador, contador de FPS...)
     public static event System.Action Changed;
@@ -80,6 +87,9 @@ public static class GameSettings
         MusicVolume = PlayerPrefs.GetFloat(KeyMusic, 1f);
         SfxVolume = PlayerPrefs.GetFloat(KeySfx, 1f);
 
+        NpcsEnabled = PlayerPrefs.GetInt(KeyNpcs, 0) == 1;
+        NpcCount = PlayerPrefs.GetInt(KeyNpcCount, 3);
+
         _loaded = true;
     }
 
@@ -98,6 +108,9 @@ public static class GameSettings
         PlayerPrefs.SetFloat(KeyMaster, MasterVolume);
         PlayerPrefs.SetFloat(KeyMusic, MusicVolume);
         PlayerPrefs.SetFloat(KeySfx, SfxVolume);
+
+        PlayerPrefs.SetInt(KeyNpcs, NpcsEnabled ? 1 : 0);
+        PlayerPrefs.SetInt(KeyNpcCount, NpcCount);
 
         PlayerPrefs.Save();
     }

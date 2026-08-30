@@ -18,6 +18,8 @@ public class PlayerNameTags : MonoBehaviour
     [Header("Colocacion")]
     [Tooltip("Altura extra sobre la cabeza, en metros")]
     public float heightOffset = 0.45f;
+    [Tooltip("Altura que se supone cuando el personaje no dice la suya")]
+    public float defaultHeight = 1.8f;
 
     [Header("Distancia")]
     [Tooltip("A partir de aqui ya no se muestra el nombre")]
@@ -30,8 +32,12 @@ public class PlayerNameTags : MonoBehaviour
     public int minFontSize = 11;
     public Color nameColor = new Color(0.85f, 0.95f, 1f, 1f);
     public Color downedColor = new Color(1f, 0.45f, 0.35f, 1f);
+    [Tooltip("Color de los supervivientes controlados por la maquina")]
+    public Color npcColor = new Color(0.7f, 1f, 0.75f, 1f);
     [Tooltip("Texto que se anade al nombre de un companero abatido")]
     public string downedSuffix = " (abatido)";
+    [Tooltip("Texto que se anade al NPC que va huyendo de un enemigo")]
+    public string fleeingSuffix = " (huyendo)";
 
     private class Tag
     {
@@ -68,8 +74,30 @@ public class PlayerNameTags : MonoBehaviour
                 // Tu propio nombre no se dibuja: ya sabes quien eres
                 if (player == NetworkPlayer.LocalPlayer) continue;
 
+                var nameComponent = player.GetComponent<PlayerName>();
+                string label = nameComponent != null ? nameComponent.Name : "Jugador";
+
+                var downed = player.GetComponent<PlayerDownedState>();
+                bool isDown = downed != null && !downed.CanAct;
+
                 EnsureTags(used + 1);
-                if (ShowTag(_tags[used], player, cam)) used++;
+                if (ShowTag(_tags[used], player.transform,
+                            isDown ? label + downedSuffix : label,
+                            isDown ? downedColor : nameColor, cam)) used++;
+            }
+
+            // Los supervivientes controlados por la maquina se ven igual que un
+            // companero, pero en otro color: hay que distinguirlos de un vistazo.
+            var npcs = NpcSurvivor.All;
+            for (int i = 0; i < npcs.Count; i++)
+            {
+                NpcSurvivor npc = npcs[i];
+                if (npc == null) continue;
+
+                EnsureTags(used + 1);
+                if (ShowTag(_tags[used], npc.transform,
+                            npc.IsFleeing ? npc.Name + fleeingSuffix : npc.Name,
+                            npc.IsFleeing ? downedColor : npcColor, cam)) used++;
             }
         }
 
@@ -92,9 +120,9 @@ public class PlayerNameTags : MonoBehaviour
     }
 
     // Devuelve false si esta etiqueta no toca pintarla ahora
-    private bool ShowTag(Tag tag, PlayerController player, Camera cam)
+    private bool ShowTag(Tag tag, Transform target, string label, Color color, Camera cam)
     {
-        Vector3 head = HeadPosition(player);
+        Vector3 head = HeadPosition(target);
 
         float distance = Vector3.Distance(cam.transform.position, head);
         if (distance > maxDistance)
@@ -127,31 +155,30 @@ public class PlayerNameTags : MonoBehaviour
         float t = Mathf.InverseLerp(maxDistance, fullSizeDistance, distance);
         tag.label.fontSize = Mathf.RoundToInt(Mathf.Lerp(minFontSize, maxFontSize, t));
 
-        var nameComponent = player.GetComponent<PlayerName>();
-        string playerName = nameComponent != null ? nameComponent.Name : "Jugador";
-
-        var downed = player.GetComponent<PlayerDownedState>();
-        bool isDown = downed != null && !downed.CanAct;
-
-        Color color = isDown ? downedColor : nameColor;
         color.a = Mathf.Lerp(0.45f, 1f, t);
 
-        tag.label.text = isDown ? playerName + downedSuffix : playerName;
+        tag.label.text = label;
         tag.label.color = color;
         return true;
     }
 
     // Alto real del personaje: asi la etiqueta no se clava en el pecho de los
     // modelos altos ni flota demasiado en los bajos.
-    private Vector3 HeadPosition(PlayerController player)
+    //
+    // Los jugadores llevan CharacterController y los NPCs un NavMeshAgent, asi
+    // que se prueban los dos antes de recurrir a una altura fija.
+    private Vector3 HeadPosition(Transform target)
     {
-        Vector3 position = player.transform.position;
-
-        var cc = player.GetComponent<CharacterController>();
+        var cc = target.GetComponent<CharacterController>();
         if (cc != null)
-            position = player.transform.TransformPoint(cc.center) + Vector3.up * (cc.height * 0.5f);
+            return target.TransformPoint(cc.center)
+                   + Vector3.up * (cc.height * 0.5f + heightOffset);
 
-        return position + Vector3.up * heightOffset;
+        var agent = target.GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agent != null)
+            return target.position + Vector3.up * (agent.height + heightOffset);
+
+        return target.position + Vector3.up * (defaultHeight + heightOffset);
     }
 
     private Camera CanvasCamera()

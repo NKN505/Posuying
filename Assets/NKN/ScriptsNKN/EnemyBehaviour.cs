@@ -99,6 +99,22 @@ public abstract class EnemyBehaviour : Character
             }
         }
 
+        // Los supervivientes NPC tambien valen como presa: si no, los enemigos
+        // los atravesarian sin inmutarse y no servirian para probar nada.
+        var npcs = NpcSurvivor.All;
+        for (int i = 0; i < npcs.Count; i++)
+        {
+            var npc = npcs[i];
+            if (npc == null) continue;
+
+            float sqr = (npc.transform.position - transform.position).sqrMagnitude;
+            if (sqr < nearestSqr)
+            {
+                nearestSqr = sqr;
+                nearest = npc.transform;
+            }
+        }
+
         player = nearest;
     }
 
