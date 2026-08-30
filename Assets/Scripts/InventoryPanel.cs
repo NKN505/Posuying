@@ -100,15 +100,14 @@ public class InventoryPanel : MonoBehaviour
         int hotbar = inventory.hotbarSize;
         int rows = Mathf.CeilToInt(backpack / (float)columns);
 
+        // El cinturon NO se dibuja aqui: ya se ve permanentemente abajo en pantalla,
+        // y repetirlo dentro del panel era informacion duplicada.
         float gridWidth = columns * slotSize + (columns - 1) * spacing;
-        float hotbarWidth = hotbar * slotSize + (hotbar - 1) * spacing;
-        float contentWidth = Mathf.Max(gridWidth, hotbarWidth);
+        float contentWidth = gridWidth;
 
         float titleH = 28f;
-        float gapH = 22f;
         float hintH = 22f;
-        float contentHeight = titleH + rows * slotSize + (rows - 1) * spacing
-                              + gapH + slotSize + hintH;
+        float contentHeight = titleH + rows * slotSize + (rows - 1) * spacing + hintH;
 
         GameObject rootGO = new GameObject("PanelInventario", typeof(RectTransform), typeof(Image));
         _root = rootGO.GetComponent<RectTransform>();
@@ -144,21 +143,6 @@ public class InventoryPanel : MonoBehaviour
                 gridTop - slotSize / 2f - row * (slotSize + spacing));
 
             CreateSlot(slotIndex, pos, "");
-        }
-
-        // Fila del cinturon
-        float hotbarY = gridTop - rows * slotSize - (rows - 1) * spacing - gapH - slotSize / 2f;
-        float hotbarStartX = -hotbarWidth / 2f + slotSize / 2f;
-
-        CreateLabel("TituloCinturon", "CINTURON", _root,
-            new Vector2(0f, hotbarY + slotSize / 2f + 10f),
-            new Vector2(contentWidth, 20f), 13, TextAnchor.MiddleCenter,
-            new Color(1f, 1f, 1f, 0.6f));
-
-        for (int i = 0; i < hotbar; i++)
-        {
-            Vector2 pos = new Vector2(hotbarStartX + i * (slotSize + spacing), hotbarY);
-            CreateSlot(i, pos, (i + 1).ToString());
         }
 
         // Linea de ayuda abajo del panel
@@ -223,6 +207,14 @@ public class InventoryPanel : MonoBehaviour
 
     // ---------- Mover objetos ----------
 
+    // Lo llama tambien el cinturon de abajo, para poder mover objetos entre
+    // la mochila y el cinturon aunque este no se dibuje dentro del panel.
+    public void HandleSlotClick(int index)
+    {
+        if (!_open) return;   // fuera del inventario, el cinturon no se toca
+        OnSlotClicked(index);
+    }
+
     private void OnSlotClicked(int index)
     {
         if (_sourceIndex < 0)
@@ -251,6 +243,9 @@ public class InventoryPanel : MonoBehaviour
 
         for (int i = 0; i < _bgs.Length; i++)
         {
+            // Los huecos del cinturon no tienen recuadro aqui dentro
+            if (_bgs[i] == null) continue;
+
             bool isHotbar = inventory.IsHotbarSlot(i);
 
             if (i == _sourceIndex)

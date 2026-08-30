@@ -246,6 +246,24 @@ public class PlayerVisual : NetworkBehaviour
         cam.cullingMask = mask;
     }
 
+    /// <summary>
+    /// Pone los renderers de un objeto en la capa de "cuerpo de otro":
+    /// el que SI ve la camara del jugador local.
+    ///
+    /// Lo usan los supervivientes NPC, que reaprovechan el modelo del jugador
+    /// pero no llevan este componente. Sin esto heredarian la capa guardada en
+    /// el prefab y, si esa fuera LocalPlayerBody, serian invisibles.
+    /// </summary>
+    public static void ApplyRemoteBodyLayer(GameObject root)
+    {
+        if (root == null) return;
+
+        ResolveLayers();
+        if (_remoteBodyLayer < 0) return;
+
+        SetLayer(root, _remoteBodyLayer, true);
+    }
+
     // -----------------------------------------------------------------------
     // Utilidades de capas
     // -----------------------------------------------------------------------

@@ -35,9 +35,16 @@ public abstract class EnemyBehaviour : Character
         agent = GetComponent<NavMeshAgent>();
     }
 
+    // Todos los enemigos vivos, en todas las maquinas. Lo usa el minimapa para
+    // no tener que rastrear la escena cada frame (con hordas de 30 seria caro).
+    public static readonly System.Collections.Generic.List<EnemyBehaviour> All =
+        new System.Collections.Generic.List<EnemyBehaviour>();
+
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
+
+        if (!All.Contains(this)) All.Add(this);
 
         if (IsServer)
         {
@@ -86,6 +93,11 @@ public abstract class EnemyBehaviour : Character
             var p = players[i];
             if (p == null) continue;
 
+            // A los abatidos se les deja en paz: ya no son una amenaza y ademas
+            // asi el companero puede acercarse a levantarlos
+            var downed = p.GetComponent<PlayerDownedState>();
+            if (downed != null && !downed.CanAct) continue;
+
             float sqr = (p.transform.position - transform.position).sqrMagnitude;
             if (sqr < nearestSqr)
             {
@@ -94,7 +106,37 @@ public abstract class EnemyBehaviour : Character
             }
         }
 
+        // Los supervivientes NPC tambien valen como presa: si no, los enemigos
+        // los atravesarian sin inmutarse y no servirian para probar nada.
+        var npcs = NpcSurvivor.All;
+        for (int i = 0; i < npcs.Count; i++)
+        {
+            var npc = npcs[i];
+            if (npc == null) continue;
+
+            float sqr = (npc.transform.position - transform.position).sqrMagnitude;
+            if (sqr < nearestSqr)
+            {
+                nearestSqr = sqr;
+                nearest = npc.transform;
+            }
+        }
+
         player = nearest;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        All.Remove(this);
+        base.OnNetworkDespawn();
+    }
+
+    // Red de seguridad: si un enemigo se destruye sin pasar por el despawn
+    // (cambio de escena, reinicio de partida) no debe quedar en la lista.
+    public override void OnDestroy()
+    {
+        All.Remove(this);
+        base.OnDestroy();
     }
 
     protected virtual void Patrol()
@@ -125,6 +167,10 @@ public abstract class EnemyBehaviour : Character
     {
         // El dano a los jugadores solo lo aplica el servidor
         if (!IsServer) return;
+
+        // Tampoco se remata a quien ya esta en el suelo
+        var downedTarget = other.GetComponent<PlayerDownedState>();
+        if (downedTarget != null && !downedTarget.CanAct) return;
 
         if (other.CompareTag("Player") && _damageTimer <= 0f)
         {

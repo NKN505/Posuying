@@ -342,11 +342,24 @@ public class MainMenuUI : MonoBehaviour
 
             bool joinable = !info.IsLocked && info.AvailableSlots > 0;
 
+            bool needsPassword = info.HasPassword;
+
             Button(text, _content, new Vector2(0f, y), new Vector2(w, 36f), () =>
             {
                 _selectedSessionId = id;
-                if (joinable)
-                    onlineSession.JoinSessionById(id, _joinPasswordInput != null ? _joinPasswordInput.text : "");
+                if (!joinable) return;
+
+                string typed = _joinPasswordInput != null ? _joinPasswordInput.text : "";
+
+                // Intentar entrar sin la contrasena deja la red en mal estado y
+                // luego ya no se puede entrar en ninguna partida. Mejor no intentarlo.
+                if (needsPassword && string.IsNullOrWhiteSpace(typed))
+                {
+                    _status.text = "Esa partida pide contrasena: escribela abajo y vuelve a pulsar";
+                    return;
+                }
+
+                onlineSession.JoinSessionById(id, typed);
             }, joinable ? buttonColor : new Color(1f, 0.3f, 0.3f, 0.15f));
 
             y -= 42f;
@@ -462,6 +475,23 @@ public class MainMenuUI : MonoBehaviour
         StepRow(3, "Campo de vision", () => Mathf.RoundToInt(GameSettings.FieldOfView) + " grados",
             () => GameSettings.FieldOfView = Mathf.Max(60f, GameSettings.FieldOfView - 5f),
             () => GameSettings.FieldOfView = Mathf.Min(110f, GameSettings.FieldOfView + 5f));
+
+        // Los NPCs los crea el servidor, asi que aqui solo manda el anfitrion.
+        // Se puede cambiar en mitad de la partida: aparecen o desaparecen al vuelo.
+        ToggleRow(4, "Companeros NPC", () => GameSettings.OnOff(GameSettings.NpcsEnabled),
+            () => GameSettings.NpcsEnabled = !GameSettings.NpcsEnabled);
+
+        StepRow(5, "Cuantos NPC", () => GameSettings.NpcCount.ToString(),
+            () => GameSettings.NpcCount = Mathf.Max(1, GameSettings.NpcCount - 1),
+            () => GameSettings.NpcCount = Mathf.Min(8, GameSettings.NpcCount + 1));
+
+        // El minimapa es cosa de cada jugador: no depende del anfitrion
+        ToggleRow(6, "Minimapa", () => GameSettings.OnOff(GameSettings.MinimapEnabled),
+            () => GameSettings.MinimapEnabled = !GameSettings.MinimapEnabled);
+
+        StepRow(7, "Alcance minimapa", () => Mathf.RoundToInt(GameSettings.MinimapRange) + " m",
+            () => GameSettings.MinimapRange = Mathf.Max(15f, GameSettings.MinimapRange - 5f),
+            () => GameSettings.MinimapRange = Mathf.Min(100f, GameSettings.MinimapRange + 5f));
     }
 
     private void BuildGraphicsOptions()

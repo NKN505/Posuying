@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Multiplayer;
@@ -65,12 +66,28 @@ public class OnlineSession : MonoBehaviour
     // pulso "Cliente local" y se quedo intentando conectar). Lo apagamos antes.
     private async Task EnsureNetworkStoppedAsync()
     {
+        // MUY IMPORTANTE: si hay una sesion del SDK viva, NO se puede llamar a
+        // NetworkManager.Shutdown(). El SDK lo detecta como un apagado "por fuera"
+        // y aborta su propio arranque con "Failed to start the network manager",
+        // dejando la red inservible hasta reiniciar. Se sale por la sesion.
+        if (_session != null)
+        {
+            try { await _session.LeaveAsync(); }
+            catch (System.Exception e) { Debug.LogWarning("Al salir de la sesion: " + e.Message); }
+
+            UnhookSessionEvents();
+            _session = null;
+            return;
+        }
+
         var nm = NetworkManager.Singleton;
         if (nm == null) return;
 
         if (!nm.IsListening && !nm.IsClient && !nm.IsServer) return;
 
-        Debug.Log("Habia una conexion previa abierta: se cierra antes de continuar.");
+        // Aqui no hay sesion: solo puede venir de una partida local (F1/F2),
+        // que si se apaga con Shutdown porque el SDK no esta involucrado.
+        Debug.Log("Cerrando una partida local previa.");
         nm.Shutdown();
 
         // Netcode necesita frames completos para soltarlo todo, no basta con ceder el turno
@@ -85,6 +102,21 @@ public class OnlineSession : MonoBehaviour
 
         if (nm.IsListening || nm.IsClient || nm.IsServer)
             Debug.LogWarning("Netcode sigue activo tras el apagado; la conexion puede fallar.");
+    }
+
+    // Las partidas locales (F1/F2) fijan el puerto 7777 en el transporte. Si en el
+    // mismo equipo hay otra instancia usandolo, la siguiente no consigue arrancar
+    // la red. Para las partidas online no necesitamos puerto fijo: que lo elija
+    // el sistema (0) y asi nunca chocan dos instancias.
+    private void FreeLocalPort()
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null) return;
+
+        var transport = nm.GetComponent<UnityTransport>();
+        if (transport == null) return;
+
+        transport.SetConnectionData("0.0.0.0", 0);
     }
 
     // Unity exige identificarse antes de usar Relay (basta con un login anonimo)
@@ -128,11 +160,15 @@ public class OnlineSession : MonoBehaviour
         Status = "Conectando con Unity...";
 
         await EnsureNetworkStoppedAsync();
+        FreeLocalPort();
 
         if (await EnsureSignedInAsync())
         {
             try
             {
+                // Sin esto, cualquier cierre en seco anterior nos deja fuera de juego
+                await SessionCleanup.PurgeGhostSessionsAsync();
+
                 Status = "Creando partida...";
 
                 var options = new SessionOptions
@@ -160,12 +196,27 @@ public class OnlineSession : MonoBehaviour
             }
             catch (System.Exception e)
             {
-                Status = "Error al crear la partida: " + e.Message;
-                Debug.LogException(e);
+                HandleNetworkError(e, "Error al crear la partida: ");
             }
         }
 
         Busy = false;
+    }
+
+    // Si Netcode se ha quedado en mal estado, reintentar no sirve de nada:
+    // hay que reconstruirlo entero (destruir el NetworkManager y recargar).
+    private void HandleNetworkError(System.Exception e, string prefix)
+    {
+        Debug.LogException(e);
+
+        if (NetworkReset.LooksLikeBrokenNetwork(e.Message))
+        {
+            Status = "La red se quedo en mal estado: reiniciandola...";
+            NetworkReset.HardReset(e.Message);
+            return;
+        }
+
+        Status = prefix + e.Message;
     }
 
     // ---------- Buscar partidas ----------
@@ -207,11 +258,16 @@ public class OnlineSession : MonoBehaviour
         Status = "Entrando en la partida...";
 
         await EnsureNetworkStoppedAsync();
+        FreeLocalPort();
 
         if (await EnsureSignedInAsync())
         {
             try
             {
+                // Si seguimos apuntados en una partida vieja, el servidor
+                // respondera "conflicto" y el SDK se rompe con un null.
+                await SessionCleanup.PurgeGhostSessionsAsync();
+
                 var joinOptions = new JoinSessionOptions()
                     .WithHostMigration(new WorldMigrationHandler());
 
@@ -227,8 +283,7 @@ public class OnlineSession : MonoBehaviour
             }
             catch (System.Exception e)
             {
-                Status = "No se pudo entrar: " + e.Message;
-                Debug.LogException(e);
+                HandleNetworkError(e, "No se pudo entrar: ");
             }
         }
 
@@ -264,6 +319,7 @@ public class OnlineSession : MonoBehaviour
         Status = "Conectando con Unity...";
 
         await EnsureNetworkStoppedAsync();
+        FreeLocalPort();
 
         if (await EnsureSignedInAsync())
         {
@@ -271,6 +327,8 @@ public class OnlineSession : MonoBehaviour
 
             try
             {
+                await SessionCleanup.PurgeGhostSessionsAsync();
+
                 Status = "Entrando en la partida " + cleanCode + "...";
 
                 // Tambien aqui: cualquiera de los dos puede acabar siendo el host
@@ -294,8 +352,7 @@ public class OnlineSession : MonoBehaviour
             }
             catch (System.Exception e)
             {
-                Status = "No se pudo entrar: " + e.Message;
-                Debug.LogException(e);
+                HandleNetworkError(e, "No se pudo entrar: ");
             }
         }
 
@@ -309,9 +366,10 @@ public class OnlineSession : MonoBehaviour
         _leavingOnPurpose = true;   // que no lo confunda con una caida
         UnhookSessionEvents();
 
-        // Si sale el anfitrion, dejar la sesion es lo que dispara la migracion
-        // en los demas jugadores.
-        try { await _session.LeaveAsync(); }
+        // Si sale el anfitrion y queda gente, esto dispara la migracion en los
+        // demas. Si no queda nadie, la partida se borra en vez de quedar
+        // huerfana en la lista.
+        try { await CloseSessionAsync(_session); }
         catch (System.Exception e) { Debug.LogException(e); }
 
         _session = null;
@@ -320,7 +378,8 @@ public class OnlineSession : MonoBehaviour
         _disconnectedAt = -1f;
         Status = "Desconectado";
 
-        await EnsureNetworkStoppedAsync();
+        // El SDK ya apaga Netcode al dejar la sesion. Hacerlo tambien nosotros
+        // es justo lo que rompia la siguiente conexion.
         _leavingOnPurpose = false;
     }
 
@@ -365,6 +424,31 @@ public class OnlineSession : MonoBehaviour
         ClearSessionState("La partida se ha cerrado");
     }
 
+    // Dejar una partida que TODAVIA nos tiene apuntados.
+    //
+    // Es distinto de ClearSessionState: alli el servidor ya nos habia sacado y
+    // solo quedaba tirar la referencia. Aqui seguimos siendo miembros, asi que
+    // hay que avisar a Unity o quedaremos como jugadores fantasma y no nos
+    // dejara entrar en ninguna otra partida.
+    private async void AbandonSession(string message)
+    {
+        var leaving = _session;
+        UnhookSessionEvents();
+        ClearSessionState(message);
+
+        if (leaving == null) return;
+
+        try { await leaving.LeaveAsync(); }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning("No se pudo salir limpiamente: " + e.Message);
+
+            // Ultimo recurso: sacarnos por el servicio de lobbies, que no
+            // necesita que la sesion local siga viva.
+            await SessionCleanup.PurgeGhostSessionsAsync();
+        }
+    }
+
     private async void ClearSessionState(string message)
     {
         UnhookSessionEvents();
@@ -376,8 +460,9 @@ public class OnlineSession : MonoBehaviour
         _disconnectedAt = -1f;
         Status = message;
 
-        // Dejar Netcode apagado para poder volver a entrar limpiamente
-        await EnsureNetworkStoppedAsync();
+        // Nos han sacado: el SDK ya ha desmontado la red por su cuenta.
+        // No tocamos NetworkManager para no romper la siguiente conexion.
+        await Task.Yield();
     }
 
     private void OnHostChanged(string hostId)
@@ -400,6 +485,8 @@ public class OnlineSession : MonoBehaviour
 
     void Start()
     {
+        Application.wantsToQuit += OnWantsToQuit;
+
         var nm = NetworkManager.Singleton;
         if (nm == null) return;
 
@@ -409,11 +496,86 @@ public class OnlineSession : MonoBehaviour
 
     void OnDestroy()
     {
+        Application.wantsToQuit -= OnWantsToQuit;
+
         var nm = NetworkManager.Singleton;
         if (nm == null) return;
 
         nm.OnClientDisconnectCallback -= OnNetcodeDisconnect;
         nm.OnTransportFailure -= OnTransportFailure;
+    }
+
+    // ---------- Salir del juego sin dejar rastro ----------
+
+    private bool _readyToQuit;
+
+    // Cerrar el juego estando en una partida es lo que nos convertia en
+    // jugadores fantasma. Aqui frenamos el cierre (devolviendo false),
+    // avisamos a Unity de que salimos, y despues ya cerramos de verdad.
+    //
+    // Funciona con Alt+F4 y con la X de la ventana. Un cuelgue o un corte de
+    // luz se lo salta, claro: para eso esta la limpieza al volver a entrar.
+    private bool OnWantsToQuit()
+    {
+        if (_readyToQuit || _session == null) return true;
+
+        LeaveThenQuitAsync();
+        return false;
+    }
+
+    private async void LeaveThenQuitAsync()
+    {
+        Status = "Cerrando la partida...";
+        _leavingOnPurpose = true;
+        UnhookSessionEvents();
+
+        var leaving = _session;
+        _session = null;
+
+        try
+        {
+            // Con tope de tiempo: si el servidor no responde, preferimos que el
+            // juego cierre a que se quede colgado sin poder hacer nada.
+            var timeout = Task.Delay(3000);
+            if (await Task.WhenAny(CloseSessionAsync(leaving), timeout) == timeout)
+                Debug.LogWarning("Se agoto el tiempo al cerrar la partida.");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogWarning("Error al cerrar la partida al salir: " + e.Message);
+        }
+
+        _readyToQuit = true;
+        Application.Quit();
+    }
+
+    // Cerrar bien una partida en la que seguimos dentro.
+    //
+    // Si somos el anfitrion y no queda nadie mas, hay que BORRARLA. Con solo
+    // salir, el lobby no muere: se queda huerfano esperando un anfitrion que ya
+    // no va a volver, y sigue apareciendo en la lista de partidas de todos.
+    private async Task CloseSessionAsync(ISession session)
+    {
+        if (session == null) return;
+
+        bool aloneAsHost = session.IsHost && session.PlayerCount <= 1;
+
+        if (aloneAsHost && session is IHostSession host)
+        {
+            try
+            {
+                await host.DeleteAsync();
+                Debug.Log("Partida borrada: no quedaba nadie mas dentro.");
+                return;
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("No se pudo borrar la partida: " + e.Message);
+            }
+        }
+
+        // Hay mas gente (o no somos el anfitrion): salir y que siga sin nosotros
+        await session.LeaveAsync();
     }
 
     private void OnNetcodeDisconnect(ulong clientId)
@@ -456,7 +618,11 @@ public class OnlineSession : MonoBehaviour
             else if (Time.time - _migrationStart > MigrationTimeout)
             {
                 IsMigrating = false;
-                ClearSessionState("No se pudo reconectar tras el cambio de anfitrion");
+
+                // OJO: aqui no nos ha echado nadie, solo hemos tardado demasiado.
+                // Si soltamos la sesion sin abandonarla, seguimos apuntados en
+                // ella y no podremos entrar en ninguna otra.
+                AbandonSession("No se pudo reconectar tras el cambio de anfitrion");
             }
             return;
         }
@@ -475,7 +641,10 @@ public class OnlineSession : MonoBehaviour
         {
             _disconnectedAt = -1f;
             Notifications.Show("Se ha perdido la conexion con la partida");
-            ClearSessionState("Se ha perdido la conexion");
+
+            // Igual que en la migracion: nadie nos ha echado, asi que hay que
+            // salir de verdad y no limitarse a olvidar la sesion.
+            AbandonSession("Se ha perdido la conexion");
         }
     }
 
