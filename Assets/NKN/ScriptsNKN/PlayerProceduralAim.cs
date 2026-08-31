@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
@@ -17,10 +18,21 @@ using UnityEngine;
 ///
 /// Rig verificado: genSWAT es Humanoid con Spine, Chest y Head mapeados, y
 /// optimizeGameObjects a 0, asi que GetBoneTransform devuelve Transforms reales.
+///
+/// -------------------------------------------------------------------------
+/// EN RED
+/// -------------------------------------------------------------------------
+/// El pitch viaja. El dueno lo lee de su camara y lo publica; los demas lo leen
+/// de la red y lo aplican igual. Sin esto, un companero al que ves apuntando al
+/// techo se te queda con el torso recto y no sabes hacia donde mira.
+///
+/// El LEAN no viaja, y es a proposito: sale del giro de la raiz y de MoveX, que
+/// el NetworkTransform y el NetworkAnimator ya replican. Cada maquina lo calcula
+/// sola y le sale lo mismo. Mandarlo seria pagar ancho de banda por nada.
 /// </summary>
 [RequireComponent(typeof(Animator))]
 [DisallowMultipleComponent]
-public class PlayerProceduralAim : MonoBehaviour
+public class PlayerProceduralAim : NetworkBehaviour
 {
     [Header("Referencias")]
     [Tooltip("Camara del jugador. Si se deja vacia se busca en PlayerController o entre los hijos.")]
@@ -59,11 +71,33 @@ public class PlayerProceduralAim : MonoBehaviour
     // mantiene la cabeza mas o menos vertical al girar.
     [Range(0f, 1f)] [SerializeField] private float leanPesoHead = 0f;
 
+    [Header("Red")]
+    [Tooltip("Grados que tiene que cambiar el pitch para volver a mandarlo. " +
+             "Subirlo ahorra trafico a costa de un poco de escalon.")]
+    [SerializeField] private float umbralEnvioPitch = 1.5f;
+
     private Transform _spine, _chest, _head;
     private float _anguloAim;
     private float _anguloLean;
     private float _yawAnterior;
     private bool _listo;
+
+    // Pitch del dueno, visible para todos. Lo escribe el propio dueno: es un dato
+    // de entrada suyo, no una decision de partida, asi que no hace falta que pase
+    // por el servidor.
+    private readonly NetworkVariable<float> _pitchRed = new NetworkVariable<float>(
+        0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+    private float _ultimoPitchEnviado;
+
+    /// <summary>
+    /// Mando el pitch yo, o me lo tienen que dar. Fuera de red (escena suelta,
+    /// modo un jugador) mando yo siempre.
+    /// </summary>
+    private bool MandoYo
+    {
+        get { return !IsSpawned || IsOwner; }
+    }
 
     private void Awake()
     {
@@ -86,11 +120,14 @@ public class PlayerProceduralAim : MonoBehaviour
         _chest = animator.GetBoneTransform(HumanBodyBones.Chest);
         _head  = animator.GetBoneTransform(HumanBodyBones.Head);
 
-        _listo = playerCamera != null && (_spine != null || _chest != null || _head != null);
+        // OJO: la camara ya NO es obligatoria. Los jugadores remotos no tienen
+        // camara propia en tu maquina y aun asi tienen que mover el torso: su
+        // pitch les llega por la red.
+        _listo = _spine != null || _chest != null || _head != null;
         _yawAnterior = transform.eulerAngles.y;
 
         if (!_listo)
-            Debug.LogWarning("[PlayerProceduralAim] Falta la camara o los huesos de la columna.", this);
+            Debug.LogWarning("[PlayerProceduralAim] No encuentro los huesos de la columna.", this);
     }
 
     private void LateUpdate()
@@ -124,16 +161,46 @@ public class PlayerProceduralAim : MonoBehaviour
 
     private void CalcularAim(float dt)
     {
-        // El pitch vive en la rotacion local de la camara (PlayerController la
-        // escribe cada frame). Se normaliza a -180..180 porque localEulerAngles
-        // devuelve 0..360 y 350 grados serian en realidad -10.
-        float pitch = playerCamera.transform.localEulerAngles.x;
-        if (pitch > 180f) pitch -= 360f;
+        float pitch = MandoYo ? LeerPitchDeLaCamara() : _pitchRed.Value;
 
         float objetivo = Mathf.Clamp(pitch, -anguloMaximo, anguloMaximo);
         if (invertir) objetivo = -objetivo;
 
+        // El suavizado tambien corre en los remotos, y ahi hace doble trabajo:
+        // ademas de quitarle brusquedad, disimula el escalon entre un valor de
+        // red y el siguiente.
         _anguloAim = Mathf.Lerp(_anguloAim, objetivo, Factor(velocidadSuavizado, dt));
+
+        if (MandoYo) PublicarPitch(pitch);
+    }
+
+    /// <summary>
+    /// El pitch vive en la rotacion local de la camara (PlayerController la
+    /// escribe cada frame). Se normaliza a -180..180 porque localEulerAngles
+    /// devuelve 0..360 y 350 grados serian en realidad -10.
+    /// </summary>
+    private float LeerPitchDeLaCamara()
+    {
+        if (playerCamera == null) return _anguloAim;
+
+        float pitch = playerCamera.transform.localEulerAngles.x;
+        if (pitch > 180f) pitch -= 360f;
+        return pitch;
+    }
+
+    /// <summary>
+    /// Solo se manda cuando cambia lo suficiente. Mirar alrededor mueve el pitch
+    /// en todos los frames, y publicar cada uno seria un goteo constante para un
+    /// detalle puramente cosmetico.
+    /// </summary>
+    private void PublicarPitch(float pitch)
+    {
+        if (!IsSpawned || !IsOwner) return;
+
+        if (Mathf.Abs(pitch - _ultimoPitchEnviado) < umbralEnvioPitch) return;
+
+        _ultimoPitchEnviado = pitch;
+        _pitchRed.Value = pitch;
     }
 
     private void CalcularLean(float dt)

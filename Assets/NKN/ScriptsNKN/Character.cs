@@ -37,6 +37,15 @@ public class Character : NetworkBehaviour{
 
     private float regenTimer = 0f;
 
+    // Datos del golpe que te mato, guardados por el servidor para pasarselos al
+    // ragdoll. No se replican solos: viajan dentro del ClientRpc de la muerte.
+    private Vector3 _puntoUltimoGolpe;
+    private Vector3 _direccionUltimoGolpe;
+    private float _sobredanoUltimoGolpe;
+
+    private RagdollDeath _ragdoll;
+    private bool _ragdollBuscado;
+
     [Header("Estamina")]
     [SerializeField] private float maxStamina = 100f;
     [SerializeField] private float staminaRegenRate = 25f;
@@ -56,11 +65,33 @@ public override void OnNetworkSpawn()
 
 public void TakeDamage(float amount)
 {
+    TakeDamage(amount, Vector3.zero, Vector3.zero);
+}
+
+// Igual que la anterior pero sabiendo POR DONDE te entro el golpe. El punto y la
+// direccion no cambian el dano: solo alimentan al ragdoll. Un cero en cualquiera
+// de los dos significa "sin datos", y entonces el ragdoll se apana con el pecho
+// y con la espalda.
+public void TakeDamage(float amount, Vector3 puntoImpacto, Vector3 direccionImpacto)
+{
     if (!IsServer) return;   // solo el servidor aplica dano
 
+    float vidaAntes = netHealth.Value;
     netHealth.Value -= amount;
-    if (netHealth.Value <= 0f)
+
+    // El 'vidaAntes > 0' evita que los golpes que sigan cayendo sobre un cuerpo
+    // ya muerto vuelvan a llamar a Die() una y otra vez.
+    if (netHealth.Value <= 0f && vidaAntes > 0f)
+    {
+        // Sobredano: lo que sobro del golpe despues de dejarte a cero. Un tiro
+        // justo da 0 y el cuerpo se desploma donde esta; una escopeta a
+        // bocajarro da mucho y te manda por los aires.
+        _sobredanoUltimoGolpe   = Mathf.Max(0f, amount - Mathf.Max(0f, vidaAntes));
+        _puntoUltimoGolpe       = puntoImpacto;
+        _direccionUltimoGolpe   = direccionImpacto;
+
         Die();
+    }
 }
 
 // Un cliente no puede tocar la vida directamente: se la pide al servidor.
@@ -69,6 +100,14 @@ public void TakeDamage(float amount)
 public void TakeDamageServerRpc(float amount)
 {
     TakeDamage(amount);
+}
+
+// Nombre distinto en vez de una sobrecarga: Netcode genera el codigo de los RPC
+// a partir del nombre del metodo, y dos RPC que se llamen igual no compilan.
+[ServerRpc(RequireOwnership = false)]
+public void TakeDamageWithHitServerRpc(float amount, Vector3 puntoImpacto, Vector3 direccionImpacto)
+{
+    TakeDamage(amount, puntoImpacto, direccionImpacto);
 }
 
 public void Heal(float amount)
@@ -97,6 +136,13 @@ public void RequestDamage(float amount)
 {
     if (IsServer) TakeDamage(amount);
     else TakeDamageServerRpc(amount);
+}
+
+// Igual, pero pasando de donde vino el golpe para que el ragdoll lo use.
+public void RequestDamage(float amount, Vector3 puntoImpacto, Vector3 direccionImpacto)
+{
+    if (IsServer) TakeDamage(amount, puntoImpacto, direccionImpacto);
+    else TakeDamageWithHitServerRpc(amount, puntoImpacto, direccionImpacto);
 }
 
 // Cura funcionando tanto si somos el servidor como si somos un cliente
@@ -147,6 +193,79 @@ public bool DrainStamina(float amountThisFrame)
 protected virtual void Die()
 {
     gameObject.SetActive(false);
+}
+
+// --------------------------------------------------------------------------
+// MUERTE CON RAGDOLL
+// --------------------------------------------------------------------------
+//
+// Quien decide es el SERVIDOR: elige el tipo de muerte, y manda a todos ese
+// numero junto con el punto y la fuerza del golpe. Cada cliente simula su
+// propio ragdoll con esos datos.
+//
+// NO se sincroniza hueso por hueso. Serian 11 transforms por cadaver y por
+// frame; y no hace falta, porque partiendo del mismo clip, del mismo punto de
+// impacto y del mismo impulso, todas las maquinas ven una caida practicamente
+// igual. Que un brazo acabe unos centimetros distinto no lo nota nadie.
+
+private RagdollDeath Ragdoll
+{
+    get
+    {
+        if (!_ragdollBuscado)
+        {
+            _ragdoll = GetComponent<RagdollDeath>();
+            _ragdollBuscado = true;
+        }
+        return _ragdoll;
+    }
+}
+
+/// <summary>
+/// Lanza la muerte con ragdoll en todas las maquinas. Solo el servidor.
+/// Devuelve false si este personaje no tiene ragdoll montado, para que quien
+/// llame pueda seguir con el comportamiento de siempre.
+/// </summary>
+public bool MorirConRagdoll()
+{
+    if (!IsServer || Ragdoll == null) return false;
+
+    int tipo = Ragdoll.ElegirTipoMuerte();
+
+    // Sin direccion conocida, el cuerpo cae hacia atras: es lo que hace alguien
+    // al que le disparan de frente, que es el caso normal.
+    Vector3 direccion = _direccionUltimoGolpe.sqrMagnitude > 0.0001f
+                      ? _direccionUltimoGolpe
+                      : -transform.forward;
+
+    MorirConRagdollClientRpc(tipo, _puntoUltimoGolpe, direccion, _sobredanoUltimoGolpe);
+    Ragdoll.Matar(tipo, _puntoUltimoGolpe, direccion, _sobredanoUltimoGolpe);
+    return true;
+}
+
+[ClientRpc]
+private void MorirConRagdollClientRpc(int tipo, Vector3 punto, Vector3 direccion, float sobredano)
+{
+    // El host es servidor Y cliente: ya lo ha hecho arriba, no repetir.
+    if (IsServer) return;
+
+    if (Ragdoll != null) Ragdoll.Matar(tipo, punto, direccion, sobredano);
+}
+
+/// <summary>Deshace el ragdoll en todas las maquinas (reanimacion, reinicio).</summary>
+public void LevantarDeRagdoll()
+{
+    if (!IsServer || Ragdoll == null) return;
+
+    LevantarDeRagdollClientRpc();
+    Ragdoll.Levantar();
+}
+
+[ClientRpc]
+private void LevantarDeRagdollClientRpc()
+{
+    if (IsServer) return;
+    if (Ragdoll != null) Ragdoll.Levantar();
 }
 
 public float GetHealth()

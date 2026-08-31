@@ -212,7 +212,7 @@ public class RagdollDeath : MonoBehaviour
     /// <summary>Muerte sin golpe concreto: caida, desangrado, guion.</summary>
     public void Matar()
     {
-        Matar(ElegirTipoMuerte(), transform.position, Vector3.zero, 0f);
+        Matar(ElegirTipoMuerte(), Vector3.zero, Vector3.zero, 0f);
     }
 
     /// <summary>
@@ -227,6 +227,11 @@ public class RagdollDeath : MonoBehaviour
     {
         if (_muerto) return;
         _muerto = true;
+
+        // Sin punto de impacto (caida, desangrado, guion) se usa el pecho. Si se
+        // dejara el origen del mundo, el impulso iria al hueso equivocado.
+        if (puntoImpacto.sqrMagnitude < 0.0001f && animator != null && animator.isHuman)
+            puntoImpacto = PosicionDeHueso(HumanBodyBones.Chest);
 
         _puntoImpacto = puntoImpacto;
         _dirImpacto   = direccionImpacto.sqrMagnitude > 0.0001f
@@ -421,6 +426,16 @@ public class RagdollDeath : MonoBehaviour
         Apagar<PlayerProceduralAim>();
         Apagar<PlayerProceduralFeet>();
         Apagar<PlayerProceduralHands>();
+
+        // Los enemigos se mueven con NavMeshAgent, no con CharacterController: si
+        // no se apaga, el agente sigue empujando la raiz y el cadaver se desliza
+        // por el suelo persiguiendote.
+        var agente = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agente != null && agente.enabled)
+        {
+            if (agente.isOnNavMesh) agente.isStopped = true;
+            agente.enabled = false;
+        }
     }
 
     private void Apagar<T>() where T : Behaviour
@@ -476,6 +491,15 @@ public class RagdollDeath : MonoBehaviour
         Encender<PlayerProceduralAim>();
         Encender<PlayerProceduralFeet>();
         Encender<PlayerProceduralHands>();
+
+        var agente = GetComponent<UnityEngine.AI.NavMeshAgent>();
+        if (agente != null)
+        {
+            agente.enabled = true;
+            // Warp y no isStopped: el agente ha perdido su sitio en la malla
+            // mientras el cadaver rodaba, y sin esto se queja al reactivarse.
+            agente.Warp(transform.position);
+        }
 
         _muerto = false;
         _ragdollActivo = false;

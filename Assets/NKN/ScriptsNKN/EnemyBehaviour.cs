@@ -18,6 +18,11 @@ public abstract class EnemyBehaviour : Character
     public float damageCooldown = 1f;
     private float _damageTimer = 0f;
 
+    [Header("Muerte")]
+    [Tooltip("Segundos que el cadaver se queda en el suelo antes de desaparecer. " +
+             "Solo aplica si el enemigo tiene el componente RagdollDeath.")]
+    public float segundosDeCadaver = 150f;
+
     protected NavMeshAgent agent;
     protected Transform player;
     protected enum State { Patrolling, Chasing }
@@ -149,9 +154,20 @@ public abstract class EnemyBehaviour : Character
 
     // Los enemigos se destruyen al morir. Al hacerlo en el servidor sobre un objeto
     // de red, Netcode se encarga de eliminarlo tambien en todos los clientes.
+    //
+    // Si el enemigo tiene ragdoll montado, primero cae y el cuerpo se queda un
+    // rato en el suelo. Destruirlo en el mismo frame haria que el ragdoll no
+    // llegase a verse nunca.
     protected override void Die()
     {
         if (!IsServer) return;
+
+        if (MorirConRagdoll())
+        {
+            Destroy(gameObject, segundosDeCadaver);
+            return;
+        }
+
         Destroy(gameObject);
     }
 
@@ -177,7 +193,14 @@ public abstract class EnemyBehaviour : Character
             Character playerChar = other.GetComponent<Character>();
             if (playerChar != null)
             {
-                playerChar.TakeDamage(damageAmount);
+                // El zarpazo entra por donde esta el enemigo y empuja hacia
+                // donde esta la victima: asi el ragdoll cae en la direccion
+                // del golpe en vez de desplomarse recto.
+                Vector3 punto = other.ClosestPoint(transform.position + Vector3.up);
+                Vector3 direccion = other.transform.position - transform.position;
+                direccion.y = 0f;
+
+                playerChar.TakeDamage(damageAmount, punto, direccion);
                 _damageTimer = damageCooldown;
             }
         }

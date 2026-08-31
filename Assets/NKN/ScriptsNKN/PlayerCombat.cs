@@ -50,8 +50,10 @@ public class PlayerCombat : MonoBehaviour
             EnemyBehaviour enemy = hit.collider.GetComponentInParent<EnemyBehaviour>();
             if (enemy != null)
             {
-                // El dano lo aplica el servidor (RequestDamage se encarga de pedirlo)
-                enemy.RequestDamage(meleeDamage);
+                // El dano lo aplica el servidor (RequestDamage se encarga de pedirlo).
+                // Se le pasa por donde entro el golpe y hacia donde iba: es lo que
+                // usa el ragdoll para torcer el cuerpo por el sitio correcto.
+                enemy.RequestDamage(meleeDamage, hit.point, _cam.transform.forward);
                 Debug.Log("Golpe melee a " + hit.collider.name);
             }
         }
@@ -67,7 +69,7 @@ public class PlayerCombat : MonoBehaviour
             EnemyBehaviour enemy = hit.collider.GetComponentInParent<EnemyBehaviour>();
             if (enemy != null)
             {
-                enemy.RequestDamage(shootDamage);
+                enemy.RequestDamage(shootDamage, hit.point, _cam.transform.forward);
                 Debug.Log("Disparo a " + hit.collider.name);
             }
         }

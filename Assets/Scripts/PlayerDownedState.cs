@@ -147,11 +147,24 @@ public class PlayerDownedState : NetworkBehaviour
             netOut.Value = true;
             netBleed.Value = 0f;
 
+            // Esto si es una muerte de verdad: no quedan vidas y de aqui no se
+            // vuelve hasta que se reinicie la partida. El cuerpo cae con ragdoll
+            // y se queda en el sitio.
+            SoltarRagdoll();
+
             AnnounceClientRpc(NameOfThisPlayer() + " esta fuera de combate");
 
             if (MatchManager.Instance != null)
                 MatchManager.Instance.CheckDefeat();
         }
+    }
+
+    // El ragdoll lo lanza Character, que es quien habla con la red: elige el tipo
+    // de muerte en el servidor y lo manda a todos para que vean la misma caida.
+    private void SoltarRagdoll()
+    {
+        var character = GetComponent<Character>();
+        if (character != null) character.MorirConRagdoll();
     }
 
     private void RespawnFromLife()
@@ -210,6 +223,12 @@ public class PlayerDownedState : NetworkBehaviour
         netBleed.Value = 0f;
         netReviveProgress.Value = 0f;
         _beingRevived = false;
+
+        // Si el jugador se quedo hecho un guinapo en el suelo, hay que deshacer
+        // el ragdoll ANTES de reaparecerlo: si no, vuelve a la partida como un
+        // monton de huesos sin Animator.
+        var character = GetComponent<Character>();
+        if (character != null) character.LevantarDeRagdoll();
 
         var controller = GetComponent<PlayerController>();
         if (controller != null) controller.RespawnNow();
