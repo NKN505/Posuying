@@ -1,0 +1,5 @@
+Posicion en la escena de Unity (Transform > Position).
+El pivote de cada edificio es la esquina suroeste, a nivel de suelo.
+
+Conserjeria              X= -157.151  Y=  0.000  Z=   97.537
+Nave_Mantenimiento       X= -115.410  Y=  0.000  Z=  100.652
