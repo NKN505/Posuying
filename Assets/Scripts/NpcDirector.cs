@@ -14,8 +14,14 @@ public class NpcDirector : MonoBehaviour
     public static NpcDirector Instance { get; private set; }
 
     [Header("Prefab")]
-    [Tooltip("Prefab del NPC (con NetworkObject, NavMeshAgent y NpcSurvivor)")]
+    [Tooltip("Prefab del NPC (con NetworkObject, NavMeshAgent y NpcSurvivor). " +
+             "Solo se usa si la lista de abajo esta vacia.")]
     public NpcSurvivor npcPrefab;
+
+    [Tooltip("Cuerpos entre los que se sortea al crear cada NPC. Todos tienen que " +
+             "estar registrados en DefaultNetworkPrefabs o el cliente no sabra crearlos. " +
+             "Si esta vacia se usa npcPrefab.")]
+    public NpcSurvivor[] npcPrefabs;
 
     [Header("Poblacion")]
     [Tooltip("Cada cuanto comprueba si falta alguno (segundos)")]
@@ -72,7 +78,18 @@ public class NpcDirector : MonoBehaviour
 
     public bool SpawnOne()
     {
-        if (npcPrefab == null)
+        // Se sortea el cuerpo entre los de la lista; si no hay lista, el de siempre.
+        NpcSurvivor elegido = npcPrefab;
+        if (npcPrefabs != null && npcPrefabs.Length > 0)
+        {
+            // puede haber huecos sin asignar en el inspector, se saltan
+            int intentos = npcPrefabs.Length;
+            do { elegido = npcPrefabs[Random.Range(0, npcPrefabs.Length)]; }
+            while (elegido == null && --intentos > 0);
+            if (elegido == null) elegido = npcPrefab;
+        }
+
+        if (elegido == null)
         {
             Debug.LogWarning("NpcDirector: falta asignar el prefab del NPC.");
             return false;
@@ -81,7 +98,7 @@ public class NpcDirector : MonoBehaviour
         Vector3 position;
         if (!FindSpawnPosition(out position)) return false;
 
-        NpcSurvivor npc = Instantiate(npcPrefab, position, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
+        NpcSurvivor npc = Instantiate(elegido, position, Quaternion.Euler(0f, Random.Range(0f, 360f), 0f));
 
         // El modelo se hunde en el suelo si el agente no compensa el pivote
         var agent = npc.GetComponent<NavMeshAgent>();
