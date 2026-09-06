@@ -47,6 +47,14 @@ public class PlayerNoise : NetworkBehaviour
     private Vector3 _posicionAnterior;
     private float _distanciaAcumulada;
     private PlayerDownedState _abatido;
+    private float _velocidad;
+
+    /// <summary>
+    /// Velocidad horizontal medida por el SERVIDOR, suavizada. La usan los
+    /// escondites: esconderse exige estarse quieto, y "quieto" tiene que poder
+    /// comprobarlo el servidor, no el cliente.
+    /// </summary>
+    public float ObservedSpeed { get { return _velocidad; } }
 
     public override void OnNetworkSpawn()
     {
@@ -74,6 +82,8 @@ public class PlayerNoise : NetworkBehaviour
         if (_abatido != null && !_abatido.CanAct) return;
 
         float velocidad = delta.magnitude / Time.deltaTime;
+        _velocidad = Mathf.Lerp(_velocidad, velocidad, 10f * Time.deltaTime);
+
         if (velocidad < silentSpeed) { _distanciaAcumulada = 0f; return; }
 
         _distanciaAcumulada += delta.magnitude;
