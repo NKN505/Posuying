@@ -25,6 +25,11 @@ public class StalkerEnemy : EnemyBehaviour
     [Tooltip("Más lejos de esto no se le considera visto, aunque esté de frente")]
     public float maxSightDistance = 60f;
 
+    [Tooltip("Si llega a esta distancia del jugador, mirarlo YA NO lo detiene: " +
+             "sigue avanzando y atacando. Es el punto de no retorno — si lo has " +
+             "dejado acercarse tanto, la mirada ya no te salva.")]
+    public float attackRadius = 4f;
+
     [Tooltip("Qué capas cortan la línea de visión. Si hay un muro por medio, " +
              "mirar hacia él no lo congela.")]
     public LayerMask sightBlockers = ~0;
@@ -153,13 +158,22 @@ public class StalkerEnemy : EnemyBehaviour
     {
         if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
 
-        if (AlguienMeVe())
+        // Dentro del radio de ataque la regla de la mirada deja de aplicarse.
+        // Sin esto el enemigo es inofensivo: bastaría con mirarlo fijamente para
+        // dejarlo clavado a un metro de ti para siempre.
+        if (!YaMeTienesEncima() && AlguienMeVe())
         {
             Congelar();
             return;
         }
 
         Avanzar();
+    }
+
+    private bool YaMeTienesEncima()
+    {
+        if (player == null) return false;
+        return Vector3.Distance(transform.position, player.position) <= attackRadius;
     }
 
     // ---------- Los dos estados ----------

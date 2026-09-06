@@ -18,11 +18,13 @@ public class PlayerCombat : MonoBehaviour
     private float _meleeTimer = 0f;
     private float _shootTimer = 0f;
     private Camera _cam;
+    private PlayerNoise _ruido;
 
     void Start()
     {
         // Su propia camara, no Camera.main (que en red puede ser la de otro jugador)
         _cam = playerCamera != null ? playerCamera : GetComponentInChildren<Camera>(true);
+        _ruido = GetComponent<PlayerNoise>();
     }
 
     void Update()
@@ -44,6 +46,9 @@ public class PlayerCombat : MonoBehaviour
     {
         _meleeTimer = meleeCooldown;
 
+        // Un golpe suena poco, pero suena
+        if (_ruido != null) _ruido.MakeMelee();
+
         RaycastHit hit;
         if (Physics.Raycast(_cam.transform.position, _cam.transform.forward, out hit, meleeRange))
         {
@@ -62,6 +67,9 @@ public class PlayerCombat : MonoBehaviour
     void Shoot()
     {
         _shootTimer = shootCooldown;
+
+        // Lo más ruidoso que puede hacer el jugador, con diferencia
+        if (_ruido != null) _ruido.MakeShot();
 
         RaycastHit hit;
         if (Physics.Raycast(_cam.transform.position, _cam.transform.forward, out hit, shootRange))
