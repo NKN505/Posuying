@@ -816,6 +816,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4254339531153286621}
+    - targetCorrespondingSourceObject: {fileID: 100000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 9098028231869260692}
     - targetCorrespondingSourceObject: {fileID: 100008, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
       insertIndex: -1
       addedObject: {fileID: 366014365146000162}
@@ -960,7 +963,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3610567159
+  GlobalObjectIdHash: 1881604731
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1242,6 +1245,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25a23dfa6b077444590911ce0ef733e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   playerCamera: {fileID: 4597197466058931861}
   animator: {fileID: 8706869791166751682}
   pesoSpine: 0.3
@@ -1258,6 +1262,7 @@ MonoBehaviour:
   leanSuavizado: 6
   leanInvertido: 0
   leanPesoHead: 0
+  umbralEnvioPitch: 1.5
 --- !u!114 &4254339531153286620
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1353,6 +1358,30 @@ MonoBehaviour:
       Synchronize: 1
       ParameterType: 3
   AnimatorParametersExpanded: 0
+--- !u!114 &9098028231869260692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8706869791174135810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c6ab79e34d1ab24d83f792b571eabf8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  sneakRadius: 4
+  walkRadius: 11
+  sprintRadius: 20
+  silentSpeed: 0.4
+  sneakSpeed: 2.5
+  sprintSpeed: 9
+  strideLength: 1.8
+  shotRadius: 45
+  meleeRadius: 8
+  jumpRadius: 6
+  landRadius: 12
 --- !u!1 &8706869791174135812 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 100006, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
