@@ -49,6 +49,21 @@ public class HidingSpot : MonoBehaviour
         return (_col.ClosestPoint(punto) - punto).sqrMagnitude < 0.0001f;
     }
 
+    /// <summary>
+    /// ¿Está dentro de un escondite, se esté quieto o no? Sirve para avisarle de
+    /// que el sitio vale pero que se está moviendo demasiado.
+    /// </summary>
+    public static bool IsInsideAny(PlayerController jugador)
+    {
+        if (jugador == null) return false;
+
+        Vector3 p = jugador.transform.position;
+        for (int i = 0; i < _todos.Count; i++)
+            if (_todos[i] != null && _todos[i].Contains(p)) return true;
+
+        return false;
+    }
+
     /// <summary>¿Este jugador está escondido ahora mismo?</summary>
     public static bool IsHidden(PlayerController jugador)
     {

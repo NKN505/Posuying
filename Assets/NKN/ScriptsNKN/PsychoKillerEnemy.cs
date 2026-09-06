@@ -257,7 +257,13 @@ public class PsychoKillerEnemy : EnemyBehaviour
         string deseado = moviendose ? moveState : idleState;
         if (string.IsNullOrEmpty(deseado)) return;
 
-        if (deseado != _estadoAnim) { _anim.CrossFade(deseado, 0.15f); _estadoAnim = deseado; }
+        // Se comprueba el estado REAL, no una cadena cacheada: si algo saca al
+        // Animator de su sitio, al frame siguiente vuelve solo.
+        if (!_anim.GetCurrentAnimatorStateInfo(0).IsName(deseado) && !_anim.IsInTransition(0))
+        {
+            _anim.CrossFade(deseado, 0.15f);
+            _estadoAnim = deseado;
+        }
         _anim.speed = moviendose && clipSpeed > 0.01f
             ? Mathf.Clamp(_velocidadObservada / clipSpeed, 0.4f, 2f) : 1f;
     }

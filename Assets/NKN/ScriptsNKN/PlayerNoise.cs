@@ -56,10 +56,25 @@ public class PlayerNoise : NetworkBehaviour
     /// </summary>
     public float ObservedSpeed { get { return _velocidad; } }
 
+    /// <summary>Qué tal se te da esconderte ahora mismo.</summary>
+    public enum Sigilo : byte { Descubierto = 0, DentroPeroVisible = 1, Escondido = 2 }
+
+    // Lo decide el SERVIDOR y se replica. El HUD tiene que enseñar exactamente
+    // lo mismo que usa la IA para decidir: si lo calculara el cliente por su
+    // cuenta podría decirte "escondido" mientras el servidor cree que no, y te
+    // dispararían con el cartel verde en pantalla.
+    private readonly NetworkVariable<byte> netSigilo = new NetworkVariable<byte>(
+        0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    public Sigilo EstadoSigilo { get { return (Sigilo)netSigilo.Value; } }
+
+    private PlayerController _controlador;
+
     public override void OnNetworkSpawn()
     {
         _posicionAnterior = transform.position;
         _abatido = GetComponent<PlayerDownedState>();
+        _controlador = GetComponent<PlayerController>();
     }
 
     void Update()
@@ -68,6 +83,16 @@ public class PlayerNoise : NetworkBehaviour
         if (!IsServer) return;
 
         RuidoAlMoverse();
+        ActualizarSigilo();
+    }
+
+    private void ActualizarSigilo()
+    {
+        if (_controlador == null) { netSigilo.Value = 0; return; }
+
+        if (!HidingSpot.IsInsideAny(_controlador)) { netSigilo.Value = 0; return; }
+
+        netSigilo.Value = (byte)(HidingSpot.IsHidden(_controlador) ? 2 : 1);
     }
 
     private void RuidoAlMoverse()

@@ -125,11 +125,16 @@ public class StalkerEnemy : EnemyBehaviour
             return;
         }
 
-        // Al soltarse, retoma el clip por donde iba: no reinicia la zancada
-        if (!_animArrancada)
+        // Se comprueba el estado REAL cada frame en vez de fiarlo a una bandera
+        // de "ya lo puse una vez". Con el controlador original eso fallaba: la
+        // orden se ejecutaba, pero sus transiciones automáticas se lo llevaban
+        // acto seguido y el bicho acababa tirado haciendo 'death4'. Verificando
+        // se recupera solo pase lo que pase.
+        if (!string.IsNullOrEmpty(moveState) &&
+            !_anim.GetCurrentAnimatorStateInfo(0).IsName(moveState) &&
+            !_anim.IsInTransition(0))
         {
             _anim.CrossFade(moveState, 0.15f);
-            _animArrancada = true;
         }
 
         // El ritmo sigue a la velocidad real para que los pies no patinen
