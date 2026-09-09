@@ -121,7 +121,7 @@ public class CowardEnemy : EnemyBehaviour
             if (UnityEngine.AI.NavMesh.SamplePosition(huida, out hit, 6f, UnityEngine.AI.NavMesh.AllAreas))
             {
                 agent.isStopped = false;
-                agent.SetDestination(hit.position);
+                PedirDestino(hit.position);
             }
             return;
         }
@@ -129,7 +129,7 @@ public class CowardEnemy : EnemyBehaviour
         if (distancia > maxDistance)
         {
             agent.isStopped = false;
-            agent.SetDestination(_objetivo.transform.position);
+            PedirDestino(_objetivo.transform.position);
             return;
         }
 

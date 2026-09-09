@@ -197,7 +197,7 @@ public class NemesisEnemy : EnemyBehaviour
     {
         agent.isStopped = false;
         agent.speed = chaseSpeed;
-        if (_objetivo != null) agent.SetDestination(_objetivo.transform.position);
+        if (_objetivo != null) PedirDestino(_objetivo.transform.position);
     }
 
     private void Rastrear()
@@ -217,7 +217,7 @@ public class NemesisEnemy : EnemyBehaviour
         Vector3 candidato = _ultimaPosicionConocida + Random.insideUnitSphere * searchRadius;
         UnityEngine.AI.NavMeshHit hit;
         if (UnityEngine.AI.NavMesh.SamplePosition(candidato, out hit, searchRadius, UnityEngine.AI.NavMesh.AllAreas))
-            agent.SetDestination(hit.position);
+            PedirDestino(hit.position);
     }
 
     private void Rondar()

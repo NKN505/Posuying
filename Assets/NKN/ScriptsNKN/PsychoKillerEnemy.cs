@@ -194,7 +194,7 @@ public class PsychoKillerEnemy : EnemyBehaviour
 
         agent.isStopped = false;
         agent.speed = moveSpeed;
-        agent.SetDestination(_nido);
+        PedirDestino(_nido);
 
         if (Vector3.Distance(transform.position, _nido) <= 2f)
             _yendoAlNido = false;

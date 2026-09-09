@@ -11,6 +11,6 @@ public class NormalEnemy : EnemyBehaviour
 
     protected override void Chase()
     {
-        agent.SetDestination(player.position);
+        PedirDestino(player.position);
     }
 }

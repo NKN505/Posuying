@@ -393,6 +393,8 @@ MonoBehaviour:
   cadenciaMerodeo: 1.6
   damageAmount: 10
   damageCooldown: 1
+  estadoGolpe: 
+  duracionGolpe: 0.9
   segundosDeCadaver: 150
 --- !u!195 &715292205873706543
 NavMeshAgent:
@@ -531,8 +533,8 @@ MonoBehaviour:
   runThreshold: 2.2749999
   runHysteresis: 0.75
   minStateTime: 0.25
-  walkClipSpeed: 1.4
-  runClipSpeed: 3.5
+  walkClipSpeed: 1.9
+  runClipSpeed: 3.8
   minAnimSpeed: 0.5
   maxAnimSpeed: 2
   crossFade: 0.15

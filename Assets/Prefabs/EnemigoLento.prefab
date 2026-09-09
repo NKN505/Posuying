@@ -117,6 +117,9 @@ MonoBehaviour:
   detectionRadius: 10
   patrolRadius: 20
   alwaysAggro: 1
+  merodearSiNoLlega: 1
+  radioMerodeo: 3.5
+  cadenciaMerodeo: 1.6
   damageAmount: 10
   damageCooldown: 1
   segundosDeCadaver: 150
@@ -139,7 +142,7 @@ NavMeshAgent:
   m_AutoBraking: 1
   m_AutoRepath: 1
   m_Height: 2
-  m_BaseOffset: 0
+  m_BaseOffset: 0.9
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
 --- !u!135 &1018419220403126934

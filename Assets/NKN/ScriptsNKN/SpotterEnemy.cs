@@ -175,7 +175,7 @@ public class SpotterEnemy : EnemyBehaviour
 
         agent.isStopped = false;
         agent.speed = fleeSpeed;
-        agent.SetDestination(hit.position);
+        PedirDestino(hit.position);
     }
 
     private void Rondar()

@@ -150,7 +150,7 @@ public class SoundHunterEnemy : EnemyBehaviour
         IsInvestigating = true;
         agent.isStopped = false;
         agent.speed = chaseSpeed;
-        agent.SetDestination(_destino);
+        PedirDestino(_destino);
 
         if (Vector3.Distance(transform.position, _destino) > arriveDistance) return;
 

@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -35,6 +36,17 @@ public abstract class EnemyBehaviour : Character
     public float damageCooldown = 1f;
     private float _damageTimer = 0f;
 
+    [Tooltip("Estado del Animator que se reproduce al golpear cuerpo a cuerpo. " +
+             "Vacio = sin animacion (los enemigos de horda no tienen clip para esto). " +
+             "Se llama asi y no 'attackState' porque el Acechador ya usa ese nombre " +
+             "para su placaje, y dos campos serializados iguales rompen la herencia.")]
+    public string estadoGolpe = "attack";
+    [Tooltip("Cuanto dura la animacion del golpe")]
+    public float duracionGolpe = 0.9f;
+
+    // Lo busca solo: los enemigos que no lo lleven simplemente no se animan
+    private EnemyLocomotionAnimator _locomocion;
+
     [Header("Muerte")]
     [Tooltip("Segundos que el cadaver se queda en el suelo antes de desaparecer. " +
              "Solo aplica si el enemigo tiene el componente RagdollDeath.")]
@@ -63,6 +75,7 @@ public abstract class EnemyBehaviour : Character
         SetIsJumping(false);
 
         agent = GetComponent<NavMeshAgent>();
+        _locomocion = GetComponent<EnemyLocomotionAnimator>();
     }
 
     // Todos los enemigos vivos, en todas las maquinas. Lo usa el minimapa para
@@ -116,17 +129,15 @@ public abstract class EnemyBehaviour : Character
         // no tiene nada que reintentar.
         ActualizarRecorte();
 
-        if (_tieneRecorte)
+        // El switch se ejecuta SIEMPRE, tambien con el destino recortado. Chase()
+        // no solo pide ruta: el Acechador comprueba ahi si lo estan mirando, el
+        // Tanque mira sus zonas prohibidas, el Cobarde decide si huir. Saltarselo
+        // les quita su mecanica. El recorte se aplica donde toca, dentro de
+        // PedirDestino, no secuestrando el metodo entero.
+        switch (state)
         {
-            IrAlPuntoRecortado();
-        }
-        else
-        {
-            switch (state)
-            {
-                case State.Patrolling: Patrol(); break;
-                case State.Chasing:   Chase();   break;
-            }
+            case State.Patrolling: Patrol(); break;
+            case State.Chasing:   Chase();   break;
         }
     }
 
@@ -243,6 +254,21 @@ public abstract class EnemyBehaviour : Character
         if (agent != null && agent.enabled) agent.autoRepath = _autoRepathOriginal;
     }
 
+    /// <summary>
+    /// Unico sitio por el que se pide ruta. Las subclases deben usar esto en vez
+    /// de agent.SetDestination: si el objetivo esta recortado por inalcanzable,
+    /// aqui se sustituye por el punto alcanzable mas cercano. Llamando al agente
+    /// directamente se saltarian el recorte y volveria el diente de sierra.
+    /// </summary>
+    protected void PedirDestino(Vector3 objetivo)
+    {
+        if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
+
+        if (_tieneRecorte) { IrAlPuntoRecortado(); return; }
+
+        agent.SetDestination(objetivo);
+    }
+
     private void IrAlPuntoRecortado()
     {
         if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
@@ -293,7 +319,7 @@ public abstract class EnemyBehaviour : Character
         Vector3 randomDirection = Random.insideUnitSphere * patrolRadius + transform.position;
         NavMeshHit hit;
         if (NavMesh.SamplePosition(randomDirection, out hit, patrolRadius, 1))
-            agent.SetDestination(hit.position);
+            PedirDestino(hit.position);
     }
 
     void OnTriggerStay(Collider other)
@@ -319,8 +345,25 @@ public abstract class EnemyBehaviour : Character
 
                 playerChar.TakeDamage(damageAmount, punto, direccion);
                 _damageTimer = damageCooldown;
+
+                // La animacion tiene que verse en todas las maquinas, no solo en
+                // la del anfitrion: el dano es del servidor, el espectaculo no.
+                AnimarAtaqueRpc();
             }
         }
+    }
+
+    /// <summary>
+    /// Reproduce el zarpazo en todas las maquinas. Es un solo sitio para los trece
+    /// enemigos: todos hacen dano por el mismo trigger, asi que todos se animan
+    /// aqui. Si un enemigo no tiene EnemyLocomotionAnimator o su controlador no
+    /// tiene el estado, no pasa nada: se queda como estaba.
+    /// </summary>
+    [Rpc(SendTo.Everyone)]
+    private void AnimarAtaqueRpc()
+    {
+        if (_locomocion == null || string.IsNullOrEmpty(estadoGolpe)) return;
+        _locomocion.PlayOneShot(estadoGolpe, duracionGolpe);
     }
 
     void OnDrawGizmosSelected()

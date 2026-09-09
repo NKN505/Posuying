@@ -105,7 +105,7 @@ public class TankEnemy : EnemyBehaviour
         agent.isStopped = false;
         agent.speed = chaseSpeed;
         agent.angularSpeed = turnSpeed;
-        agent.SetDestination(hit.position);
+        PedirDestino(hit.position);
     }
 
     private void ActualizarAnimacion()

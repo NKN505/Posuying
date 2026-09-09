@@ -347,7 +347,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 873846832
+  GlobalObjectIdHash: 2348791761
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -387,6 +387,9 @@ MonoBehaviour:
   detectionRadius: 10
   patrolRadius: 20
   alwaysAggro: 0
+  merodearSiNoLlega: 1
+  radioMerodeo: 3.5
+  cadenciaMerodeo: 1.6
   damageAmount: 10
   damageCooldown: 1
   segundosDeCadaver: 150
@@ -411,7 +414,7 @@ NavMeshAgent:
   m_AutoBraking: 1
   m_AutoRepath: 1
   m_Height: 2
-  m_BaseOffset: 0
+  m_BaseOffset: 0.9
   m_WalkableMask: 4294967295
   m_ObstacleAvoidanceType: 4
 --- !u!135 &4400769925536609610

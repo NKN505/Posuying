@@ -66,6 +66,32 @@ public class EnemyLocomotionAnimator : MonoBehaviour
     /// </summary>
     public bool Frozen { get; set; }
 
+    /// <summary>
+    /// Reproduce un clip de un solo uso (atacar, gritar, recibir un golpe) y
+    /// suspende la locomoción mientras dure. Al acabar vuelve solo a idle/walk/run
+    /// según la velocidad que lleve, sin que el que lo llamó tenga que hacer nada.
+    ///
+    /// La duración se pasa a mano en vez de leer la del clip a propósito: casi
+    /// siempre interesa cortarlo antes. El Attack del Slender dura 2,73 s y
+    /// dejarlo entero clava al bicho una eternidad.
+    /// </summary>
+    public void PlayOneShot(string estado, float duracion, float mezcla)
+    {
+        if (_anim == null || _anim.runtimeAnimatorController == null) return;
+        if (string.IsNullOrEmpty(estado) || duracion <= 0f) return;
+
+        _anim.speed = 1f;
+        _anim.CrossFade(estado, mezcla);
+        _estadoPuesto = estado;
+        _tiempoEnEstado = 0f;
+        _finDelOneShot = Time.time + duracion;
+    }
+
+    public void PlayOneShot(string estado, float duracion) { PlayOneShot(estado, duracion, 0.1f); }
+
+    /// <summary>True mientras haya un clip de un solo uso en marcha.</summary>
+    public bool EnOneShot { get { return Time.time < _finDelOneShot; } }
+
     /// <summary>Velocidad medida, por si algún script la quiere.</summary>
     public float ObservedSpeed { get { return _velocidad; } }
 
@@ -77,6 +103,7 @@ public class EnemyLocomotionAnimator : MonoBehaviour
     private bool _corriendo;
     private string _estadoPuesto = "";
     private float _tiempoEnEstado;
+    private float _finDelOneShot;
 
     void Awake()
     {
@@ -93,6 +120,11 @@ public class EnemyLocomotionAnimator : MonoBehaviour
         ActualizarUmbralCorrer();
 
         if (Frozen) { _anim.speed = 0f; return; }
+
+        // Un clip de un solo uso manda sobre la locomocion mientras dure. Sin
+        // esto, la maquina de estados lo pisaria al frame siguiente y el ataque
+        // no llegaria a verse.
+        if (Time.time < _finDelOneShot) { _anim.speed = 1f; return; }
 
         _tiempoEnEstado += Time.deltaTime;
 

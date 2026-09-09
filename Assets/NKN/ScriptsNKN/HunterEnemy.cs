@@ -153,7 +153,7 @@ public class HunterEnemy : EnemyBehaviour
 
         agent.isStopped = false;
         agent.speed = moveSpeed;
-        agent.SetDestination(_puestoDeVigilancia);
+        PedirDestino(_puestoDeVigilancia);
     }
 
     private void Parar()
