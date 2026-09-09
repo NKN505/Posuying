@@ -1,5 +1,12 @@
 fileFormatVersion: 2
 guid: 12109b4a5225cd34f8bd1a64bc8fbbba
+AssetOrigin:
+  serializedVersion: 1
+  productId: 290587
+  packageName: MONS6
+  packageVersion: 1.0
+  assetPath: Assets/MONS 6/FBX/IDLE.fbx
+  uploadId: 678238
 ModelImporter:
   serializedVersion: 22200
   internalIDToNameTable: []
@@ -21,8 +28,6 @@ ModelImporter:
     optimizeGameObjects: 0
     removeConstantScaleCurves: 0
     motionNodeName: 
-    rigImportErrors: 
-    rigImportWarnings: 
     animationImportErrors: 
     animationImportWarnings: 
     animationRetargetingWarnings: 
@@ -49,7 +54,7 @@ ModelImporter:
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
-      loopTime: 0
+      loopTime: 1
       loopBlend: 0
       loopBlendOrientation: 0
       loopBlendPositionY: 0
@@ -141,10 +146,3 @@ ModelImporter:
   userData: 
   assetBundleName: 
   assetBundleVariant: 
-AssetOrigin:
-  serializedVersion: 1
-  productId: 290587
-  packageName: MONS6
-  packageVersion: 1.0
-  assetPath: Assets/MONS 6/FBX/IDLE.fbx
-  uploadId: 678238

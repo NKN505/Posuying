@@ -34,21 +34,6 @@ public class StalkerEnemy : EnemyBehaviour
              "mirar hacia él no lo congela.")]
     public LayerMask sightBlockers = ~0;
 
-    [Header("Animación")]
-    [Tooltip("Estado del Animator que se reproduce mientras avanza. El " +
-             "controlador del modelo no tiene parámetros, así que se llama por " +
-             "nombre: walk2/walk3/walk4, run1/run2/run3...")]
-    public string moveState = "run1";
-
-    [Tooltip("A qué velocidad real (m/s) se ve natural ese clip. Se usa para " +
-             "ajustar el ritmo de la animación y que los pies no patinen.")]
-    public float clipSpeed = 4.5f;
-
-    [Tooltip("Límites del ritmo de la animación, para que ni se arrastre ni " +
-             "parezca acelerada")]
-    public float minAnimSpeed = 0.4f;
-    public float maxAnimSpeed = 2f;
-
     // Congelado o no, visible para todos. Ahora mismo solo lo usa el propio
     // enemigo, pero lo necesitará la animación cuando el modelo tenga clips.
     private readonly Unity.Netcode.NetworkVariable<bool> netFrozen =
@@ -61,10 +46,11 @@ public class StalkerEnemy : EnemyBehaviour
 
     private bool _congelado;
 
-    private Animator _anim;
-    private Vector3 _posicionAnterior;
-    private float _velocidadObservada;
-    private bool _animArrancada;
+    // La animacion la lleva entera EnemyLocomotionAnimator: mide la velocidad del
+    // transform (el agente esta apagado en los clientes), decide idle/walk/run con
+    // histeresis y ajusta el ritmo del clip. Aqui solo hay que decirle cuando
+    // congelarse.
+    private EnemyLocomotionAnimator _loco;
 
     protected override void Awake()
     {
@@ -74,9 +60,7 @@ public class StalkerEnemy : EnemyBehaviour
         // Lo único que lo detiene es que lo miren.
         alwaysAggro = true;
 
-        // El Animator está en el modelo, que cuelga como hijo de la raíz
-        _anim = GetComponentInChildren<Animator>(true);
-        _posicionAnterior = transform.position;
+        _loco = GetComponent<EnemyLocomotionAnimator>();
     }
 
     public override void OnNetworkSpawn()
@@ -106,57 +90,14 @@ public class StalkerEnemy : EnemyBehaviour
 
     // ---------- Animación ----------
 
+    // Congelar el Animator lo deja EXACTAMENTE en el fotograma en que estaba: a
+    // media zancada, con el peso en un pie y un brazo levantado. Eso es lo que
+    // hace el efecto. Saltar a una pose de reposo sería mucho peor, porque se
+    // vería el cambio y delataría que hay una máquina de estados detrás.
+    // Congelado de verdad significa congelado donde estuviera.
     private void ActualizarAnimacion()
     {
-        if (_anim == null) return;
-
-        MedirVelocidad();
-
-        if (IsFrozen)
-        {
-            // Parar el Animator deja el cuerpo EXACTAMENTE en el fotograma en el
-            // que estaba: a media zancada, con el peso en un pie y un brazo
-            // levantado. Eso es lo que hace el efecto.
-            //
-            // Saltar a una pose de reposo sería mucho peor: se vería el cambio y
-            // delataría que hay una máquina de estados detrás. Congelado de
-            // verdad significa congelado donde estuviera.
-            _anim.speed = 0f;
-            return;
-        }
-
-        // Se comprueba el estado REAL cada frame en vez de fiarlo a una bandera
-        // de "ya lo puse una vez". Con el controlador original eso fallaba: la
-        // orden se ejecutaba, pero sus transiciones automáticas se lo llevaban
-        // acto seguido y el bicho acababa tirado haciendo 'death4'. Verificando
-        // se recupera solo pase lo que pase.
-        if (!string.IsNullOrEmpty(moveState) &&
-            !_anim.GetCurrentAnimatorStateInfo(0).IsName(moveState) &&
-            !_anim.IsInTransition(0))
-        {
-            _anim.CrossFade(moveState, 0.15f);
-        }
-
-        // El ritmo sigue a la velocidad real para que los pies no patinen
-        float ritmo = clipSpeed > 0.01f ? _velocidadObservada / clipSpeed : 1f;
-        _anim.speed = Mathf.Clamp(ritmo, minAnimSpeed, maxAnimSpeed);
-    }
-
-    // Se mide del propio transform, no del NavMeshAgent, porque en los clientes
-    // el agente está apagado y el bicho lo mueve NetworkTransform. Así el mismo
-    // código vale en todas las máquinas y no hace falta un NetworkAnimator.
-    private void MedirVelocidad()
-    {
-        Vector3 delta = transform.position - _posicionAnterior;
-        delta.y = 0f;
-        _posicionAnterior = transform.position;
-
-        if (Time.deltaTime <= 0f) return;
-
-        float instantanea = delta.magnitude / Time.deltaTime;
-
-        // Suavizado: sin esto, un salto de posición de la red daría un tirón
-        _velocidadObservada = Mathf.Lerp(_velocidadObservada, instantanea, 12f * Time.deltaTime);
+        if (_loco != null) _loco.Frozen = IsFrozen;
     }
 
     private void Acechar()
