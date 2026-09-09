@@ -9,6 +9,23 @@ public abstract class EnemyBehaviour : Character
     [Tooltip("Si esta activo, el enemigo va siempre a por el jugador (no patrulla). Lo usan los enemigos de horda.")]
     public bool alwaysAggro = false;
 
+    [Header("Objetivo inalcanzable")]
+    [Tooltip("Que hacer cuando el jugador se sube a un sitio al que no hay NavMesh " +
+             "(una caja, una plataforma suelta). Sin esto el enemigo llega al borde " +
+             "de lo que puede pisar y se queda petrificado, que parece un bug. " +
+             "Con esto merodea por debajo esperando a que baje.")]
+    public bool merodearSiNoLlega = true;
+    [Tooltip("Radio del merodeo alrededor del punto mas cercano al jugador")]
+    public float radioMerodeo = 3.5f;
+    [Tooltip("Cada cuanto elige un punto nuevo al merodear")]
+    public float cadenciaMerodeo = 1.6f;
+
+    /// <summary>
+    /// True cuando tiene al jugador fichado pero no existe camino hasta el.
+    /// Lo puede leer el HUD, el audio o cualquier script que quiera reaccionar.
+    /// </summary>
+    public bool ObjetivoInalcanzable { get { return _tieneRecorte; } }
+
     // De que prefab del HordeDirector salio. Lo necesita el guardado del mundo
     // para poder recrearlo igual si cambia el host.
     [System.NonSerialized] public int prefabIndex = -1;
@@ -27,6 +44,14 @@ public abstract class EnemyBehaviour : Character
     protected Transform player;
     protected enum State { Patrolling, Chasing }
     protected State state = State.Patrolling;
+
+    // Recorte del destino cuando el objetivo esta en un sitio sin NavMesh conectado
+    private bool _tieneRecorte;
+    private bool _autoRepathOriginal = true;
+    private float _tiempoHastaRecalcular;
+    private float _tiempoDesdeElUltimoPunto;
+    private Vector3 _anclaMerodeo;
+    private NavMeshPath _rutaDePrueba;
 
     protected override void Awake()
     {
@@ -79,10 +104,29 @@ public abstract class EnemyBehaviour : Character
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
         state = (alwaysAggro || distanceToPlayer < detectionRadius) ? State.Chasing : State.Patrolling;
 
-        switch (state)
+        // Con el objetivo inalcanzable el agente entra en un ciclo destructivo:
+        // autoRepath reintenta la ruta completa cada pocas decimas, cada reintento
+        // TIRA el camino actual, y sin camino desiredVelocity cae a 0 y frena en
+        // seco. Luego vuelve el trozo parcial y acelera. Eso es el diente de sierra.
+        //
+        // Medido: 2 reinicios por segundo, con has=0 rest=0 deseada=0 en cada fondo.
+        //
+        // La cura es no darle nunca un destino que no pueda alcanzar: se recorta al
+        // punto alcanzable mas cercano, la ruta pasa a ser completa y autoRepath ya
+        // no tiene nada que reintentar.
+        ActualizarRecorte();
+
+        if (_tieneRecorte)
         {
-            case State.Patrolling: Patrol(); break;
-            case State.Chasing:   Chase();   break;
+            IrAlPuntoRecortado();
+        }
+        else
+        {
+            switch (state)
+            {
+                case State.Patrolling: Patrol(); break;
+                case State.Chasing:   Chase();   break;
+            }
         }
     }
 
@@ -142,6 +186,79 @@ public abstract class EnemyBehaviour : Character
     {
         All.Remove(this);
         base.OnDestroy();
+    }
+
+    // ---------------------------------------------------------------------
+    // Recorte del destino cuando el objetivo es inalcanzable.
+    //
+    // El jugador puede acabar en sitios sin NavMesh conectado: encima de una caja,
+    // en una plataforma suelta, o en otra de las islas en que esta partido el mapa.
+    // Pedirle al agente que vaya ahi no solo no funciona, es que lo ROMPE (ver el
+    // comentario de arriba sobre autoRepath).
+    //
+    // Aqui se calcula, como mucho dos veces por segundo, si hay camino de verdad.
+    // Si no lo hay, el destino se recorta al ultimo punto alcanzable y el enemigo
+    // merodea por ahi esperando. En cuanto vuelve a haber camino completo se suelta
+    // el recorte y Chase() retoma el mando sin enterarse de nada.
+    // ---------------------------------------------------------------------
+    private void ActualizarRecorte()
+    {
+        if (!merodearSiNoLlega) { SoltarRecorte(); return; }
+        if (player == null || agent == null || !agent.enabled || !agent.isOnNavMesh) { SoltarRecorte(); return; }
+
+        _tiempoHastaRecalcular -= Time.deltaTime;
+        if (_tiempoHastaRecalcular > 0f) return;
+        _tiempoHastaRecalcular = 0.5f;
+
+        if (_rutaDePrueba == null) _rutaDePrueba = new NavMeshPath();
+
+        bool hayCamino =
+            NavMesh.CalculatePath(transform.position, player.position, agent.areaMask, _rutaDePrueba) &&
+            _rutaDePrueba.status == NavMeshPathStatus.PathComplete;
+
+        if (hayCamino) { SoltarRecorte(); return; }
+
+        int esquinas = _rutaDePrueba.corners.Length;
+        if (esquinas == 0) { SoltarRecorte(); return; }
+
+        // Ultimo punto al que si se puede llegar acercandose al objetivo
+        _anclaMerodeo = _rutaDePrueba.corners[esquinas - 1];
+
+        if (!_tieneRecorte)
+        {
+            _tieneRecorte = true;
+            _tiempoDesdeElUltimoPunto = cadenciaMerodeo;   // elige punto ya
+
+            // Mientras nosotros llevamos el destino, autoRepath solo estorba: es
+            // justo quien provoca el frenazo periodico.
+            _autoRepathOriginal = agent.autoRepath;
+            agent.autoRepath = false;
+        }
+    }
+
+    private void SoltarRecorte()
+    {
+        if (!_tieneRecorte) return;
+        _tieneRecorte = false;
+        if (agent != null && agent.enabled) agent.autoRepath = _autoRepathOriginal;
+    }
+
+    private void IrAlPuntoRecortado()
+    {
+        if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
+
+        _tiempoDesdeElUltimoPunto += Time.deltaTime;
+        if (_tiempoDesdeElUltimoPunto < cadenciaMerodeo && agent.hasPath) return;
+        _tiempoDesdeElUltimoPunto = 0f;
+
+        Vector2 c = Random.insideUnitCircle * radioMerodeo;
+        Vector3 candidato = _anclaMerodeo + new Vector3(c.x, 0f, c.y);
+
+        NavMeshHit hit;
+        Vector3 destino = NavMesh.SamplePosition(candidato, out hit, radioMerodeo, agent.areaMask)
+            ? hit.position : _anclaMerodeo;
+
+        agent.SetDestination(destino);
     }
 
     protected virtual void Patrol()
