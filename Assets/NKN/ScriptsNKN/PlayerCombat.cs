@@ -18,11 +18,13 @@ public class PlayerCombat : MonoBehaviour
     private float _meleeTimer = 0f;
     private float _shootTimer = 0f;
     private Camera _cam;
+    private PlayerNoise _ruido;
 
     void Start()
     {
         // Su propia camara, no Camera.main (que en red puede ser la de otro jugador)
         _cam = playerCamera != null ? playerCamera : GetComponentInChildren<Camera>(true);
+        _ruido = GetComponent<PlayerNoise>();
     }
 
     void Update()
@@ -44,14 +46,19 @@ public class PlayerCombat : MonoBehaviour
     {
         _meleeTimer = meleeCooldown;
 
+        // Un golpe suena poco, pero suena
+        if (_ruido != null) _ruido.MakeMelee();
+
         RaycastHit hit;
         if (Physics.Raycast(_cam.transform.position, _cam.transform.forward, out hit, meleeRange))
         {
             EnemyBehaviour enemy = hit.collider.GetComponentInParent<EnemyBehaviour>();
             if (enemy != null)
             {
-                // El dano lo aplica el servidor (RequestDamage se encarga de pedirlo)
-                enemy.RequestDamage(meleeDamage);
+                // El dano lo aplica el servidor (RequestDamage se encarga de pedirlo).
+                // Se le pasa por donde entro el golpe y hacia donde iba: es lo que
+                // usa el ragdoll para torcer el cuerpo por el sitio correcto.
+                enemy.RequestDamage(meleeDamage, hit.point, _cam.transform.forward);
                 Debug.Log("Golpe melee a " + hit.collider.name);
             }
         }
@@ -61,13 +68,16 @@ public class PlayerCombat : MonoBehaviour
     {
         _shootTimer = shootCooldown;
 
+        // Lo más ruidoso que puede hacer el jugador, con diferencia
+        if (_ruido != null) _ruido.MakeShot();
+
         RaycastHit hit;
         if (Physics.Raycast(_cam.transform.position, _cam.transform.forward, out hit, shootRange))
         {
             EnemyBehaviour enemy = hit.collider.GetComponentInParent<EnemyBehaviour>();
             if (enemy != null)
             {
-                enemy.RequestDamage(shootDamage);
+                enemy.RequestDamage(shootDamage, hit.point, _cam.transform.forward);
                 Debug.Log("Disparo a " + hit.collider.name);
             }
         }

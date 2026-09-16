@@ -167,6 +167,10 @@ public class PlayerController : Character, IPassiveRegenerator
             {
                 Jump();
 
+                // Saltar hace ruido; caer hará mas, pero eso va aparte
+                var ruido = GetComponent<PlayerNoise>();
+                if (ruido != null) ruido.MakeJump();
+
                 // El estado Jump del Animator se entra por este trigger. Sin esta
                 // linea el estado existe pero nunca se alcanza.
                 if (animator != null && animator.isActiveAndEnabled)

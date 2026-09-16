@@ -11,6 +11,6 @@ public class FastEnemy : EnemyBehaviour
 
     protected override void Chase()
     {
-        agent.SetDestination(player.position);
+        PedirDestino(player.position);
     }
 }
