@@ -22,7 +22,7 @@ using UnityEngine;
 /// </summary>
 public static class NKNAlinearClips
 {
-    const string CARPETA = "Assets/NKN/Animations/Player";
+    const string CARPETA = "Assets/_Posuying/Animaciones/Player";
 
     // Muestras a lo largo del clip para promediar el yaw.
     const int MUESTRAS = 120;

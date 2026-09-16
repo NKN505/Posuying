@@ -30,8 +30,8 @@ using UnityEngine.SceneManagement;
 /// </summary>
 public static class ColocarEdificios
 {
-    const string RutaEscena = "Assets/Scenes/TestMap.unity";
-    const string CarpetaArt = "Assets/Art/Edificios";
+    const string RutaEscena = "Assets/_Posuying/Escenas/TestMap/TestMap.unity";
+    const string CarpetaArt = "Assets/_Posuying/Arte/Edificios";
 
     struct Colocacion
     {

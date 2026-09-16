@@ -17,8 +17,8 @@ using UnityEngine;
 /// </summary>
 public static class NKNAnimatorBuilder
 {
-    const string CARPETA_ANIM = "Assets/NKN/Animations/Player";
-    const string CARPETA_SALIDA = "Assets/NKN/Animations/Player";
+    const string CARPETA_ANIM = "Assets/_Posuying/Animaciones/Player";
+    const string CARPETA_SALIDA = "Assets/_Posuying/Animaciones/Player";
     const string NOMBRE_CONTROLLER = "AC_Player_Generado";
 
     // Velocidades de Character.cs: speed = 5, sprintMultiplier = 1.8
