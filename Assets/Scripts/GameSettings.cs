@@ -128,6 +128,23 @@ public static class GameSettings
         PlayerPrefs.Save();
     }
 
+    // Volumen en vivo, para los sliders: se aplica al instante sin pasar por
+    // APLICAR. Queda guardado en PlayerPrefs solo en memoria (SetFloat es barato
+    // y se puede llamar en cada frame del arrastre); a disco se escribe al soltar
+    // el slider con PlayerPrefs.Save(), y Unity lo hace tambien al cerrar el juego.
+    // Tiene que quedar en PlayerPrefs y no solo en la variable: el menu llama a
+    // Load() al cambiar de sub-pestana y, si no, el valor volveria al anterior.
+    public static void ApplyVolumes()
+    {
+        PlayerPrefs.SetFloat(KeyMaster, MasterVolume);
+        PlayerPrefs.SetFloat(KeyMusic, MusicVolume);
+        PlayerPrefs.SetFloat(KeySfx, SfxVolume);
+
+        // La musica y los efectos leen su variable cada frame; el general va por
+        // el AudioListener
+        AudioListener.volume = MasterVolume;
+    }
+
     // Guarda y aplica de golpe (lo llama el boton APLICAR del menu)
     public static void SaveAndApply()
     {

@@ -433,18 +433,25 @@ public class MainMenuUI : MonoBehaviour
             case OptionsTab.Audio: BuildAudioOptions(); break;
         }
 
+        // El audio se aplica solo al mover los sliders: en esa pestana APLICAR
+        // sobra y solo haria pensar que hay que pulsarlo
+        bool needsApply = _optionsTab != OptionsTab.Audio;
+
         // En partida el boton comparte fila con el de volver
         float applyX = OptionsOverlayOpen ? -110f : 0f;
 
-        Button("APLICAR", _content, new Vector2(applyX, -top + 24f), new Vector2(200f, 34f), () =>
+        if (needsApply)
         {
-            GameSettings.ApplyResolution(GameSettings.Resolutions[_resIndex], _fullscreen);
-            GameSettings.SaveAndApply();
-        }, accentColor);
+            Button("APLICAR", _content, new Vector2(applyX, -top + 24f), new Vector2(200f, 34f), () =>
+            {
+                GameSettings.ApplyResolution(GameSettings.Resolutions[_resIndex], _fullscreen);
+                GameSettings.SaveAndApply();
+            }, accentColor);
+        }
 
         if (OptionsOverlayOpen)
         {
-            Button("VOLVER AL JUEGO", _content, new Vector2(110f, -top + 24f),
+            Button("VOLVER AL JUEGO", _content, new Vector2(needsApply ? 110f : 0f, -top + 24f),
                 new Vector2(200f, 34f), CloseOptionsOverlay);
         }
     }
@@ -531,21 +538,22 @@ public class MainMenuUI : MonoBehaviour
             11, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
     }
 
+    // El audio se aplica al instante mientras arrastras: aqui no hace falta APLICAR
     private void BuildAudioOptions()
     {
-        StepRow(0, "Volumen general", () => GameSettings.Percent(GameSettings.MasterVolume),
-            () => GameSettings.MasterVolume = Mathf.Max(0f, GameSettings.MasterVolume - 0.1f),
-            () => GameSettings.MasterVolume = Mathf.Min(1f, GameSettings.MasterVolume + 0.1f));
+        SliderRow(0, "Volumen general", GameSettings.MasterVolume,
+            v => { GameSettings.MasterVolume = v; GameSettings.ApplyVolumes(); },
+            () => GameSettings.Percent(GameSettings.MasterVolume));
 
-        StepRow(1, "Musica", () => GameSettings.Percent(GameSettings.MusicVolume),
-            () => GameSettings.MusicVolume = Mathf.Max(0f, GameSettings.MusicVolume - 0.1f),
-            () => GameSettings.MusicVolume = Mathf.Min(1f, GameSettings.MusicVolume + 0.1f));
+        SliderRow(1, "Musica", GameSettings.MusicVolume,
+            v => { GameSettings.MusicVolume = v; GameSettings.ApplyVolumes(); },
+            () => GameSettings.Percent(GameSettings.MusicVolume));
 
-        StepRow(2, "Efectos", () => GameSettings.Percent(GameSettings.SfxVolume),
-            () => GameSettings.SfxVolume = Mathf.Max(0f, GameSettings.SfxVolume - 0.1f),
-            () => GameSettings.SfxVolume = Mathf.Min(1f, GameSettings.SfxVolume + 0.1f));
+        SliderRow(2, "Efectos", GameSettings.SfxVolume,
+            v => { GameSettings.SfxVolume = v; GameSettings.ApplyVolumes(); },
+            () => GameSettings.Percent(GameSettings.SfxVolume));
 
-        Label("aviso", "El juego aun no tiene sonidos: musica y efectos\nquedan guardados para cuando los haya.",
+        Label("aviso", "Los cambios se aplican al momento.\nLos efectos aun no tienen sonidos: su volumen queda guardado.",
             _content, new Vector2(0f, RowY(4)), new Vector2(_content.sizeDelta.x, 40f),
             12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
     }
@@ -573,6 +581,38 @@ public class MainMenuUI : MonoBehaviour
 
         Button(">", _content, new Vector2(right + 82f, y), new Vector2(30f, 24f),
             () => { next(); value.text = read(); });
+    }
+
+    // Fila con barra deslizante y el valor a la derecha. Cada movimiento llama a
+    // onChange, asi que lo que haga onChange se nota mientras arrastras.
+    private void SliderRow(int index, string label, float initial,
+        System.Action<float> onChange, System.Func<string> read)
+    {
+        float w = _content.sizeDelta.x;
+        float y = RowY(index);
+        float right = w / 2f - 105f;
+
+        Label("l_" + label, label, _content, new Vector2(-w / 2f + 85f, y),
+            new Vector2(170f, 22f), 14, TextAnchor.MiddleLeft, Color.white);
+
+        Text value = Label("v_" + label, read(), _content, new Vector2(right + 80f, y),
+            new Vector2(54f, 24f), 14, TextAnchor.MiddleRight, Color.white);
+
+        Slider slider = NewSlider("s_" + label, _content, new Vector2(right - 24f, y),
+            new Vector2(170f, 24f));
+
+        // Sin notificar: poner el valor inicial no debe contar como un cambio
+        slider.SetValueWithoutNotify(Mathf.Clamp01(initial));
+        slider.onValueChanged.AddListener(v => { onChange(v); value.text = read(); });
+
+        // Mientras arrastras solo se guarda en memoria; a disco, al soltar
+        var trigger = slider.gameObject.AddComponent<UnityEngine.EventSystems.EventTrigger>();
+        var alSoltar = new UnityEngine.EventSystems.EventTrigger.Entry
+        {
+            eventID = UnityEngine.EventSystems.EventTriggerType.PointerUp
+        };
+        alSoltar.callback.AddListener(_ => PlayerPrefs.Save());
+        trigger.triggers.Add(alSoltar);
     }
 
     // Fila con boton de Cambiar
@@ -655,6 +695,66 @@ public class MainMenuUI : MonoBehaviour
         label.resizeTextMaxSize = 15;
 
         return button;
+    }
+
+    // Slider de 0 a 1 con el estilo del menu: carril tenue, relleno del color de
+    // acento y tirador blanco. Montado a mano porque todo el menu se crea en runtime.
+    private Slider NewSlider(string name, Transform parent, Vector2 pos, Vector2 size)
+    {
+        const float handleWidth = 12f;
+        const float trackHeight = 6f;
+
+        RectTransform rt = NewRect(name, parent, size);
+        rt.anchoredPosition = pos;
+
+        // Zona de clic invisible con la altura de la fila entera: el carril solo
+        // mide 6 px y seria muy dificil de acertar
+        AddImage(rt, new Color(0f, 0f, 0f, 0f));
+
+        RectTransform track = NewRect("Carril", rt, Vector2.zero);
+        track.anchorMin = new Vector2(0f, 0.5f);
+        track.anchorMax = new Vector2(1f, 0.5f);
+        track.sizeDelta = new Vector2(0f, trackHeight);
+        AddImage(track, buttonColor).raycastTarget = false;
+
+        // Relleno y tirador van en zonas encogidas medio tirador por cada lado,
+        // para que en 0 y en 100 el tirador no se salga del carril
+        RectTransform fillArea = NewRect("ZonaRelleno", rt, Vector2.zero);
+        fillArea.anchorMin = new Vector2(0f, 0.5f);
+        fillArea.anchorMax = new Vector2(1f, 0.5f);
+        fillArea.sizeDelta = new Vector2(-handleWidth, trackHeight);
+
+        RectTransform fill = NewRect("Relleno", fillArea, Vector2.zero);
+        fill.anchorMin = Vector2.zero;
+        fill.anchorMax = new Vector2(0f, 1f);
+        fill.sizeDelta = new Vector2(handleWidth, 0f);   // llega hasta debajo del tirador
+        AddImage(fill, accentColor).raycastTarget = false;
+
+        RectTransform handleArea = NewRect("ZonaTirador", rt, Vector2.zero);
+        handleArea.anchorMin = Vector2.zero;
+        handleArea.anchorMax = Vector2.one;
+        handleArea.sizeDelta = new Vector2(-handleWidth, 0f);
+
+        RectTransform handle = NewRect("Tirador", handleArea, Vector2.zero);
+        handle.anchorMin = new Vector2(0f, 0.2f);
+        handle.anchorMax = new Vector2(0f, 0.8f);
+        handle.sizeDelta = new Vector2(handleWidth, 0f);
+        Image handleImage = AddImage(handle, Color.white);
+
+        Slider slider = rt.gameObject.AddComponent<Slider>();
+        slider.fillRect = fill;
+        slider.handleRect = handle;
+        slider.targetGraphic = handleImage;
+        slider.direction = Slider.Direction.LeftToRight;
+        slider.minValue = 0f;
+        slider.maxValue = 1f;
+        slider.wholeNumbers = false;
+
+        // Sin navegacion por teclado: si no, las flechas moverian el volumen
+        // mientras el jugador navega por el menu
+        slider.navigation = new Navigation { mode = Navigation.Mode.None };
+
+        return slider;
     }
 
     private InputField Input(string name, string initial, Transform parent, Vector2 pos,
