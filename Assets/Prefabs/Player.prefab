@@ -941,7 +941,7 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 2
+  m_Height: 0.4
   m_Radius: 0.21
   m_SlopeLimit: 45
   m_StepOffset: 0.3
@@ -1242,6 +1242,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25a23dfa6b077444590911ce0ef733e5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   playerCamera: {fileID: 4597197466058931861}
   animator: {fileID: 8706869791166751682}
   pesoSpine: 0.3
@@ -1258,6 +1259,7 @@ MonoBehaviour:
   leanSuavizado: 6
   leanInvertido: 0
   leanPesoHead: 0
+  umbralEnvioPitch: 1.5
 --- !u!114 &4254339531153286620
 MonoBehaviour:
   m_ObjectHideFlags: 0
