@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: b1ef3aa96a1aa7143b85017fe92e3566
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 11500000, guid: 625f186215c104763be7675aa2d941aa, type: 3}
+AssetOrigin:
+  serializedVersion: 1
+  productId: 335052
+  packageName: Arachnid-Alien Head Lite
+  packageVersion: 1.0
+  assetPath: Assets/Stocklancer/ArachnidAlienHead_Lite/Material/HDRP_ArachnidAlienHeadLite.shadergraph
+  uploadId: 792814

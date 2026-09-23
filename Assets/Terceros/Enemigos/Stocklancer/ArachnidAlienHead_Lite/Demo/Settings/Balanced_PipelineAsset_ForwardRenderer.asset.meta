@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 1f71e4acf9ae65b4bab6936d618c1d2b
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 335052
+  packageName: Arachnid-Alien Head Lite
+  packageVersion: 1.0
+  assetPath: Assets/Stocklancer/ArachnidAlienHead_Lite/Demo/Settings/Balanced_PipelineAsset_ForwardRenderer.asset
+  uploadId: 792814
