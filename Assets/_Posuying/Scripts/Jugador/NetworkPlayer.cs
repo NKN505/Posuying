@@ -52,8 +52,13 @@ public class NetworkPlayer : NetworkBehaviour
             if (cam != null)
             {
                 cam.enabled = false;
-                var listener = cam.GetComponent<AudioListener>();
-                if (listener != null) listener.enabled = false;
+                // Solo puede escuchar la camara propia. Se apaga tanto el oyente de
+                // Unity como el de Wwise (AkAudioListener): si el de un remoto quedara
+                // encendido, Wwise mezclaria el sonido desde varias posiciones a la vez.
+                // El de Wwise se busca por nombre para no atar este script a su ensamblado.
+                foreach (var b in cam.GetComponents<Behaviour>())
+                    if (b is AudioListener || b.GetType().Name == "AkAudioListener")
+                        b.enabled = false;
             }
         }
     }
