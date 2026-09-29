@@ -1,0 +1,33 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Windows",
+  "BasePlatform": "Windows",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "3945748993",
+    "Type": "Event",
+    "GUID": "{3777F9A2-E6E7-4571-A290-E8BF2DC6EF2B}",
+    "Language": "SFX",
+    "Hash": "{6E30288E-A05A-6E19-BAA2-698572831141}",
+    "ObjectPath": "Stop_Menu_Music",
+    "ShortName": "Stop_Menu_Music",
+    "Path": "Event/Stop_Menu_Music.bnk",
+    "Events": [
+     {
+      "Id": "3945748993",
+      "Name": "Stop_Menu_Music",
+      "ObjectPath": "\\Events\\Default Work Unit\\Stop_Menu_Music",
+      "GUID": "{3777F9A2-E6E7-4571-A290-E8BF2DC6EF2B}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0"
+     }
+    ]
+   }
+  ],
+  "FileHash": "{86CDCED7-631C-3591-EE48-5C86B4C7ECD9}"
+ }
+}

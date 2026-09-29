@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 /// <summary>
@@ -66,8 +67,54 @@ public abstract class Weapon : MonoBehaviour{
     [SerializeField] private float hipSpread = 2.0f;
     [SerializeField] private float aimSpread = 0.2f;
 
+    [Header("Caida de dano por distancia")]
+    [Tooltip("Hasta esta distancia el arma hace el 100% del dano. Mas alla " +
+             "empieza a caer hasta el alcance maximo (scope).")]
+    [SerializeField] private float effectiveRange = 10.0f;
+
+    [Tooltip("Multiplicador de dano en el alcance maximo. NO conviene ponerlo " +
+             "a 0: un impacto que suena, se ve y no hace nada se lee como un " +
+             "bug. Un 10-15% comunica 'le has dado, pero desde aqui no sirve'.")]
+    [Range(0.0f, 1.0f)]
+    [SerializeField] private float minDamageMultiplier = 0.15f;
+
+    [Tooltip("Forma de la caida entre effectiveRange y scope. X = 0 es el " +
+             "alcance efectivo, X = 1 el alcance maximo. Y = 0 es dano pleno, " +
+             "Y = 1 es dano minimo. Recta = caida progresiva; una curva de " +
+             "acantilado comunica mejor un limite claro al jugador.")]
+    [SerializeField]
+    private AnimationCurve falloffShape = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+
     [Header("Estela")]
     [SerializeField] private BulletTracer tracerPrefab;
+
+    // ---------------------------
+    // ANIMACION DE LOS BRAZOS (fpArms)
+    // ---------------------------
+
+    [Header("Brazos de primera persona")]
+    [Tooltip("Animator del objeto fpArms. Parametros esperados: " +
+             "Shoot (Trigger), Reload (Trigger), Sprinting (Bool).")]
+    [SerializeField] private Animator armsAnimator;
+
+    [Tooltip("Duracion del clip Fp_Pistol_Reloading en SEGUNDOS. " +
+             "48 fotogramas a 24 fps = 2.0 s. Si cambias el clip en " +
+             "Blender, actualiza este numero o la municion entrara " +
+             "antes o despues de lo que se ve.")]
+    [SerializeField] private float reloadDuration = 2.0f;
+
+    [Tooltip("En que punto de la recarga (0-1) entran las balas al " +
+             "cargador. 0.75 = cuando el cargador nuevo ya esta dentro, " +
+             "antes de montar la corredera.")]
+    [Range(0.0f, 1.0f)]
+    [SerializeField] private float reloadAmmoPoint = 0.75f;
+
+    // Hashes cacheados: StringToHash una vez, no en cada llamada.
+    private static readonly int HashShoot = Animator.StringToHash("Shoot");
+    private static readonly int HashReload = Animator.StringToHash("Reload");
+    private static readonly int HashSprinting = Animator.StringToHash("Sprinting");
+
+    private Coroutine reloadRoutine;
 
     [Header("Depuracion")]
     // Dibuja el rayo en la vista Scene (y en Game si activas el boton
@@ -331,6 +378,13 @@ public abstract class Weapon : MonoBehaviour{
         isShooting = false;
     }
 
+    /* La recarga ya NO es instantanea: dura lo que dura la animacion.
+
+    Antes este metodo ponia isReloading a true, rellenaba el cargador y lo
+    volvia a poner a false en el mismo frame. Con un clip de 2 segundos eso
+    significaria recargar y poder disparar al instante mientras las manos
+    siguen su teatro. */
+
     public void Reload()
     {
         if (isReloading || isSwitchingWeapon)
@@ -348,38 +402,50 @@ public abstract class Weapon : MonoBehaviour{
             return;
         }
 
-        if (isEmpty)
+        if (!isActiveAndEnabled)
         {
-            EmptyReload();
+            // Sin objeto activo no se puede lanzar corrutina: recarga seca.
+            FillMagazine();
+            return;
         }
-        else
-        {
-            TacticalReload();
-        }
+
+        reloadRoutine = StartCoroutine(ReloadRoutine());
     }
 
-    private void TacticalReload()
+    private IEnumerator ReloadRoutine()
     {
         isReloading = true;
 
-        Debug.Log("Recarga táctica: aún queda munición en el cargador");
+        Debug.Log(isEmpty
+            ? "Recarga desde vacío: cargador vacío"
+            : "Recarga táctica: aún queda munición en el cargador");
 
-        //Animaciones. referencias al animator
+        PlayReloadAnimation();
+
+        // Las balas entran a mitad de animacion, no al principio: cuando el
+        // cargador nuevo ya esta dentro segun lo que ve el jugador.
+        float ammoDelay = reloadDuration * reloadAmmoPoint;
+
+        yield return new WaitForSeconds(ammoDelay);
 
         FillMagazine();
+
+        // El resto del clip: montar la corredera y volver a la pose.
+        yield return new WaitForSeconds(reloadDuration - ammoDelay);
 
         isReloading = false;
+        reloadRoutine = null;
     }
 
-    private void EmptyReload()
+    // Corta la recarga a medias (cambio de arma, muerte, guardar el arma).
+    // Sin esto el arma se quedaria con isReloading pegado a true.
+    protected void CancelReload()
     {
-        isReloading = true;
-
-        Debug.Log("Recarga desde vacío: cargador vacío");
-
-        // Animator SetTrigger
-
-        FillMagazine();
+        if (reloadRoutine != null)
+        {
+            StopCoroutine(reloadRoutine);
+            reloadRoutine = null;
+        }
 
         isReloading = false;
     }
@@ -440,7 +506,16 @@ public abstract class Weapon : MonoBehaviour{
 
     protected bool ShootRay(float spread, out RaycastHit hit)
     {
+        return ShootRay(spread, out hit, out _);
+    }
+
+    // Misma llamada, pero devolviendo tambien la direccion del disparo: la
+    // necesita ApplyDamage para que el ragdoll tuerza el cuerpo hacia donde
+    // iba la bala.
+    protected bool ShootRay(float spread, out RaycastHit hit, out Vector3 direction)
+    {
         hit = default;
+        direction = Vector3.forward;
 
         if (playerCamera == null)
         {
@@ -451,7 +526,7 @@ public abstract class Weapon : MonoBehaviour{
         Transform cam = playerCamera.transform;
 
         Vector3 origin = cam.position;
-        Vector3 direction = ApplySpread(cam.forward, cam.rotation, spread);
+        direction = ApplySpread(cam.forward, cam.rotation, spread);
 
         bool impact = Physics.Raycast(
             origin,
@@ -509,6 +584,108 @@ public abstract class Weapon : MonoBehaviour{
         return cameraRotation * deviation * Vector3.forward;
     }
 
+    /* Multiplicador de dano segun la distancia del impacto.
+
+    Hasta effectiveRange el dano es integro. A partir de ahi cae segun la
+    curva hasta minDamageMultiplier en el alcance maximo. Un arma sin caida
+    solo tiene que dejar effectiveRange >= scope. */
+
+    protected float GetDamageMultiplier(float distance)
+    {
+        if (distance <= effectiveRange || scope <= effectiveRange)
+        {
+            return 1.0f;
+        }
+
+        // 0 en el alcance efectivo, 1 en el alcance maximo.
+        float t = Mathf.InverseLerp(effectiveRange, scope, distance);
+
+        float shaped = Mathf.Clamp01(falloffShape.Evaluate(t));
+
+        return Mathf.Lerp(1.0f, minDamageMultiplier, shaped);
+    }
+
+    /* Aplica el dano a lo que haya impactado.
+
+    Se usa GetComponentInParent porque el collider tocado suele ser una
+    hitbox de un hueso, no la raiz del enemigo.
+
+    RequestDamage viene de Character: resuelve el dano en el SERVIDOR y lleva
+    el punto y la direccion del impacto, que es lo que usa el ragdoll para
+    torcer el cuerpo por donde entro la bala. Devuelve el dano aplicado por
+    si quien llama quiere acumularlo (escopeta) o mostrarlo. */
+
+    protected float ApplyDamage(RaycastHit hit, Vector3 direction)
+    {
+        EnemyBehaviour enemy = hit.collider.GetComponentInParent<EnemyBehaviour>();
+
+        if (enemy == null)
+        {
+            return 0.0f;
+        }
+
+        float finalDamage = damage * GetDamageMultiplier(hit.distance);
+
+        enemy.RequestDamage(finalDamage, hit.point, direction);
+
+        return finalDamage;
+    }
+
+    //----------------------------------------------
+    // ANIMACION DE LOS BRAZOS
+    //
+    // Tres llamadas y nada mas. Las armas hijas no tocan el Animator
+    // directamente: si manana el controller cambia de parametros, se
+    // arregla aqui y no en cuatro sitios.
+    //----------------------------------------------
+
+    protected void PlayShootAnimation()
+    {
+        if (armsAnimator == null || !armsAnimator.isActiveAndEnabled)
+        {
+            return;
+        }
+
+        armsAnimator.SetTrigger(HashShoot);
+    }
+
+    protected void PlayReloadAnimation()
+    {
+        if (armsAnimator == null || !armsAnimator.isActiveAndEnabled)
+        {
+            return;
+        }
+
+        armsAnimator.SetTrigger(HashReload);
+    }
+
+    /* Lo llama PlayerController cuando el jugador empieza o deja de correr.
+
+    Es un Bool y no un Trigger a proposito: el sprint es un ESTADO que dura,
+    no un evento puntual. Con un trigger habria que acordarse de apagarlo. */
+
+    public void SetSprinting(bool sprinting)
+    {
+        // Correr no debe interrumpir una recarga ya empezada.
+        if (armsAnimator == null || !armsAnimator.isActiveAndEnabled)
+        {
+            return;
+        }
+
+        armsAnimator.SetBool(HashSprinting, sprinting && !isReloading);
+    }
+
+    public Animator GetArmsAnimator()
+    {
+        return armsAnimator;
+    }
+
+    public float GetReloadDuration()
+    {
+        return reloadDuration;
+    }
+
+
     // Estela visual: del CANON al punto de impacto.
     private void SpawnTracer(Vector3 endPoint)
     {
@@ -562,7 +739,8 @@ public abstract class Weapon : MonoBehaviour{
     // esquema (por ejemplo, apuntado con conmutador en vez de mantenido).
     protected virtual void ReadAimInput()
     {
-        if (!canAim)
+        // Con una ventana de interfaz abierta los clics son para la UI.
+        if (!canAim || UIState.BlocksGameplay)
         {
             isAiming = false;
             return;
@@ -666,5 +844,17 @@ public abstract class Weapon : MonoBehaviour{
 
         isAiming = false;
         ResetZoom();
+
+        // Si el arma se guarda a mitad de disparo o de recarga, que no se
+        // queden los flags colgados: al volver a sacarla no dispararia.
+        CancelInvoke(nameof(StopShooting));
+        isShooting = false;
+
+        CancelReload();
+
+        if (armsAnimator != null && armsAnimator.isActiveAndEnabled)
+        {
+            armsAnimator.SetBool(HashSprinting, false);
+        }
     }
 }

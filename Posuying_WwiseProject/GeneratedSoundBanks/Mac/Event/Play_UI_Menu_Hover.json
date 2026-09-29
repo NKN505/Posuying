@@ -1,0 +1,48 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Mac",
+  "BasePlatform": "Mac",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "2880217405",
+    "Type": "Event",
+    "GUID": "{90D50ACF-5C5B-415C-A9AF-E0989769268D}",
+    "Language": "SFX",
+    "Hash": "{21454D18-E0C7-69BB-B430-750BBA0656B5}",
+    "ObjectPath": "Play_UI_Menu_Hover",
+    "ShortName": "Play_UI_Menu_Hover",
+    "Path": "Event/Play_UI_Menu_Hover.bnk",
+    "Media": [
+     {
+      "Id": "430451479",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Mouse_HOVER.wav",
+      "Path": "Media/430451479.wem",
+      "CachePath": "DC/{DCC15BA9-6636-FBEB-EB12-FE6E80EBDA3D}.wem"
+     }
+    ],
+    "Events": [
+     {
+      "Id": "2880217405",
+      "Name": "Play_UI_Menu_Hover",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_UI_Menu_Hover",
+      "GUID": "{90D50ACF-5C5B-415C-A9AF-E0989769268D}",
+      "DurationType": "OneShot",
+      "DurationMin": "4.2",
+      "DurationMax": "4.2",
+      "MediaRefs": [
+       {
+        "Id": "430451479"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "FileHash": "{9D10BFE6-7258-AE26-090D-35C78AA20AF1}"
+ }
+}

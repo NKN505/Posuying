@@ -1,0 +1,48 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Windows",
+  "BasePlatform": "Windows",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "3531686095",
+    "Type": "Event",
+    "GUID": "{7C9ACBA6-B820-477B-8AE8-84EC2FC12F49}",
+    "Language": "SFX",
+    "Hash": "{79E0DB34-9B10-EC1B-139B-770DDCE074FF}",
+    "ObjectPath": "Play_UI_Menu_Start",
+    "ShortName": "Play_UI_Menu_Start",
+    "Path": "Event/Play_UI_Menu_Start.bnk",
+    "Media": [
+     {
+      "Id": "359301465",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Mouse_Menu_Start_Game.wav",
+      "Path": "Media/359301465.wem",
+      "CachePath": "19/{1947DF78-780E-F6BB-7FA1-9507ECE805EB}.wem"
+     }
+    ],
+    "Events": [
+     {
+      "Id": "3531686095",
+      "Name": "Play_UI_Menu_Start",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_UI_Menu_Start",
+      "GUID": "{7C9ACBA6-B820-477B-8AE8-84EC2FC12F49}",
+      "DurationType": "OneShot",
+      "DurationMin": "2",
+      "DurationMax": "2",
+      "MediaRefs": [
+       {
+        "Id": "359301465"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "FileHash": "{F7CF8881-F626-F17F-74CB-8F2965C740B2}"
+ }
+}

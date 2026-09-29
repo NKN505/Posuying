@@ -1,6 +1,116 @@
 <?xml version="1.0" encoding="utf-8"?>
 <WwiseDocument Type="WorkUnit" ID="{E88C4FD5-09C9-47BC-B035-FE67159DF0D6}" SchemaVersion="133">
 	<Events>
-		<WorkUnit Name="Default Work Unit" ID="{E88C4FD5-09C9-47BC-B035-FE67159DF0D6}" PersistMode="Standalone"/>
+		<WorkUnit Name="Default Work Unit" ID="{E88C4FD5-09C9-47BC-B035-FE67159DF0D6}" PersistMode="Standalone">
+			<ChildrenList>
+				<Event Name="Play_Player_Jog" ID="{15297B58-6E5C-4513-95CA-306CD4023F0F}">
+					<ChildrenList>
+						<Action Name="" ID="{C9D50953-B924-48FE-815E-18453AC0F45A}" ShortID="339738">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SC_Player_Jog" ID="{FF097914-0D0D-4E0D-94FA-52452566560F}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_Player_Sprint" ID="{C627CCF0-4BD1-4DD4-8B66-5B8AF903E363}">
+					<ChildrenList>
+						<Action Name="" ID="{C0CB3B3C-40D6-4438-8940-9F8FFB09F9C9}" ShortID="29576980">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SC_Player_Sprint" ID="{67F1E11B-8989-41B6-974D-ED544BFE4279}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_Ambience_City" ID="{F136EEEB-CE59-41F3-9DA2-ABAE5979E6D3}">
+					<ChildrenList>
+						<Action Name="" ID="{5772D63B-364D-4885-ACD0-78E558A22EB4}" ShortID="222493047">
+							<PropertyList>
+								<Property Name="FadeInCurve" Type="int16" Value="5"/>
+								<Property Name="FadeTime" Type="Real64" Value="4">
+									<ModifierList>
+										<ModifierInfo>
+											<Modifier Name="" ID="{5E107043-78C9-4BBB-8D57-8E83219329DD}"/>
+										</ModifierInfo>
+									</ModifierList>
+								</Property>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SFX_Ambience_City" ID="{57A1868F-9842-4AB2-B7D8-F88A40A405E4}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_Menu_Music" ID="{4EEE4DF1-8B75-40AA-B998-058BD1CD5E5B}">
+					<ChildrenList>
+						<Action Name="" ID="{441E0EFA-45CF-4A81-957F-8D5075218F8F}" ShortID="610828676">
+							<PropertyList>
+								<Property Name="FadeInCurve" Type="int16" Value="5"/>
+								<Property Name="FadeTime" Type="Real64" Value="1"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SFX_Menu_Music" ID="{6BA78110-74F0-4821-B991-23F284F518E3}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Stop_Menu_Music" ID="{3777F9A2-E6E7-4571-A290-E8BF2DC6EF2B}">
+					<ChildrenList>
+						<Action Name="" ID="{A28FC41D-FB2D-492B-B3EB-003E6892D8BB}" ShortID="268737983">
+							<PropertyList>
+								<Property Name="ActionType" Type="int16" Value="2"/>
+								<Property Name="FadeOutCurve" Type="int16" Value="5"/>
+								<Property Name="FadeTime" Type="Real64" Value="0.5"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SFX_Menu_Music" ID="{6BA78110-74F0-4821-B991-23F284F518E3}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_UI_Menu_Hover" ID="{90D50ACF-5C5B-415C-A9AF-E0989769268D}">
+					<ChildrenList>
+						<Action Name="" ID="{4474E4A2-CACA-4797-B742-D9A30E37025D}" ShortID="871979732">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SFX_UI_Menu_Hover" ID="{A3ECE8FD-6089-4CDA-95EC-00BACFFC8520}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_UI_Menu_Click" ID="{34CEE7C4-EEA0-4D5C-997E-0CF7259B362F}">
+					<ChildrenList>
+						<Action Name="" ID="{BDB00E38-4DCD-4727-BE60-3B5A31BA7346}" ShortID="570603410">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SFX_UI_Menu_Click" ID="{A03685B0-BE7A-440D-AB9A-F22494C6A168}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_UI_Menu_Start" ID="{7C9ACBA6-B820-477B-8AE8-84EC2FC12F49}">
+					<ChildrenList>
+						<Action Name="" ID="{96256083-A711-405D-83D8-00AAF0B182D4}" ShortID="82850563">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SFX_UI_Menu_Start" ID="{5235DC15-F7A9-4091-A27F-099CD236D84C}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+			</ChildrenList>
+		</WorkUnit>
 	</Events>
 </WwiseDocument>

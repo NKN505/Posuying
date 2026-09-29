@@ -25,6 +25,11 @@ public class NetworkPlayer : NetworkBehaviour
         var inventory = GetComponent<Inventory>();
         var cam = GetComponentInChildren<Camera>(true);
 
+        // Wwise solo reproduce sonidos sobre objetos registrados: sin esto los
+        // pasos (que se lanzan desde el cuerpo del jugador) no sonarian.
+        if (GetComponent<AkGameObj>() == null)
+            gameObject.AddComponent<AkGameObj>();
+
         if (IsOwner)
         {
             // Este es MI personaje
@@ -32,6 +37,11 @@ public class NetworkPlayer : NetworkBehaviour
             LocalInventory = inventory;
 
             gameObject.name = "Player (LOCAL)";
+
+            // El oido de Wwise va en la camara de ESTE jugador. Solo en el
+            // local: si los remotos tambien lo tuvieran, se oiria desde todos.
+            if (cam != null && cam.GetComponent<AkAudioListener>() == null)
+                cam.gameObject.AddComponent<AkAudioListener>();
 
             // El cursor lo gestiona NetworkUI segun este abierto el menu de red
 
