@@ -23,8 +23,8 @@
         </Property>
         <Property Name="ExternalSourcesOutputPath" Type="string">
           <ValueList>
-            <Value Platform="Windows">GeneratedSoundBanks\Windows\</Value>
-            <Value Platform="Mac">GeneratedSoundBanks\Mac\</Value>
+            <Value Platform="Windows">..\Assets\GeneratedSoundBanks\Windows\</Value>
+            <Value Platform="Mac">..\Assets\GeneratedSoundBanks\Mac\</Value>
           </ValueList>
         </Property>
         <Property Name="SoundBankGenerateEstimatedDuration" Type="bool" Value="True" />
@@ -35,11 +35,11 @@
         <Property Name="SoundBankGeneratePrintGUID" Type="bool" Value="True" />
         <Property Name="SoundBankGeneratePrintPath" Type="bool" Value="True" />
         <Property Name="AutoSoundBankEnabled" Type="bool" Value="True" />
-        <Property Name="SoundBankHeaderFilePath" Type="string" Value="..\Assets\WwiseData\Bank\" />
+        <Property Name="SoundBankHeaderFilePath" Type="string" Value="..\Assets\StreamingAssets\Audio\GeneratedSoundBanks\" />
         <Property Name="SoundBankPaths" Type="string">
           <ValueList>
-            <Value Platform="Windows">..\Assets\WwiseData\Bank\Windows\</Value>
-            <Value Platform="Mac">..\Assets\WwiseData\Bank\Mac\</Value>
+            <Value Platform="Windows">GeneratedSoundBanks\Windows\</Value>
+            <Value Platform="Mac">GeneratedSoundBanks\Mac\</Value>
           </ValueList>
         </Property>
         <Property Name="SoundBankPostGenerateCustomCmdDescription" Type="string">
@@ -873,8 +873,7 @@
             </Property>
             <Property Name="ExternalSourcesOutputPath" Type="string">
               <ValueList>
-                <Value>
-                </Value>
+                <Value>..\Assets\GeneratedSoundBanks\</Value>
               </ValueList>
             </Property>
             <Property Name="FilterBehavior" Type="int16">
@@ -1016,7 +1015,7 @@
             </Property>
             <Property Name="SoundBankPaths" Type="string">
               <ValueList>
-                <Value>..\Assets\WwiseData\Bank\</Value>
+                <Value>GeneratedSoundBanks\</Value>
               </ValueList>
             </Property>
             <Property Name="SoundBankPostGenerateCustomCmdDescription" Type="string">
@@ -6846,8 +6845,7 @@
             </Property>
             <Property Name="ExternalSourcesOutputPath" Type="string">
               <ValueList>
-                <Value>
-                </Value>
+                <Value>..\Assets\GeneratedSoundBanks\</Value>
               </ValueList>
             </Property>
             <Property Name="ExternalSourcesOverrideInputPath" Type="bool">
@@ -6978,7 +6976,7 @@
             </Property>
             <Property Name="SoundBankPaths" Type="string">
               <ValueList>
-                <Value>..\Assets\WwiseData\Bank\</Value>
+                <Value>GeneratedSoundBanks\</Value>
               </ValueList>
             </Property>
             <Property Name="SoundBankPostGenerateCustomCmdDescription" Type="string">

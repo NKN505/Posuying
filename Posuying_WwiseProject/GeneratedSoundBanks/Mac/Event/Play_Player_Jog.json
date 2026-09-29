@@ -1,0 +1,145 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Mac",
+  "BasePlatform": "Mac",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "1965955460",
+    "Type": "Event",
+    "GUID": "{15297B58-6E5C-4513-95CA-306CD4023F0F}",
+    "Language": "SFX",
+    "Hash": "{AA952EF3-FF2B-B85D-2EB1-B1860197A300}",
+    "ObjectPath": "Play_Player_Jog",
+    "ShortName": "Play_Player_Jog",
+    "Path": "Event/Play_Player_Jog.bnk",
+    "Media": [
+     {
+      "Id": "35036812",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Trote3.wav",
+      "Path": "Media/35036812.wem",
+      "CachePath": "40/{40845630-482A-BF57-5D38-DFED2A77C720}.wem"
+     },
+     {
+      "Id": "101796764",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Trote2.wav",
+      "Path": "Media/101796764.wem",
+      "CachePath": "E4/{E494B99A-0315-0A07-9B7A-65EB7306BC45}.wem"
+     },
+     {
+      "Id": "355742726",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Trote6.wav",
+      "Path": "Media/355742726.wem",
+      "CachePath": "DD/{DDCCD1D5-6451-B52B-7D57-E36E33179632}.wem"
+     },
+     {
+      "Id": "435709707",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Trote4.wav",
+      "Path": "Media/435709707.wem",
+      "CachePath": "42/{4232D646-836B-D4B6-252E-2AB8C59218B1}.wem"
+     },
+     {
+      "Id": "463570140",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Trote9.wav",
+      "Path": "Media/463570140.wem",
+      "CachePath": "DB/{DB279019-4087-8005-9B11-0EB724007E76}.wem"
+     },
+     {
+      "Id": "619708094",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Trote8.wav",
+      "Path": "Media/619708094.wem",
+      "CachePath": "02/{024EB7EF-2EB5-BDB4-DDE2-BCB5596ECE72}.wem"
+     },
+     {
+      "Id": "711383431",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Trote7.wav",
+      "Path": "Media/711383431.wem",
+      "CachePath": "CD/{CD2F952B-A476-C2A6-2872-D4B47C86A8EE}.wem"
+     },
+     {
+      "Id": "809240413",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Trote1.wav",
+      "Path": "Media/809240413.wem",
+      "CachePath": "13/{13EE784B-8AFD-0AE6-535C-5BC6700B8F66}.wem"
+     },
+     {
+      "Id": "949757251",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Trote5.wav",
+      "Path": "Media/949757251.wem",
+      "CachePath": "D0/{D0A36A2F-1996-5220-F94C-FF2226499563}.wem"
+     }
+    ],
+    "Events": [
+     {
+      "Id": "1965955460",
+      "Name": "Play_Player_Jog",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Player_Jog",
+      "GUID": "{15297B58-6E5C-4513-95CA-306CD4023F0F}",
+      "MaxAttenuation": "20",
+      "DurationType": "OneShot",
+      "DurationMin": "0.37498868",
+      "DurationMax": "12.576735",
+      "MediaRefs": [
+       {
+        "Id": "35036812"
+       },
+       {
+        "Id": "101796764"
+       },
+       {
+        "Id": "355742726"
+       },
+       {
+        "Id": "435709707"
+       },
+       {
+        "Id": "463570140"
+       },
+       {
+        "Id": "619708094"
+       },
+       {
+        "Id": "711383431"
+       },
+       {
+        "Id": "809240413"
+       },
+       {
+        "Id": "949757251"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "FileHash": "{0DAA653D-5E8B-2453-C221-FA8D13E37A65}"
+ }
+}

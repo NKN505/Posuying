@@ -1,0 +1,3 @@
+Event	ID	Name			Wwise Object Path	Notes
+	3945748993	Stop_Menu_Music			\Default Work Unit\Stop_Menu_Music	
+

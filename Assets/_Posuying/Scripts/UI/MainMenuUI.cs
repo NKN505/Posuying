@@ -31,6 +31,32 @@ public class MainMenuUI : MonoBehaviour
     public Color accentColor = new Color(0.55f, 0.12f, 0.12f, 1f);
     public Color buttonColor = new Color(1f, 1f, 1f, 0.14f);
 
+    [Header("Sonido (Wwise)")]
+    [Tooltip("Play_Menu_Music")]
+    public AK.Wwise.Event menuMusicPlay;
+    [Tooltip("Stop_Menu_Music")]
+    public AK.Wwise.Event menuMusicStop;
+    [Tooltip("Play_Ambience_City: suena mientras estas en partida")]
+    public AK.Wwise.Event ambiencePlay;
+    [Tooltip("Milisegundos de fundido al cortar el ambiente al volver al menu")]
+    public int ambienceFadeOutMs = 1500;
+    [Tooltip("Play_UI_Menu_Hover")]
+    public AK.Wwise.Event uiHover;
+    [Tooltip("Play_UI_Menu_Click")]
+    public AK.Wwise.Event uiClick;
+    [Tooltip("Play_UI_Menu_Start: al crear o unirse a una partida")]
+    public AK.Wwise.Event uiStart;
+
+    // Un emisor por tipo de sonido: asi el volumen de Musica de Opciones solo
+    // afecta a la musica, y parar el ambiente no corta nada mas.
+    private GameObject _musicEmitter;
+    private GameObject _ambienceEmitter;
+    private GameObject _uiEmitter;
+    private bool? _wasInGame = null;      // null = aun no se ha decidido nada
+    private float _appliedMaster = -1f;
+    private float _appliedMusic = -1f;
+    private MenuCamera _menuCamera;
+
     // Para que el menu de Escape pueda abrir las opciones estando en partida
     public static MainMenuUI Instance { get; private set; }
     public bool OptionsOverlayOpen { get; private set; }
@@ -64,6 +90,8 @@ public class MainMenuUI : MonoBehaviour
 
     void Update()
     {
+        UpdateVolumes();
+
         if (!_built)
         {
             TryBuild();
@@ -80,6 +108,8 @@ public class MainMenuUI : MonoBehaviour
 
         // Se ve fuera de partida, o dentro si han abierto las opciones desde Escape
         bool show = !inGame || OptionsOverlayOpen;
+
+        UpdateMenuAudio(inGame);
 
         if (_root.gameObject.activeSelf != show)
             _root.gameObject.SetActive(show);
@@ -288,6 +318,7 @@ public class MainMenuUI : MonoBehaviour
         Button("CREAR PARTIDA", _content, new Vector2(0f, y),
             new Vector2(240f, 42f), () =>
             {
+                PostUI(uiStart);
                 onlineSession.CreateOnlineGame(new OnlineSession.GameConfig
                 {
                     name = _nameInput.text,
@@ -295,7 +326,7 @@ public class MainMenuUI : MonoBehaviour
                     isPrivate = _isPrivate,
                     password = _passwordInput.text
                 });
-            }, accentColor);
+            }, accentColor, false);
     }
 
     private string PrivacyText()
@@ -347,7 +378,7 @@ public class MainMenuUI : MonoBehaviour
             Button(text, _content, new Vector2(0f, y), new Vector2(w, 36f), () =>
             {
                 _selectedSessionId = id;
-                if (!joinable) return;
+                if (!joinable) { PlayClick(); return; }
 
                 string typed = _joinPasswordInput != null ? _joinPasswordInput.text : "";
 
@@ -356,11 +387,13 @@ public class MainMenuUI : MonoBehaviour
                 if (needsPassword && string.IsNullOrWhiteSpace(typed))
                 {
                     _status.text = "Esa partida pide contrasena: escribela abajo y vuelve a pulsar";
+                    PlayClick();
                     return;
                 }
 
+                PostUI(uiStart);
                 onlineSession.JoinSessionById(id, typed);
-            }, joinable ? buttonColor : new Color(1f, 0.3f, 0.3f, 0.15f));
+            }, joinable ? buttonColor : new Color(1f, 0.3f, 0.3f, 0.15f), false);
 
             y -= 42f;
         }
@@ -390,7 +423,8 @@ public class MainMenuUI : MonoBehaviour
         _codeInput = Input("codigo", "", _content, new Vector2(0f, 20f), new Vector2(260f, 40f), false);
 
         Button("UNIRSE", _content, new Vector2(0f, -40f), new Vector2(200f, 40f),
-            () => onlineSession.JoinOnlineGame(_codeInput.text), accentColor);
+            () => { PostUI(uiStart); onlineSession.JoinOnlineGame(_codeInput.text); },
+            accentColor, false);
 
         Label("l6", "Para partidas privadas que te hayan pasado por chat", _content,
             new Vector2(0f, -90f), new Vector2(w, 22f), 12, TextAnchor.MiddleCenter,
@@ -678,7 +712,7 @@ public class MainMenuUI : MonoBehaviour
     }
 
     private Button Button(string caption, Transform parent, Vector2 pos, Vector2 size,
-        UnityEngine.Events.UnityAction onClick, Color? color = null)
+        UnityEngine.Events.UnityAction onClick, Color? color = null, bool playClick = true)
     {
         RectTransform rt = NewRect("Btn_" + caption, parent, size);
         rt.anchoredPosition = pos;
@@ -687,6 +721,12 @@ public class MainMenuUI : MonoBehaviour
         Button button = rt.gameObject.AddComponent<Button>();
         button.targetGraphic = bg;
         button.onClick.AddListener(onClick);
+
+        // Sonidos del boton. Los de empezar partida ponen playClick = false
+        // porque ya lanzan su propio sonido (uiStart).
+        if (playClick)
+            button.onClick.AddListener(PlayClick);
+        rt.gameObject.AddComponent<UIHoverSound>().onEnter = PlayHover;
 
         Text label = Label("Texto", caption, rt, Vector2.zero, size, 15,
             TextAnchor.MiddleCenter, Color.white);
@@ -774,5 +814,93 @@ public class MainMenuUI : MonoBehaviour
         if (isPassword) field.contentType = InputField.ContentType.Password;
 
         return field;
+    }
+    // ---------- Sonido (Wwise) ----------
+
+    // Wwise solo reproduce sobre objetos registrados (con AkGameObj). Se crean
+    // aqui como hijos del menu, que vive toda la partida.
+    private GameObject Emitter(ref GameObject field, string name)
+    {
+        if (field == null)
+        {
+            field = new GameObject(name);
+            field.transform.SetParent(transform, false);
+            field.AddComponent<AkGameObj>();
+        }
+        return field;
+    }
+
+    private void PostUI(AK.Wwise.Event evt)
+    {
+        if (evt != null && evt.IsValid())
+            evt.Post(Emitter(ref _uiEmitter, "Audio_UI"));
+    }
+
+    private void PlayClick() { PostUI(uiClick); }
+    private void PlayHover() { PostUI(uiHover); }
+
+    // Musica del menu y ambiente de partida. Solo actua en el CAMBIO
+    // menu <-> partida, no cada frame. Abrir las Opciones con Escape en mitad
+    // de la partida no cuenta como volver al menu.
+    private void UpdateMenuAudio(bool inGame)
+    {
+        if (_wasInGame == inGame) return;
+        _wasInGame = inGame;
+
+        GameObject music = Emitter(ref _musicEmitter, "Audio_Musica");
+        GameObject ambience = Emitter(ref _ambienceEmitter, "Audio_Ambiente");
+
+        if (inGame)
+        {
+            if (menuMusicStop != null && menuMusicStop.IsValid()) menuMusicStop.Post(music);
+            if (ambiencePlay != null && ambiencePlay.IsValid()) ambiencePlay.Post(ambience);
+        }
+        else
+        {
+            if (ambiencePlay != null && ambiencePlay.IsValid()) ambiencePlay.Stop(ambience, ambienceFadeOutMs);
+            if (menuMusicPlay != null && menuMusicPlay.IsValid()) menuMusicPlay.Post(music);
+        }
+    }
+
+    // Los sliders de Opciones movian el AudioListener de Unity, que Wwise no
+    // escucha. Aqui se trasladan a Wwise: Maestro = salida general, Musica = el
+    // emisor de la musica del menu (que se oye por la camara del menu).
+    private void UpdateVolumes()
+    {
+        if (!AkUnitySoundEngine.IsInitialized()) return;
+
+        float master = GameSettings.MasterVolume;
+        if (!Mathf.Approximately(master, _appliedMaster))
+        {
+            AkUnitySoundEngine.SetOutputVolume(0, master);
+            _appliedMaster = master;
+        }
+
+        if (_menuCamera == null) _menuCamera = FindFirstObjectByType<MenuCamera>();
+        if (_menuCamera == null) return;
+
+        float music = GameSettings.MusicVolume;
+        if (!Mathf.Approximately(music, _appliedMusic))
+        {
+            GameObject emitter = Emitter(ref _musicEmitter, "Audio_Musica");
+            AkUnitySoundEngine.SetGameObjectOutputBusVolume(
+                AkUnitySoundEngine.GetAkGameObjectID(emitter),
+                AkUnitySoundEngine.GetAkGameObjectID(_menuCamera.gameObject),
+                music);
+            _appliedMusic = music;
+        }
+    }
+}
+
+// Sonido al pasar el raton por encima de un boton. Se usa esto y no un
+// EventTrigger porque el EventTrigger se queda con TODOS los eventos del raton
+// (arrastre, rueda) y romperia el scroll de las listas.
+public class UIHoverSound : MonoBehaviour, UnityEngine.EventSystems.IPointerEnterHandler
+{
+    public System.Action onEnter;
+
+    public void OnPointerEnter(UnityEngine.EventSystems.PointerEventData eventData)
+    {
+        onEnter?.Invoke();
     }
 }
