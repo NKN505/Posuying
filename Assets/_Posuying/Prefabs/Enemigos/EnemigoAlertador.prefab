@@ -286,6 +286,7 @@ GameObject:
   - component: {fileID: 3526035164809268327}
   - component: {fileID: 635685871410088598}
   - component: {fileID: 4538132256913225205}
+  - component: {fileID: 4148529044240966528}
   m_Layer: 0
   m_Name: EnemigoAlertador
   m_TagString: Untagged
@@ -526,6 +527,22 @@ MonoBehaviour:
   minAnimSpeed: 0.5
   maxAnimSpeed: 2
   crossFade: 0.15
+--- !u!114 &4148529044240966528
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4789298370943963013}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46167f529d0da75458d037dd3d0da462, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  probabilidadMunicion: 0.6
+  probabilidadBotiquin: 0.2
+  soloUnObjeto: 1
 --- !u!1001 &2038280776586625746
 PrefabInstance:
   m_ObjectHideFlags: 0

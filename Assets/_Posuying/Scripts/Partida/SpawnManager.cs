@@ -21,20 +21,36 @@ public class SpawnManager : MonoBehaviour
             spawnPoints = new List<SpawnPoint>(FindObjectsByType<SpawnPoint>(FindObjectsSortMode.None));
     }
 
+    private readonly List<SpawnPoint> _candidatos = new List<SpawnPoint>();
+
     public Transform GetSpawnPoint()
     {
         if (spawnPoints == null || spawnPoints.Count == 0)
             return null;
 
+        // Solo los puntos del tercio al que ha llegado el equipo. Si ese tercio
+        // no tiene puntos, los del tercio anterior mas cercano; y si no hay
+        // ninguno marcado, todos (escenas antiguas como TestMap).
+        int tercio = ProgresoTercios.Instance != null ? ProgresoTercios.Instance.TercioAlcanzado : 0;
+        _candidatos.Clear();
+        for (int t = tercio; t >= 1 && _candidatos.Count == 0; t--)
+            foreach (var sp in spawnPoints)
+                if (sp != null && sp.tercio == t) _candidatos.Add(sp);
+        if (_candidatos.Count == 0)
+            foreach (var sp in spawnPoints)
+                if (sp != null) _candidatos.Add(sp);
+        if (_candidatos.Count == 0)
+            return null;
+
         if (!chooseSafest)
-            return spawnPoints[Random.Range(0, spawnPoints.Count)].transform;
+            return _candidatos[Random.Range(0, _candidatos.Count)].transform;
 
         // Elegir el punto cuyo enemigo mas cercano este lo mas lejos posible
         var enemies = FindObjectsByType<EnemyBehaviour>(FindObjectsSortMode.None);
-        Transform best = spawnPoints[0].transform;
+        Transform best = _candidatos[0].transform;
         float bestDistance = -1f;
 
-        foreach (var sp in spawnPoints)
+        foreach (var sp in _candidatos)
         {
             if (sp == null) continue;
 

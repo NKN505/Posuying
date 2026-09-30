@@ -147,6 +147,10 @@ public class PlayerDownedState : NetworkBehaviour
             netOut.Value = true;
             netBleed.Value = 0f;
 
+            // Lo que llevaba se queda en el suelo para los que siguen en pie
+            var pertenencias = GetComponent<Pertenencias>();
+            if (pertenencias != null) pertenencias.SoltarEnElSuelo(false);
+
             // Esto si es una muerte de verdad: no quedan vidas y de aqui no se
             // vuelve hasta que se reinicie la partida. El cuerpo cae con ragdoll
             // y se queda en el sitio.
@@ -169,6 +173,11 @@ public class PlayerDownedState : NetworkBehaviour
 
     private void RespawnFromLife()
     {
+        // Antes de mover al jugador: la mochila se queda donde cayo, y el
+        // reaparece con el equipo basico en el tercio que haya alcanzado el equipo.
+        var pertenencias = GetComponent<Pertenencias>();
+        if (pertenencias != null) pertenencias.SoltarEnElSuelo(true);
+
         netDowned.Value = false;
         netOut.Value = false;
         netBleed.Value = 0f;
@@ -232,6 +241,10 @@ public class PlayerDownedState : NetworkBehaviour
 
         var controller = GetComponent<PlayerController>();
         if (controller != null) controller.RespawnNow();
+
+        // Municion de salida para todos, tambien para quien quedo eliminado sin nada
+        var pertenencias = GetComponent<Pertenencias>();
+        if (pertenencias != null) pertenencias.RestablecerEquipo();
     }
 
     // ---------- Entrada del jugador ----------

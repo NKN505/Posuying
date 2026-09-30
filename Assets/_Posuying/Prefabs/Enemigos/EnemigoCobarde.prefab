@@ -287,6 +287,7 @@ GameObject:
   - component: {fileID: 2929488801538514066}
   - component: {fileID: 6091913211567557868}
   - component: {fileID: 3503102751341652288}
+  - component: {fileID: 5532350159171117338}
   m_Layer: 0
   m_Name: EnemigoCobarde
   m_TagString: Untagged
@@ -547,6 +548,22 @@ MonoBehaviour:
   minAnimSpeed: 0.5
   maxAnimSpeed: 2
   crossFade: 0.15
+--- !u!114 &5532350159171117338
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7896862200917019152}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46167f529d0da75458d037dd3d0da462, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  probabilidadMunicion: 0.6
+  probabilidadBotiquin: 0.2
+  soloUnObjeto: 1
 --- !u!1001 &2447381041485215826
 PrefabInstance:
   m_ObjectHideFlags: 0

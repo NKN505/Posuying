@@ -92,6 +92,7 @@ GameObject:
   - component: {fileID: 6476613029095090198}
   - component: {fileID: 2237676248472763386}
   - component: {fileID: 9083340105010248533}
+  - component: {fileID: 4152984177173068021}
   m_Layer: 0
   m_Name: EnemigoPsychoKiller
   m_TagString: Untagged
@@ -351,6 +352,22 @@ MonoBehaviour:
   minAnimSpeed: 0.5
   maxAnimSpeed: 2
   crossFade: 0.15
+--- !u!114 &4152984177173068021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1441447816684705728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46167f529d0da75458d037dd3d0da462, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  probabilidadMunicion: 0.6
+  probabilidadBotiquin: 0.2
+  soloUnObjeto: 1
 --- !u!1 &1544431982826449634
 GameObject:
   m_ObjectHideFlags: 0

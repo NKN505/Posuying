@@ -91,6 +91,7 @@ GameObject:
   - component: {fileID: 7462377085435437753}
   - component: {fileID: 7599756578659655557}
   - component: {fileID: 5057531593251010974}
+  - component: {fileID: 3733688770684654640}
   m_Layer: 0
   m_Name: EnemigoTanque
   m_TagString: Untagged
@@ -322,6 +323,22 @@ MonoBehaviour:
   minAnimSpeed: 0.5
   maxAnimSpeed: 2
   crossFade: 0.15
+--- !u!114 &3733688770684654640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4625693088772680471}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46167f529d0da75458d037dd3d0da462, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  probabilidadMunicion: 1
+  probabilidadBotiquin: 0.5
+  soloUnObjeto: 0
 --- !u!1 &5490473489088143888
 GameObject:
   m_ObjectHideFlags: 0

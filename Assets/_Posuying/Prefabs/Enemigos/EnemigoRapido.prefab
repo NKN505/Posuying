@@ -16,6 +16,7 @@ GameObject:
   - component: {fileID: 5811228121839205788}
   - component: {fileID: 5304387494353124345}
   - component: {fileID: 3543311986625321897}
+  - component: {fileID: 1451884082408247965}
   m_Layer: 0
   m_Name: EnemigoRapido
   m_TagString: Untagged
@@ -122,6 +123,8 @@ MonoBehaviour:
   cadenciaMerodeo: 1.6
   damageAmount: 10
   damageCooldown: 1
+  estadoGolpe: attack
+  duracionGolpe: 0.9
   segundosDeCadaver: 150
 --- !u!195 &2306825265572692097
 NavMeshAgent:
@@ -238,6 +241,22 @@ MonoBehaviour:
   - nombre: Zombie_Piel_D
     materiales:
     - {fileID: 2100000, guid: 9993475f6742ce8479715701f5c89dd1, type: 2}
+--- !u!114 &1451884082408247965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600133933191842801}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46167f529d0da75458d037dd3d0da462, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  probabilidadMunicion: 0.25
+  probabilidadBotiquin: 0.06
+  soloUnObjeto: 1
 --- !u!1 &3614262117423714527
 GameObject:
   m_ObjectHideFlags: 0

@@ -91,6 +91,7 @@ GameObject:
   - component: {fileID: 5596037474828612963}
   - component: {fileID: 6915288185046152290}
   - component: {fileID: 492330130919758667}
+  - component: {fileID: 3357118543409402291}
   m_Layer: 0
   m_Name: EnemigoAcechador
   m_TagString: Untagged
@@ -339,6 +340,22 @@ MonoBehaviour:
   minAnimSpeed: 0.5
   maxAnimSpeed: 2
   crossFade: 0.15
+--- !u!114 &3357118543409402291
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5956164544566825432}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46167f529d0da75458d037dd3d0da462, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  probabilidadMunicion: 0.6
+  probabilidadBotiquin: 0.2
+  soloUnObjeto: 1
 --- !u!1 &8121341420988992263
 GameObject:
   m_ObjectHideFlags: 0
