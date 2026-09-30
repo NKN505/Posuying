@@ -24,6 +24,10 @@ public class ObjetoSoltado : NetworkBehaviour
     [Tooltip("Segundos hasta que desaparece si nadie lo coge (0 = nunca)")]
     public float segundosDeVida = 90f;
 
+    [Tooltip("Segundos desde que aparece hasta que se puede recoger. Sin esto, lo que suelta " +
+             "un zombi que muere pegado a ti se recogia al instante y nunca llegabas a verlo.")]
+    public float segundosAntesDeRecoger = 0.6f;
+
     [Header("Aspecto")]
     [Tooltip("Hijo con el modelo: gira y flota para que se vea desde lejos")]
     public Transform visual;
@@ -90,6 +94,7 @@ public class ObjetoSoltado : NetworkBehaviour
     void OnTriggerStay(Collider other)
     {
         if (!IsServer || !IsSpawned) return;
+        if (Time.time - _nacio < segundosAntesDeRecoger) return;
 
         // Solo jugadores de verdad: los NPC tambien llevan el tag Player
         var jugador = other.GetComponentInParent<NetworkPlayer>();
