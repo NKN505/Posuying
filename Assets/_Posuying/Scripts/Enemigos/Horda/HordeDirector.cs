@@ -6,7 +6,9 @@ using UnityEngine.AI;
 // Director de hordas estilo Left4Dead:
 // - Mantiene una poblacion de enemigos vivos y la repone continuamente.
 // - Cada cierto tiempo lanza un "pico de panico" (mas enemigos, mas rapido).
-// - Los enemigos aparecen en el NavMesh, alrededor de un jugador y fuera de su vista.
+// - Los enemigos salen de los EnemySpawnPoint de la escena: uno que ningun jugador
+//   este viendo y con ruta hasta el jugador. Si la escena no tiene puntos, aparecen
+//   en el NavMesh alrededor de un jugador y fuera de su vista (metodo antiguo).
 // - Mezcla: mayoria comunes, algunos especiales.
 //
 // EN RED: solo se ejecuta en el SERVIDOR. Los enemigos se crean como objetos de red
@@ -43,6 +45,24 @@ public class HordeDirector : MonoBehaviour
     public float agentBaseOffset = 0.9f;
     [Tooltip("Angulo del cono de vision del jugador: no aparecen enemigos dentro de el")]
     public float viewConeAngle = 100f;
+    [Tooltip("Altura de los ojos del jugador sobre sus pies, para la linea de vision")]
+    public float alturaOjos = 1.8f;
+
+    [Header("Puntos de spawn (EnemySpawnPoint)")]
+    [Tooltip("Si la escena tiene EnemySpawnPoint, los enemigos salen de ellos. " +
+             "Sin puntos en la escena se usa el metodo antiguo (posicion al azar alrededor del jugador).")]
+    public bool usarPuntosDeSpawn = true;
+    [Tooltip("Distancia minima entre el punto elegido y CUALQUIER jugador")]
+    public float distanciaMinimaPunto = 12f;
+    [Tooltip("Distancia maxima entre el punto elegido y el jugador al que va a por")]
+    public float distanciaMaximaPunto = 60f;
+    [Tooltip("Segundos antes de que un mismo punto pueda volver a usarse")]
+    public float esperaEntreUsos = 4f;
+    [Tooltip("Solo usar puntos desde los que haya ruta por el NavMesh hasta el jugador " +
+             "(descarta los que estan al otro lado de un muro o de un porton cerrado)")]
+    public bool exigirRuta = true;
+    [Tooltip("Cuantos puntos se comprueban a fondo (ruta incluida) por intento, para no gastar CPU")]
+    public int puntosPorIntento = 8;
 
     [Header("Control")]
     public bool active = true;
@@ -51,6 +71,11 @@ public class HordeDirector : MonoBehaviour
     private float _spawnTimer;
     private float _panicTimer;
     private float _panicEndTime = -1f;
+
+    void Awake()
+    {
+        _ruta = new NavMeshPath();
+    }
 
     void Start()
     {
@@ -240,6 +265,9 @@ public class HordeDirector : MonoBehaviour
 
     private bool TryGetSpawnPosition(Transform around, out Vector3 result)
     {
+        if (usarPuntosDeSpawn && EnemySpawnPoint.All.Count > 0)
+            return TryGetSpawnPoint(around, out result);
+
         for (int i = 0; i < placementTries; i++)
         {
             float angle = Random.Range(0f, Mathf.PI * 2f);
@@ -261,6 +289,84 @@ public class HordeDirector : MonoBehaviour
         return false;
     }
 
+    private readonly List<EnemySpawnPoint> _candidatos = new List<EnemySpawnPoint>();
+    // Puntos del cuerpo del enemigo que se comprueban al decidir si alguien lo veria
+    private static readonly float[] AlturasCuerpo = { 0.3f, 1.0f, 1.8f };
+
+    // Se crea en Awake: Unity no permite crear un NavMeshPath al inicializar campos
+    private NavMeshPath _ruta;
+
+    // Elige un EnemySpawnPoint valido para aparecer cerca de 'around'.
+    // Primero el filtro barato (distancias y espera), luego el caro (vista y ruta)
+    // sobre unos pocos candidatos en orden aleatorio.
+    private bool TryGetSpawnPoint(Transform around, out Vector3 result)
+    {
+        result = Vector3.zero;
+
+        if (!NavMesh.SamplePosition(around.position, out NavMeshHit objetivo, 3f, NavMesh.AllAreas))
+            return false;
+
+        float minSqr = distanciaMinimaPunto * distanciaMinimaPunto;
+        float maxSqr = distanciaMaximaPunto * distanciaMaximaPunto;
+        var players = NetworkPlayer.AllPlayers;
+
+        _candidatos.Clear();
+        foreach (var punto in EnemySpawnPoint.All)
+        {
+            if (Time.time - punto.ultimoUso < esperaEntreUsos) continue;
+
+            Vector3 p = punto.transform.position;
+            if (DistanciaPlanaSqr(p, around.position) > maxSqr) continue;
+
+            // Lejos de TODOS los jugadores, no solo del objetivo
+            bool demasiadoCerca = false;
+            for (int i = 0; i < players.Count; i++)
+                if (players[i] != null && DistanciaPlanaSqr(p, players[i].transform.position) < minSqr)
+                { demasiadoCerca = true; break; }
+            if (demasiadoCerca) continue;
+
+            _candidatos.Add(punto);
+        }
+
+        // Barajar para no favorecer siempre los mismos puntos
+        for (int i = _candidatos.Count - 1; i > 0; i--)
+        {
+            int j = Random.Range(0, i + 1);
+            (_candidatos[i], _candidatos[j]) = (_candidatos[j], _candidatos[i]);
+        }
+
+        int comprobados = 0;
+        foreach (var punto in _candidatos)
+        {
+            if (comprobados++ >= puntosPorIntento) break;
+
+            // Repartir un poco alrededor del punto para que no salgan apilados
+            Vector2 desvio = Random.insideUnitCircle * punto.radio;
+            Vector3 candidato = punto.transform.position + new Vector3(desvio.x, 0f, desvio.y);
+            if (!NavMesh.SamplePosition(candidato, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+                continue;
+
+            if (IsVisibleToAnyPlayer(hit.position)) continue;
+
+            if (exigirRuta &&
+                (!NavMesh.CalculatePath(hit.position, objetivo.position, NavMesh.AllAreas, _ruta) ||
+                 _ruta.status != NavMeshPathStatus.PathComplete))
+                continue;
+
+            punto.ultimoUso = Time.time;
+            result = hit.position;
+            return true;
+        }
+
+        return false;
+    }
+
+    private static float DistanciaPlanaSqr(Vector3 a, Vector3 b)
+    {
+        float dx = a.x - b.x, dz = a.z - b.z;
+        return dx * dx + dz * dz;
+    }
+
     // El servidor no tiene la camara de los demas jugadores, asi que aproximamos
     // su vision con un cono hacia delante + comprobacion de que no haya pared en medio.
     private bool IsVisibleToAnyPlayer(Vector3 worldPos)
@@ -279,9 +385,15 @@ public class HordeDirector : MonoBehaviour
             float angle = Vector3.Angle(p.transform.forward, toPoint.normalized);
             if (angle > viewConeAngle * 0.5f) continue;   // fuera de su cono de vision
 
-            // Dentro del cono: si no hay nada de por medio, nos veria aparecer
-            if (!Physics.Linecast(p.transform.position + Vector3.up, worldPos + Vector3.up))
-                return true;
+            // Dentro del cono: le veria aparecer si ALGUNA parte del cuerpo del enemigo
+            // (pies, pecho, cabeza) queda a la vista desde la altura de los ojos.
+            // Mirar solo a 1 m de altura dejaba pasar enemigos detras de muretes
+            // que tapan esa linea pero no la de los ojos.
+            Vector3 ojos = p.transform.position + Vector3.up * alturaOjos;
+            for (int k = 0; k < AlturasCuerpo.Length; k++)
+                if (!Physics.Linecast(ojos, worldPos + Vector3.up * AlturasCuerpo[k],
+                                      Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore))
+                    return true;
         }
 
         return false;
