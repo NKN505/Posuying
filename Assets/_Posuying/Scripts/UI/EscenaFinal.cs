@@ -43,8 +43,21 @@ public class EscenaFinal : MonoBehaviour
         _reproductor.renderMode = VideoRenderMode.CameraNearPlane;
         _reproductor.targetCamera = GetComponent<Camera>();
         _reproductor.aspectRatio = VideoAspectRatio.FitInside;
-        // Audio directo a la tarjeta: no depende de AudioListener ni de Wwise
-        _reproductor.audioOutputMode = VideoAudioOutputMode.Direct;
+
+        // El audio sale por un AudioSource: el modo "Direct" no esta soportado en
+        // Windows (el video se veia pero no sonaba). Asi ademas respeta el volumen
+        // general de las opciones, que GameSettings aplica al AudioListener.
+        var fuente = gameObject.AddComponent<AudioSource>();
+        fuente.playOnAwake = false;
+        fuente.spatialBlend = 0f;
+        // Siempre su propio oyente. No sirve "si no hay otro": al llegar aqui aun
+        // existe el de la camara del menu de Mapa, que se destruye justo despues.
+        if (GetComponent<AudioListener>() == null)
+            gameObject.AddComponent<AudioListener>();
+        _reproductor.audioOutputMode = VideoAudioOutputMode.AudioSource;
+        _reproductor.controlledAudioTrackCount = 1;
+        _reproductor.EnableAudioTrack(0, true);
+        _reproductor.SetTargetAudioSource(0, fuente);
         _reproductor.loopPointReached += _ => VolverAlMenu();
         _reproductor.Play();
     }

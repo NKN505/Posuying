@@ -132,7 +132,7 @@ GameObject:
   - component: {fileID: 1285266386}
   m_Layer: 0
   m_Name: CamaraFinal
-  m_TagString: MainCamera
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -149,7 +149,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 82ff46834c957cc4d9e3b5f1720ebbf2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  video: {fileID: 0}
+  video: {fileID: 32900000, guid: 670eb16e853cc3b44900def7f641692b, type: 3}
   segundosSinVideo: 6
   segundosAntesDeSaltar: 1.5
   escenaMenu: Mapa
