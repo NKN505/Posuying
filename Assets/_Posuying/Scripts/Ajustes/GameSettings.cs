@@ -44,6 +44,8 @@ public static class GameSettings
     public static bool ShowFps = false;
 
     public static float MouseSensitivity = 1f;
+    public const float MinSensitivity = 0.1f;
+    public const float MaxSensitivity = 5f;
     public static bool InvertY = false;
     public static float FieldOfView = 60f;
 
@@ -143,6 +145,14 @@ public static class GameSettings
         // La musica y los efectos leen su variable cada frame; el general va por
         // el AudioListener
         AudioListener.volume = MasterVolume;
+    }
+
+    // Sensibilidad en vivo, igual que el volumen: el jugador la lee cada frame,
+    // aqui solo se deja guardada (a disco, al soltar el slider).
+    public static void ApplySensitivity()
+    {
+        MouseSensitivity = Mathf.Clamp(MouseSensitivity, MinSensitivity, MaxSensitivity);
+        PlayerPrefs.SetFloat(KeySensitivity, MouseSensitivity);
     }
 
     // Guarda y aplica de golpe (lo llama el boton APLICAR del menu)

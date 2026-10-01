@@ -67,6 +67,19 @@ public abstract class Weapon : MonoBehaviour{
     [SerializeField] private float hipSpread = 2.0f;
     [SerializeField] private float aimSpread = 0.2f;
 
+    [Tooltip("Agachado la dispersion se multiplica por esto (menos de 1 = mas preciso)")]
+    [SerializeField] private float crouchSpreadMultiplier = 0.5f;
+
+    [Header("Dispersion acumulada al disparar seguido sin apuntar")]
+    [Tooltip("Grados que se suman al cono por cada disparo sin apuntar")]
+    [SerializeField] private float spreadPerShot = 0.6f;
+    [Tooltip("Tope de grados acumulados")]
+    [SerializeField] private float maxExtraSpread = 4.0f;
+    [Tooltip("Segundos sin disparar antes de que el cono empiece a cerrarse")]
+    [SerializeField] private float spreadRecoveryDelay = 0.25f;
+    [Tooltip("Grados por segundo que se recuperan")]
+    [SerializeField] private float spreadRecoveryPerSecond = 5.0f;
+
     [Header("Caida de dano por distancia")]
     [Tooltip("Hasta esta distancia el arma hace el 100% del dano. Mas alla " +
              "empieza a caer hasta el alcance maximo (scope).")]
@@ -137,6 +150,13 @@ public abstract class Weapon : MonoBehaviour{
     // cuerpo, para no poder disparar estando abatido y para avisar del ruido.
     private Transform ownerRoot;
     private PlayerDownedState ownerDowned;
+    private PlayerController ownerController;
+
+    // Dispersion acumulada: se guarda el valor en el ultimo disparo y el momento,
+    // y la recuperacion se calcula al leerla (no hace falta un Update para esto).
+    private float extraSpread;
+    private float lastShotTime = -999f;
+    private int lastShotFrame = -1;
     private PlayerNoise ownerNoise;
 
     // El jugador puede usar el arma (no esta abatido ni fuera de combate)
@@ -286,9 +306,41 @@ public abstract class Weapon : MonoBehaviour{
     }
 
     // Dispersion activa segun el estado de apuntado.
+    // Es el cono REAL del siguiente disparo; la reticula del HUD dibuja este valor.
     public float GetCurrentSpread()
     {
-        return isAiming ? aimSpread : hipSpread;
+        float spread = (isAiming ? aimSpread : hipSpread) + GetExtraSpread();
+
+        if (ownerController != null && ownerController.GetIsCrouching())
+        {
+            spread *= crouchSpreadMultiplier;
+        }
+
+        return spread;
+    }
+
+    // Lo acumulado por disparar seguido, ya descontado lo recuperado desde el ultimo tiro.
+    private float GetExtraSpread()
+    {
+        float resting = Time.time - lastShotTime - spreadRecoveryDelay;
+
+        return resting <= 0.0f
+            ? extraSpread
+            : Mathf.Max(0.0f, extraSpread - resting * spreadRecoveryPerSecond);
+    }
+
+    // Cada disparo sin apuntar abre un poco mas el cono. Una vez por frame como
+    // mucho: la escopeta lanza varios rayos en el mismo disparo y cuenta como uno.
+    private void AccumulateSpread()
+    {
+        if (isAiming || lastShotFrame == Time.frameCount)
+        {
+            return;
+        }
+
+        extraSpread = Mathf.Min(maxExtraSpread, GetExtraSpread() + spreadPerShot);
+        lastShotTime = Time.time;
+        lastShotFrame = Time.frameCount;
     }
 
     // ---------------------------
@@ -549,6 +601,10 @@ public abstract class Weapon : MonoBehaviour{
         Vector3 origin = cam.position;
         direction = ApplySpread(cam.forward, cam.rotation, spread);
 
+        // Despues de calcular la direccion: este tiro sale con el cono que
+        // marcaba la reticula, y es el siguiente el que sale mas abierto.
+        AccumulateSpread();
+
         bool impact = RaycastIgnoringOwner(origin, direction, out hit);
 
         // Punto final real del disparo: el impacto, o el alcance maximo.
@@ -788,6 +844,7 @@ public abstract class Weapon : MonoBehaviour{
     {
         PlayerController owner = GetComponentInParent<PlayerController>();
         ownerRoot = owner != null ? owner.transform : transform.root;
+        ownerController = owner;
 
         ownerDowned = GetComponentInParent<PlayerDownedState>();
         ownerNoise = GetComponentInParent<PlayerNoise>();

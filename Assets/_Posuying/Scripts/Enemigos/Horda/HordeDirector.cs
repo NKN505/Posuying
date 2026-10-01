@@ -67,6 +67,22 @@ public class HordeDirector : MonoBehaviour
     [Tooltip("Cuantos puntos se comprueban a fondo (ruta incluida) por intento, para no gastar CPU")]
     public int puntosPorIntento = 8;
 
+    [Header("Retirada de enemigos que se quedan atras")]
+    [Tooltip("Quita los enemigos que ya no pueden alcanzar a nadie. Sin esto, los que se " +
+             "quedaban en un tercio anterior seguian contando como vivos, llenaban el cupo " +
+             "de la horda y en el tercio nuevo no aparecia ninguno.")]
+    public bool retirarRezagados = true;
+    [Tooltip("A mas de esta distancia de TODOS los jugadores se retira siempre")]
+    public float distanciaRetirada = 75f;
+    [Tooltip("Si esta en un tercio en el que no queda ningun jugador, se retira a partir de esta distancia")]
+    public float distanciaRetiradaOtroTercio = 30f;
+    [Tooltip("Sin ruta hasta ningun jugador (porton cerrado, muro) y mas lejos que esto, empieza a contar")]
+    public float distanciaSinRuta = 15f;
+    [Tooltip("Segundos seguidos sin ruta antes de retirarlo")]
+    public float segundosSinRuta = 6f;
+    [Tooltip("Cuantos enemigos se revisan por segundo (la comprobacion de ruta cuesta CPU)")]
+    public float revisionesPorSegundo = 12f;
+
     [Header("Control")]
     public bool active = true;
 
@@ -97,6 +113,8 @@ public class HordeDirector : MonoBehaviour
 
         PruneDead();
         UpdatePanic();
+        RevisarRezagados();
+        AlCambiarDeTercio();
 
         float interval = IsPanicking ? panicSpawnInterval : spawnInterval;
         _spawnTimer -= Time.deltaTime;
@@ -131,7 +149,121 @@ public class HordeDirector : MonoBehaviour
         // migracion de host como un enemigo vivo).
         for (int i = _alive.Count - 1; i >= 0; i--)
             if (_alive[i] == null || _alive[i].IsDead)
+            {
+                if (!ReferenceEquals(_alive[i], null)) _sinRutaDesde.Remove(_alive[i]);
                 _alive.RemoveAt(i);
+            }
+    }
+
+    // ---------- Retirada de rezagados ----------
+
+    private readonly Dictionary<EnemyBehaviour, float> _sinRutaDesde = new Dictionary<EnemyBehaviour, float>();
+    private int _indiceRevision;
+    private float _revisionesPendientes;
+    private int _ultimoTercio = 1;
+
+    // Al llegar el equipo a un tercio nuevo la horda reacciona al momento: se
+    // revisa a todos de golpe (los del tercio anterior dejan sitio) y se repone ya.
+    private void AlCambiarDeTercio()
+    {
+        if (ProgresoTercios.Instance == null) return;
+
+        int tercio = ProgresoTercios.Instance.TercioAlcanzado;
+        if (tercio == _ultimoTercio) return;
+        _ultimoTercio = tercio;
+
+        _revisionesPendientes += _alive.Count;
+        _spawnTimer = 0f;
+    }
+
+    // Revisa unos pocos enemigos cada frame, por turnos, para repartir el coste.
+    private void RevisarRezagados()
+    {
+        if (!retirarRezagados || _alive.Count == 0) return;
+
+        _revisionesPendientes += revisionesPorSegundo * Time.deltaTime;
+        int n = Mathf.Min((int)_revisionesPendientes, _alive.Count);
+        _revisionesPendientes -= n;
+
+        for (int k = 0; k < n && _alive.Count > 0; k++)
+        {
+            _indiceRevision = (_indiceRevision + 1) % _alive.Count;
+            EnemyBehaviour enemigo = _alive[_indiceRevision];
+            if (enemigo == null || !enemigo.IsSpawned || enemigo.IsDead) continue;
+
+            if (DebeRetirarse(enemigo))
+            {
+                _alive.RemoveAt(_indiceRevision);
+                _sinRutaDesde.Remove(enemigo);
+                // Retirarlo no es matarlo: no deja cadaver ni suelta objetos
+                enemigo.NetworkObject.Despawn(true);
+            }
+        }
+    }
+
+    private bool DebeRetirarse(EnemyBehaviour enemigo)
+    {
+        Vector3 pos = enemigo.transform.position;
+        var players = NetworkPlayer.AllPlayers;
+
+        // El jugador mas cercano, y si queda alguno en el tercio del enemigo
+        int tercioEnemigo = ZonaTercio.TercioEn(pos);
+        bool jugadorEnSuTercio = false;
+        PlayerController cercano = null;
+        float mejorSqr = float.MaxValue;
+
+        for (int i = 0; i < players.Count; i++)
+        {
+            if (players[i] == null) continue;
+            Vector3 pj = players[i].transform.position;
+
+            float d = DistanciaPlanaSqr(pos, pj);
+            if (d < mejorSqr) { mejorSqr = d; cercano = players[i]; }
+            if (ZonaTercio.TercioEn(pj) == tercioEnemigo) jugadorEnSuTercio = true;
+        }
+        if (cercano == null) return false;
+
+        // Muy lejos de todos: fuera, se vea o no (a esa distancia no se distingue)
+        if (mejorSqr > distanciaRetirada * distanciaRetirada) return true;
+
+        // De aqui en adelante nunca desaparece delante de alguien
+        if (IsVisibleToAnyPlayer(pos)) { _sinRutaDesde.Remove(enemigo); return false; }
+
+        // Se ha quedado en un tercio que el equipo ya ha dejado atras
+        if (tercioEnemigo != 0 && !jugadorEnSuTercio &&
+            mejorSqr > distanciaRetiradaOtroTercio * distanciaRetiradaOtroTercio)
+            return true;
+
+        // Encerrado: no puede llegar hasta nadie (porton cerrado, muro, otra isla del NavMesh)
+        if (mejorSqr > distanciaSinRuta * distanciaSinRuta && !HayRutaHastaAlguien(pos))
+        {
+            if (!_sinRutaDesde.TryGetValue(enemigo, out float desde))
+            {
+                _sinRutaDesde[enemigo] = Time.time;
+                return false;
+            }
+            return Time.time - desde >= segundosSinRuta;
+        }
+
+        _sinRutaDesde.Remove(enemigo);
+        return false;
+    }
+
+    private bool HayRutaHastaAlguien(Vector3 desde)
+    {
+        if (!NavMesh.SamplePosition(desde, out NavMeshHit origen, 3f, NavMesh.AllAreas)) return false;
+
+        var players = NetworkPlayer.AllPlayers;
+        for (int i = 0; i < players.Count; i++)
+        {
+            if (players[i] == null) continue;
+            if (!NavMesh.SamplePosition(players[i].transform.position, out NavMeshHit destino, 4f, NavMesh.AllAreas))
+                continue;
+            if (NavMesh.CalculatePath(origen.position, destino.position, NavMesh.AllAreas, _ruta) &&
+                _ruta.status == NavMeshPathStatus.PathComplete)
+                return true;
+        }
+        return false;
     }
 
     private void TrySpawnBatch()
@@ -313,7 +445,10 @@ public class HordeDirector : MonoBehaviour
     {
         result = Vector3.zero;
 
-        if (!NavMesh.SamplePosition(around.position, out NavMeshHit objetivo, 3f, NavMesh.AllAreas))
+        // Radio amplio: en interiores y escaleras el jugador puede quedar algo separado
+        // del NavMesh, y con 3 m justos no aparecia nadie mientras estuviera ahi.
+        if (!NavMesh.SamplePosition(around.position, out NavMeshHit objetivo, 3f, NavMesh.AllAreas) &&
+            !NavMesh.SamplePosition(around.position, out objetivo, 8f, NavMesh.AllAreas))
             return false;
 
         float minSqr = distanciaMinimaPunto * distanciaMinimaPunto;
