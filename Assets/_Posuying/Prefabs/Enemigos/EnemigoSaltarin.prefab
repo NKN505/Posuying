@@ -286,6 +286,7 @@ GameObject:
   - component: {fileID: 4400769925536609610}
   - component: {fileID: -4015756519770596487}
   - component: {fileID: 1745896355122816341}
+  - component: {fileID: 3662383125089201861}
   m_Layer: 0
   m_Name: EnemigoSaltarin
   m_TagString: Untagged
@@ -392,6 +393,8 @@ MonoBehaviour:
   cadenciaMerodeo: 1.6
   damageAmount: 10
   damageCooldown: 1
+  estadoGolpe: attack
+  duracionGolpe: 0.9
   segundosDeCadaver: 150
   hopCooldown: 1.5
   hopForce: 6
@@ -510,6 +513,22 @@ MonoBehaviour:
   - nombre: Zombie_Piel_D
     materiales:
     - {fileID: 2100000, guid: 9993475f6742ce8479715701f5c89dd1, type: 2}
+--- !u!114 &3662383125089201861
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6348951468319593468}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46167f529d0da75458d037dd3d0da462, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  probabilidadMunicion: 0.25
+  probabilidadBotiquin: 0.06
+  soloUnObjeto: 1
 --- !u!1001 &5317458975216913632
 PrefabInstance:
   m_ObjectHideFlags: 0

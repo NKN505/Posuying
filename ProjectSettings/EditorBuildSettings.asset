@@ -8,6 +8,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Posuying/Escenas/Mapa/Mapa.unity
     guid: e66e6fab37c34689b1a57ad6d1716619
+  - enabled: 1
+    path: Assets/_Posuying/Escenas/Final/Final.unity
+    guid: cf7c2dea33f92d444949acca869d14e4
   - enabled: 0
     path: Assets/_Posuying/Escenas/TestMap/TestMap.unity
     guid: 99c9720ab356a0642a771bea13969a05

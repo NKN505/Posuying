@@ -212,6 +212,7 @@ GameObject:
   - component: {fileID: 2834732165484330663}
   - component: {fileID: 4906645193342408980}
   - component: {fileID: 3073677077315663003}
+  - component: {fileID: 8428303631790040426}
   m_Layer: 0
   m_Name: EnemigoHunter
   m_TagString: Untagged
@@ -470,6 +471,22 @@ MonoBehaviour:
   minAnimSpeed: 0.5
   maxAnimSpeed: 2
   crossFade: 0.15
+--- !u!114 &8428303631790040426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6401556216445646014}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46167f529d0da75458d037dd3d0da462, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  probabilidadMunicion: 0.6
+  probabilidadBotiquin: 0.2
+  soloUnObjeto: 1
 --- !u!1 &8596493677131338410
 GameObject:
   m_ObjectHideFlags: 0
