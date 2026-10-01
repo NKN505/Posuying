@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 
 /// <summary>
@@ -43,11 +44,14 @@ public class PlayerAnimation : MonoBehaviour
     private WeaponGrip agarreActual = (WeaponGrip)(-1);   // fuerza el primer cambio
     private bool disparoAnterior;
     private bool recargaAnterior;
+    private NetworkObject netObject;
 
     private void Awake()
     {
         if (animator == null)
             animator = GetComponent<Animator>();
+
+        netObject = GetComponentInParent<NetworkObject>();
 
         if (weaponHolder == null)
         {
@@ -59,6 +63,12 @@ public class PlayerAnimation : MonoBehaviour
     private void Update()
     {
         if (animator == null || !animator.isActiveAndEnabled) return;
+
+        // En las copias de OTROS jugadores no se toca nada. Su arma esta apagada
+        // en tu maquina (PlayerVisual), asi que aqui no se encontraba, y su cuerpo
+        // pasaba al set de manos vacias y se forzaba IsAiming a false. Los
+        // parametros ya llegan del dueno por el NetworkAnimator.
+        if (netObject != null && netObject.IsSpawned && !netObject.IsOwner) return;
 
         Weapon arma = BuscarArmaActiva();
 

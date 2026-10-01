@@ -126,6 +126,11 @@ public class StalkerEnemy : EnemyBehaviour
         // Lo único que lo detiene es que lo miren.
         alwaysAggro = true;
 
+        // Su ataque es el zarpazo. El dano por contacto de la clase base se
+        // sumaba al zarpazo y ademas lanzaba cada segundo el mismo estado
+        // "attack" (el placaje), pisando la animacion del zarpazo de verdad.
+        damageAmount = 0f;
+
         _loco = GetComponent<EnemyLocomotionAnimator>();
         _audio = GetComponentInChildren<AudioSource>(true);
     }
@@ -150,7 +155,7 @@ public class StalkerEnemy : EnemyBehaviour
         // ANTES de base.Update(): ahi dentro corre Acechar(), que necesita el dato
         // ya puesto. Y se calcula una sola vez por frame porque lleva raycasts:
         // llamarlo dos veces duplicaria el coste con varios acechadores en escena.
-        if (IsServer) netObservado.Value = AlguienMeVe();
+        if (IsServer) netObservado.Value = !IsDead && AlguienMeVe();   // un cadaver no "se siente mirado"
 
         base.Update();
 
@@ -352,6 +357,9 @@ public class StalkerEnemy : EnemyBehaviour
 
             yield return null;
         }
+
+        // Si lo han matado a mitad del salto, el golpe ya no entra
+        if (IsDead) { _atacando = false; yield break; }
 
         if (player != null &&
             Vector3.Distance(transform.position, player.position) <= attackRange + 0.4f)

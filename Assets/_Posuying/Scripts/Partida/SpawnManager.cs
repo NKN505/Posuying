@@ -41,7 +41,7 @@ public class SpawnManager : MonoBehaviour
             float nearestEnemy = float.MaxValue;
             foreach (var e in enemies)
             {
-                if (e == null || !e.gameObject.activeInHierarchy) continue;
+                if (e == null || !e.gameObject.activeInHierarchy || e.IsDead) continue;
                 float d = Vector3.Distance(sp.transform.position, e.transform.position);
                 if (d < nearestEnemy) nearestEnemy = d;
             }

@@ -52,7 +52,7 @@ public class WorldRestorer : MonoBehaviour
         {
             foreach (var enemy in director.AliveEnemies)
             {
-                if (enemy == null || enemy.prefabIndex < 0) continue;
+                if (enemy == null || enemy.prefabIndex < 0 || enemy.IsDead) continue;
 
                 state.enemies.Add(new WorldState.EnemyState
                 {
@@ -118,6 +118,7 @@ public class WorldRestorer : MonoBehaviour
 
         RestoreEnemies();
         RestorePickups();
+        RestorePlayersAlreadyHere();
 
         Debug.Log("Mundo reconstruido tras la migracion de host.");
         _pending = null;
@@ -149,6 +150,23 @@ public class WorldRestorer : MonoBehaviour
         foreach (var item in FindObjectsByType<ItemPickup>(FindObjectsSortMode.None))
             if (taken.TryGetValue(SceneObjectKey(item.gameObject), out bool wasTaken))
                 item.SetTaken(wasTaken);
+    }
+
+    // Los jugadores cuyo id llego ANTES que el estado guardado se quedaban sin
+    // restaurar (PersistentPlayerId solo avisa una vez). Se repasan aqui, ya
+    // siendo servidor. RestorePlayer quita a cada uno de la lista, asi que no
+    // se restaura a nadie dos veces.
+    private void RestorePlayersAlreadyHere()
+    {
+        foreach (var player in NetworkPlayer.AllPlayers)
+        {
+            if (player == null) continue;
+
+            var id = player.GetComponent<PersistentPlayerId>();
+            if (id == null || string.IsNullOrEmpty(id.Id)) continue;
+
+            RestorePlayer(id.Id, player, player.GetComponent<Inventory>());
+        }
     }
 
     // Lo llama PersistentPlayerId cuando el servidor descubre quien es cada jugador

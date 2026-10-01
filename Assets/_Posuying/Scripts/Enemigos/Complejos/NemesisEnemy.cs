@@ -233,7 +233,8 @@ public class NemesisEnemy : EnemyBehaviour
 
     private void ActualizarAnimacion()
     {
-        if (_anim == null || _anim.runtimeAnimatorController == null) return;
+        // Con el Animator apagado (ragdoll) no hay nada que animar
+        if (_anim == null || _anim.runtimeAnimatorController == null || !_anim.isActiveAndEnabled) return;
         if (string.IsNullOrEmpty(moveState) && string.IsNullOrEmpty(idleState)) return;
 
         Vector3 delta = transform.position - _posicionAnterior;
@@ -250,7 +251,10 @@ public class NemesisEnemy : EnemyBehaviour
         string deseado = moviendose ? moveState : idleState;
         if (string.IsNullOrEmpty(deseado)) return;
 
-        if (deseado != _estadoAnim)
+        // Se comprueba el estado REAL, no una cadena cacheada: si algo saca al
+        // Animator de su sitio (un golpe, el zarpazo de la base), al frame
+        // siguiente vuelve solo. Igual que el resto de enemigos.
+        if (!_anim.GetCurrentAnimatorStateInfo(0).IsName(deseado) && !_anim.IsInTransition(0))
         {
             _anim.CrossFade(deseado, 0.15f);
             _estadoAnim = deseado;

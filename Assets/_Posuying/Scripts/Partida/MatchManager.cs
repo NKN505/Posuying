@@ -112,6 +112,14 @@ public class MatchManager : NetworkBehaviour
         }
 
         netMatchOver.Value = true;
+
+        // Por RPC: antes el aviso solo salia en la pantalla del anfitrion
+        AnnounceDefeatClientRpc();
+    }
+
+    [ClientRpc]
+    private void AnnounceDefeatClientRpc()
+    {
         Notifications.Show("Habeis caido todos");
     }
 

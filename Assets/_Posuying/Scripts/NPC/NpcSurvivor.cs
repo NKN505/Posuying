@@ -186,7 +186,7 @@ public class NpcSurvivor : Character
             if (_nearby[i] == null) continue;
 
             var enemy = _nearby[i].GetComponentInParent<EnemyBehaviour>();
-            if (enemy == null) continue;
+            if (enemy == null || enemy.IsDead) continue;   // de un cadaver no se huye
 
             float sqr = (enemy.transform.position - transform.position).sqrMagnitude;
             if (sqr < nearestSqr)

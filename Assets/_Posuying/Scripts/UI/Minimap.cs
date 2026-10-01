@@ -99,7 +99,7 @@ public class Minimap : MonoBehaviour
         for (int i = 0; i < enemies.Count; i++)
         {
             var enemy = enemies[i];
-            if (enemy == null) continue;
+            if (enemy == null || enemy.IsDead) continue;   // los cadaveres no son amenaza
 
             // Los enemigos NO se clavan al borde: con una horda de 30 el minimapa
             // seria un anillo rojo permanente que no dice nada.

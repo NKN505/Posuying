@@ -433,13 +433,42 @@ private void UpdatePassiveRegen()
         {
             regenTimer += Time.deltaTime;
             if (regenTimer >= regenerator.RegenDelay)
-                ApplyHeal(regenerator.RegenAmountPerSecond * Time.deltaTime);
+                AcumularCuracion(regenerator.RegenAmountPerSecond * Time.deltaTime);
         }
         else
         {
             regenTimer = 0f;
+            EnviarCuracionPendiente();   // lo que quedara por mandar al dejar de regenerar
         }
     }
+}
+
+// En el servidor la regeneracion se aplica al momento. En un cliente se acumula y
+// se manda como mucho cuatro veces por segundo: antes salia un RPC en CADA frame
+// mientras el jugador estaba agachado y quieto.
+private float _curacionPendiente;
+private float _relojEnvioCuracion;
+private const float IntervaloEnvioCuracion = 0.25f;
+
+private void AcumularCuracion(float amount)
+{
+    if (IsServer) { Heal(amount); return; }
+    if (!IsOwner) return;
+
+    _curacionPendiente += amount;
+    _relojEnvioCuracion += Time.deltaTime;
+
+    if (_relojEnvioCuracion >= IntervaloEnvioCuracion)
+        EnviarCuracionPendiente();
+}
+
+private void EnviarCuracionPendiente()
+{
+    _relojEnvioCuracion = 0f;
+    if (_curacionPendiente <= 0f) return;
+
+    ApplyHeal(_curacionPendiente);
+    _curacionPendiente = 0f;
 }
 
 }

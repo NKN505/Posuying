@@ -3,9 +3,9 @@ using UnityEngine;
 
 // Objeto recogible del mundo. Necesita un Collider con IsTrigger y un NetworkObject.
 //
-// El servidor decide quien lo coge y avisa a ese jugador para que lo meta en SU inventario
-// (el inventario es local de cada jugador). El objeto no se destruye: se marca como
-// recogido en una variable de red y se oculta en todas las maquinas.
+// El servidor decide quien lo coge y lo mete directamente en su inventario (el
+// inventario lo lleva el servidor y se replica a todos). El objeto no se destruye: se
+// marca como recogido en una variable de red y se oculta en todas las maquinas.
 public class ItemPickup : NetworkBehaviour
 {
     public ItemData item;

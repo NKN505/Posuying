@@ -117,7 +117,9 @@ public class PlayerVisual : NetworkBehaviour
 
         // 2) Manos FP y extras: solo existen en tu copia, y en la capa FPArms
         //    para que la killcam nunca los renderice.
-        ApplyFirstPerson(fpArms, isOwner, warnIfNull: true);
+        // Solo se avisa si no hay NADA de primera persona: este prefab no usa
+        // 'fpArms' y lleva la pistola en 'fpExtras', y eso es valido.
+        ApplyFirstPerson(fpArms, isOwner, warnIfNull: fpExtras == null || fpExtras.Length == 0);
 
         if (fpExtras != null)
         {
