@@ -134,6 +134,7 @@ GameObject:
   - component: {fileID: 2341929343223369132}
   - component: {fileID: 4329488923466563827}
   - component: {fileID: 7703953520205679414}
+  - component: {fileID: 5821746390127456318}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -295,6 +296,64 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+--- !u!114 &5821746390127456318
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1952945492439070431}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b6fa1c12f8af4a17a9bd3982c0a65aeb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  player: {fileID: 921888261610555986}
+  body: {fileID: 7998248900326268580}
+  weight: 1
+  crouchMultiplier: 0.65
+  walkSpeed: 5
+  sprintSpeed: 9
+  walkStepRate: 1.75
+  sprintStepRate: 2.2
+  walkBob: {x: 0.008, y: 0.014, z: 0.004}
+  sprintBob: {x: 0.012, y: 0.021, z: 0.007}
+  bobSmoothness: 0.35
+  breathRate: 0.18
+  breathHeight: 0.002
+  breathPitch: 0.08
+  microTremor: 0.055
+  microFrequency: 0.2
+  accelerationLag: 0.0018
+  accelerationPitch: 0.16
+  strafeRoll: 0.75
+  maxStrafeRoll: 2
+  lookRoll: 0.8
+  lookLag: 0.3
+  maxLookSway: 2.5
+  jumpHeight: 0.012
+  jumpPitch: 0.8
+  landingSpeedRange: {x: 2, y: 10}
+  landingDrop: 0.06
+  landingPitch: 3
+  landingRoll: 1.2
+  recoilPitch: 1.2
+  recoilYaw: 0.3
+  recoilRoll: 0.4
+  recoilKickBack: 0.01
+  swapShift: 0.01
+  swapRoll: 0.8
+  damageForFullHit: 0.25
+  damageShift: 0.02
+  damagePitch: 2.5
+  damageRoll: 1.5
+  springStiffness: 150
+  springDamping: 18
+  dynamicFov: 1
+  sprintFov: 3
+  landingFov: 1
+  shotFov: 0.25
+  fovRecovery: 8
 --- !u!1 &2065217364672884988
 GameObject:
   m_ObjectHideFlags: 0
@@ -743,7 +802,7 @@ MonoBehaviour:
   hittableLayers:
     serializedVersion: 2
     m_Bits: 0
-  muzzle: {fileID: 2682229091745507286, guid: d756824bdc6c26343b7115a7597b11c2, type: 3}
+  muzzle: {fileID: 0}
   hipSpread: 2
   aimSpread: 0.2
   effectiveRange: 10
@@ -772,7 +831,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  tracerPrefab: {fileID: 8429348762723713620, guid: d756824bdc6c26343b7115a7597b11c2, type: 3}
+  tracerPrefab: {fileID: 0}
   armsAnimator: {fileID: 8270343828796866211}
   reloadDuration: 2
   reloadAmmoPoint: 0.75
@@ -1208,7 +1267,7 @@ MonoBehaviour:
   database: {fileID: 11400000, guid: 162debf0a9b023d489be4888842e61bc, type: 2}
   hotbarSize: 4
   backpackSize: 24
-  useKey: 9
+  useKey: 104
 --- !u!114 &2537126146830909993
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -65,8 +65,17 @@ public class NpcDirector : MonoBehaviour
         // y bajar en mitad de la partida.
         int target = Mathf.Max(0, GameSettings.NpcCount);
 
-        while (NpcSurvivor.All.Count > target)
-            RemoveOne();
+        // OJO: Destroy no es inmediato. El NPC sigue en la lista hasta que se da
+        // de baja en la red (al final del frame), asi que el antiguo
+        // "while (Count > target) RemoveOne()" no terminaba nunca y colgaba el
+        // juego al bajar el numero de NPC en mitad de la partida. Se quitan los
+        // que sobran de una pasada y la siguiente comprobacion ya los vera fuera.
+        int sobran = NpcSurvivor.All.Count - target;
+        if (sobran > 0)
+        {
+            RemoveExcess(sobran);
+            return;
+        }
 
         while (NpcSurvivor.All.Count < target)
         {
@@ -135,15 +144,15 @@ public class NpcDirector : MonoBehaviour
         return 1000f;   // sin jugadores todavia: el valor de siempre
     }
 
-    private void RemoveOne()
+    private void RemoveExcess(int count)
     {
-        for (int i = NpcSurvivor.All.Count - 1; i >= 0; i--)
+        for (int i = NpcSurvivor.All.Count - 1; i >= 0 && count > 0; i--)
         {
             var npc = NpcSurvivor.All[i];
             if (npc == null) continue;
 
             Destroy(npc.gameObject);
-            return;
+            count--;
         }
     }
 

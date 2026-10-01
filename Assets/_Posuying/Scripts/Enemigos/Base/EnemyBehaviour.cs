@@ -27,6 +27,14 @@ public abstract class EnemyBehaviour : Character
     /// </summary>
     public bool ObjetivoInalcanzable { get { return _tieneRecorte; } }
 
+    /// <summary>
+    /// Ya ha muerto. Con ragdoll el cadaver se queda un rato en la escena antes
+    /// de destruirse: mientras tanto NO debe pensar, hacer dano, contar para la
+    /// horda ni salir en el minimapa. La vida viaja por red, asi que vale en
+    /// todas las maquinas.
+    /// </summary>
+    public bool IsDead { get { return IsSpawned && GetHealth() <= 0f; } }
+
     // De que prefab del HordeDirector salio. Lo necesita el guardado del mundo
     // para poder recrearlo igual si cambia el host.
     [System.NonSerialized] public int prefabIndex = -1;
@@ -64,6 +72,13 @@ public abstract class EnemyBehaviour : Character
     private float _tiempoDesdeElUltimoPunto;
     private Vector3 _anclaMerodeo;
     private NavMeshPath _rutaDePrueba;
+
+    // Ultimo destino pedido por PedirDestino. El recorte se calcula contra ESTE
+    // punto y no contra el jugador mas cercano: los enemigos complejos piden
+    // otros sitios (huir, su nido, su puesto) y antes se les cambiaba el destino
+    // por un merodeo junto a un jugador al que no iban.
+    private Vector3 _objetivoPedido;
+    private bool _hayObjetivoPedido;
 
     protected override void Awake()
     {
@@ -108,6 +123,9 @@ public abstract class EnemyBehaviour : Character
 
         // La IA es autoridad del servidor: los clientes solo ven el resultado
         if (!IsServer) return;
+
+        // Un cadaver no piensa
+        if (IsDead) return;
 
         if (_damageTimer > 0f) _damageTimer -= Time.deltaTime;
 
@@ -215,7 +233,7 @@ public abstract class EnemyBehaviour : Character
     private void ActualizarRecorte()
     {
         if (!merodearSiNoLlega) { SoltarRecorte(); return; }
-        if (player == null || agent == null || !agent.enabled || !agent.isOnNavMesh) { SoltarRecorte(); return; }
+        if (!_hayObjetivoPedido || agent == null || !agent.enabled || !agent.isOnNavMesh) { SoltarRecorte(); return; }
 
         _tiempoHastaRecalcular -= Time.deltaTime;
         if (_tiempoHastaRecalcular > 0f) return;
@@ -224,7 +242,7 @@ public abstract class EnemyBehaviour : Character
         if (_rutaDePrueba == null) _rutaDePrueba = new NavMeshPath();
 
         bool hayCamino =
-            NavMesh.CalculatePath(transform.position, player.position, agent.areaMask, _rutaDePrueba) &&
+            NavMesh.CalculatePath(transform.position, _objetivoPedido, agent.areaMask, _rutaDePrueba) &&
             _rutaDePrueba.status == NavMeshPathStatus.PathComplete;
 
         if (hayCamino) { SoltarRecorte(); return; }
@@ -264,6 +282,15 @@ public abstract class EnemyBehaviour : Character
     {
         if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
 
+        // Si el destino cambia de sitio de verdad (no un jugador que se mueve un
+        // poco), el recorte calculado para el anterior ya no vale. La siguiente
+        // comprobacion (como mucho medio segundo) decide si hace falta otro.
+        if (_tieneRecorte && _hayObjetivoPedido && (objetivo - _objetivoPedido).sqrMagnitude > 25f)
+            SoltarRecorte();
+
+        _objetivoPedido = objetivo;
+        _hayObjetivoPedido = true;
+
         if (_tieneRecorte) { IrAlPuntoRecortado(); return; }
 
         agent.SetDestination(objetivo);
@@ -289,6 +316,8 @@ public abstract class EnemyBehaviour : Character
 
     protected virtual void Patrol()
     {
+        if (agent == null || !agent.enabled || !agent.isOnNavMesh) return;
+
         if (!agent.hasPath || agent.remainingDistance < 1f)
             SetNewPatrolTarget();
     }
@@ -318,7 +347,10 @@ public abstract class EnemyBehaviour : Character
     {
         Vector3 randomDirection = Random.insideUnitSphere * patrolRadius + transform.position;
         NavMeshHit hit;
-        if (NavMesh.SamplePosition(randomDirection, out hit, patrolRadius, 1))
+        // La misma mascara de areas que usa el agente (antes "1", solo Walkable,
+        // mientras el resto del codigo usaba todas las areas)
+        int areas = agent != null ? agent.areaMask : NavMesh.AllAreas;
+        if (NavMesh.SamplePosition(randomDirection, out hit, patrolRadius, areas))
             PedirDestino(hit.position);
     }
 
@@ -326,6 +358,10 @@ public abstract class EnemyBehaviour : Character
     {
         // El dano a los jugadores solo lo aplica el servidor
         if (!IsServer) return;
+
+        // Un cadaver no hace dano, y quien no hace dano (el Alertador) tampoco
+        // debe lanzar la animacion de golpe
+        if (IsDead || damageAmount <= 0f) return;
 
         // Tampoco se remata a quien ya esta en el suelo
         var downedTarget = other.GetComponent<PlayerDownedState>();

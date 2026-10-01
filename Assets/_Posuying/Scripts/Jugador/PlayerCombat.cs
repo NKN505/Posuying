@@ -19,12 +19,15 @@ public class PlayerCombat : MonoBehaviour
     private float _shootTimer = 0f;
     private Camera _cam;
     private PlayerNoise _ruido;
+    private PlayerDownedState _abatido;
+    private Weapon _arma;
 
     void Start()
     {
         // Su propia camara, no Camera.main (que en red puede ser la de otro jugador)
         _cam = playerCamera != null ? playerCamera : GetComponentInChildren<Camera>(true);
         _ruido = GetComponent<PlayerNoise>();
+        _abatido = GetComponent<PlayerDownedState>();
     }
 
     void Update()
@@ -35,11 +38,29 @@ public class PlayerCombat : MonoBehaviour
         if (_meleeTimer > 0f) _meleeTimer -= Time.deltaTime;
         if (_shootTimer > 0f) _shootTimer -= Time.deltaTime;
 
+        // Abatido o fuera de combate no se pelea
+        if (_abatido != null && !_abatido.CanAct) return;
+
+        // Con un arma en la mano, el raton es del arma (Fire = clic izquierdo,
+        // Aim = clic derecho). Antes este script actuaba a la vez: cada disparo
+        // daba tambien un golpe de mele y apuntar lanzaba un disparo invisible.
+        if (TieneArmaActiva()) return;
+
         if (Input.GetMouseButtonDown(0) && _meleeTimer <= 0f)
             MeleeAttack();
 
         if (Input.GetMouseButtonDown(1) && _shootTimer <= 0f)
             Shoot();
+    }
+
+    // Mismo criterio que PlayerController: el arma activa es la que esta
+    // encendida en la jerarquia, y solo se busca cuando la anterior se apaga.
+    private bool TieneArmaActiva()
+    {
+        if (_arma == null || !_arma.isActiveAndEnabled)
+            _arma = GetComponentInChildren<Weapon>(false);
+
+        return _arma != null && _arma.isActiveAndEnabled;
     }
 
     void MeleeAttack()

@@ -21,6 +21,9 @@ public class HordeDirector : MonoBehaviour
     [Range(0f, 1f)] public float specialChance = 0.15f;
     [Tooltip("Vida de cada enemigo spawneado (baja = facil de matar)")]
     public float enemyHealth = 60f;
+    [Tooltip("Si esta marcado, cada enemigo conserva la vida de su prefab (el Tanque " +
+             "tiene 6000) en vez de recibir 'Enemy Health'. Desmarcado = como hasta ahora.")]
+    public bool usarVidaDelPrefab = false;
 
     [Header("Poblacion")]
     public int baseAlive = 8;         // objetivo de vivos en calma
@@ -123,8 +126,11 @@ public class HordeDirector : MonoBehaviour
 
     private void PruneDead()
     {
+        // Los muertos tambien salen de la cuenta: el cadaver se queda un rato en
+        // el suelo y antes seguia ocupando sitio en la horda (y se guardaba en la
+        // migracion de host como un enemigo vivo).
         for (int i = _alive.Count - 1; i >= 0; i--)
-            if (_alive[i] == null)
+            if (_alive[i] == null || _alive[i].IsDead)
                 _alive.RemoveAt(i);
     }
 
@@ -171,7 +177,8 @@ public class HordeDirector : MonoBehaviour
         netObj.Spawn();
 
         // La vida se fija DESPUES de Spawn (antes no existe la variable de red)
-        enemy.SetMaxHealth(enemyHealth);
+        if (!usarVidaDelPrefab)
+            enemy.SetMaxHealth(enemyHealth);
 
         _alive.Add(enemy);
     }
@@ -221,6 +228,9 @@ public class HordeDirector : MonoBehaviour
     public EnemyBehaviour RestoreEnemy(int prefabIndex, Vector3 position, float yaw,
                                        float health, float maxHealth)
     {
+        // Un enemigo guardado sin vida no se recrea: volveria como inmortal
+        if (health <= 0f) return null;
+
         EnemyBehaviour prefab = GetPrefabByIndex(prefabIndex);
         if (prefab == null) return null;
 

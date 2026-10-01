@@ -44,7 +44,7 @@ public class EnemyRangedAttack : NetworkBehaviour
     {
         if (!IsServer) return;
 
-        if (_reloj > 0f) { _reloj -= Time.deltaTime; Cancelar(); return; }
+        if (_reloj > 0f) { Cancelar(); return; }
 
         if (objetivo == null || !PuedoDispararle(objetivo)) { Cancelar(); return; }
 
@@ -59,6 +59,13 @@ public class EnemyRangedAttack : NetworkBehaviour
         Disparar(objetivo);
         _apuntando = 0f;
         _reloj = cooldown;
+    }
+
+    // El enfriamiento corre siempre. Antes solo bajaba mientras se llamaba a
+    // Aim(), asi que al perder el objetivo se quedaba congelado a medias.
+    void Update()
+    {
+        if (IsServer && _reloj > 0f) _reloj -= Time.deltaTime;
     }
 
     /// <summary>Deja de apuntar. Se llama sola si el objetivo se cubre.</summary>

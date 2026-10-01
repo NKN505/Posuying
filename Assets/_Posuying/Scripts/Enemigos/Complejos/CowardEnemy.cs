@@ -211,7 +211,8 @@ public class CowardEnemy : EnemyBehaviour
 
     private void ActualizarAnimacion()
     {
-        if (_anim == null || _anim.runtimeAnimatorController == null) return;
+        // Con el Animator apagado (ragdoll) no hay nada que animar
+        if (_anim == null || _anim.runtimeAnimatorController == null || !_anim.isActiveAndEnabled) return;
         if (string.IsNullOrEmpty(moveState) && string.IsNullOrEmpty(idleState)) return;
 
         Vector3 delta = transform.position - _posicionAnterior;

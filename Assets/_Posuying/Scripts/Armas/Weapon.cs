@@ -128,9 +128,19 @@ public abstract class Weapon : MonoBehaviour{
 
     private bool isAiming = false;
 
-    // FOV de reposo. Se lee de la camara en Awake en vez de escribirlo a
-    // mano, asi no hay que tocar el script si cambias el FOV en el editor.
-    private float defaultFieldOfView;
+    // FOV de reposo. Se lee SIEMPRE de Opciones (GameSettings.FieldOfView).
+    // Antes se copiaba de la camara una sola vez en Awake, y si cambiabas el FOV
+    // en Opciones con el arma en la mano, el zoom lo devolvia al valor viejo.
+    private static float DefaultFieldOfView => GameSettings.FieldOfView;
+
+    // Jugador que lleva el arma. Sirve para que el rayo no se pare en su propio
+    // cuerpo, para no poder disparar estando abatido y para avisar del ruido.
+    private Transform ownerRoot;
+    private PlayerDownedState ownerDowned;
+    private PlayerNoise ownerNoise;
+
+    // El jugador puede usar el arma (no esta abatido ni fuera de combate)
+    protected bool OwnerCanAct => ownerDowned == null || ownerDowned.CanAct;
 
     /* Desfase entre el PIVOTE del WeaponHolder y el marcador de cadera.
     Existe porque los modelos de manos y arma estan desplazados dentro del
@@ -265,6 +275,11 @@ public abstract class Weapon : MonoBehaviour{
         return muzzle;
     }
 
+    protected void SetMuzzle(Transform muzzle)
+    {
+        this.muzzle = muzzle;
+    }
+
     public LayerMask GetHittableLayers()
     {
         return hittableLayers;
@@ -387,6 +402,12 @@ public abstract class Weapon : MonoBehaviour{
 
     public void Reload()
     {
+        // Abatido no se recarga (y la R es la tecla de gastar una vida)
+        if (!OwnerCanAct)
+        {
+            return;
+        }
+
         if (isReloading || isSwitchingWeapon)
         {
             return;
@@ -528,14 +549,7 @@ public abstract class Weapon : MonoBehaviour{
         Vector3 origin = cam.position;
         direction = ApplySpread(cam.forward, cam.rotation, spread);
 
-        bool impact = Physics.Raycast(
-            origin,
-            direction,
-            out hit,
-            scope,
-            hittableLayers,
-            QueryTriggerInteraction.Ignore
-        );
+        bool impact = RaycastIgnoringOwner(origin, direction, out hit);
 
         // Punto final real del disparo: el impacto, o el alcance maximo.
         Vector3 endPoint = impact
@@ -555,6 +569,46 @@ public abstract class Weapon : MonoBehaviour{
         SpawnTracer(endPoint);
 
         return impact;
+    }
+
+    /* Igual que Physics.Raycast, pero saltandose el cuerpo de quien dispara.
+
+    El rayo nace en la camara, que va DENTRO de la capsula del jugador. Unity no
+    detecta el collider en el que empieza el rayo, pero al agacharse la camara
+    queda en el borde de la capsula y el tiro podia morir en tu propio cuerpo.
+    Se piden todos los impactos y se queda el mas cercano que no sea tuyo. */
+
+    private bool RaycastIgnoringOwner(Vector3 origin, Vector3 direction, out RaycastHit hit)
+    {
+        hit = default;
+
+        RaycastHit[] hits = Physics.RaycastAll(
+            origin,
+            direction,
+            scope,
+            hittableLayers,
+            QueryTriggerInteraction.Ignore
+        );
+
+        bool found = false;
+        float nearest = float.MaxValue;
+
+        for (int i = 0; i < hits.Length; i++)
+        {
+            if (ownerRoot != null && hits[i].collider.transform.IsChildOf(ownerRoot))
+            {
+                continue;
+            }
+
+            if (hits[i].distance < nearest)
+            {
+                nearest = hits[i].distance;
+                hit = hits[i];
+                found = true;
+            }
+        }
+
+        return found;
     }
 
     /* Desvia una direccion dentro de un cono.
@@ -728,10 +782,49 @@ public abstract class Weapon : MonoBehaviour{
         {
             playerCamera = Camera.main;
         }
+    }
 
-        if (playerCamera != null)
+    private void ResolveOwner()
+    {
+        PlayerController owner = GetComponentInParent<PlayerController>();
+        ownerRoot = owner != null ? owner.transform : transform.root;
+
+        ownerDowned = GetComponentInParent<PlayerDownedState>();
+        ownerNoise = GetComponentInParent<PlayerNoise>();
+    }
+
+    /* Si en el Inspector se dejan las capas del rayo en "Nothing", el disparo
+    no podia tocar NADA (es lo que pasaba en el prefab del jugador). En ese caso
+    se usa una mascara por defecto: todo menos Ignore Raycast, las manos FP, el
+    cuerpo local y los ragdolls. Si se asigna una mascara a mano, se respeta. */
+
+    private void ResolveHittableLayers()
+    {
+        if (hittableLayers.value != 0)
         {
-            defaultFieldOfView = playerCamera.fieldOfView;
+            return;
+        }
+
+        int mask = Physics.DefaultRaycastLayers;
+        mask &= ~LayerBit(PlayerVisual.FPArmsLayerName);
+        mask &= ~LayerBit(PlayerVisual.LocalBodyLayerName);
+        mask &= ~LayerBit("Ragdoll");
+
+        hittableLayers = mask;
+    }
+
+    private static int LayerBit(string layerName)
+    {
+        int layer = LayerMask.NameToLayer(layerName);
+        return layer >= 0 ? 1 << layer : 0;
+    }
+
+    // Avisa a los enemigos con oido de que ha sonado un disparo
+    protected void MakeShotNoise()
+    {
+        if (ownerNoise != null)
+        {
+            ownerNoise.MakeShot();
         }
     }
 
@@ -740,7 +833,8 @@ public abstract class Weapon : MonoBehaviour{
     protected virtual void ReadAimInput()
     {
         // Con una ventana de interfaz abierta los clics son para la UI.
-        if (!canAim || UIState.BlocksGameplay)
+        // Abatido tampoco se apunta.
+        if (!canAim || UIState.BlocksGameplay || !OwnerCanAct)
         {
             isAiming = false;
             return;
@@ -796,7 +890,7 @@ public abstract class Weapon : MonoBehaviour{
             return;
         }
 
-        float targetFov = isAiming ? aimFieldOfView : defaultFieldOfView;
+        float targetFov = isAiming ? aimFieldOfView : DefaultFieldOfView;
         float z = 1.0f - Mathf.Exp(-zoomSpeed * Time.deltaTime);
 
         playerCamera.fieldOfView = Mathf.Lerp(
@@ -810,9 +904,9 @@ public abstract class Weapon : MonoBehaviour{
     // si cambias de arma mientras apuntas, el zoom se quedaria pegado.
     protected void ResetZoom()
     {
-        if (playerCamera != null && defaultFieldOfView > 0.0f)
+        if (playerCamera != null && DefaultFieldOfView > 0.0f)
         {
-            playerCamera.fieldOfView = defaultFieldOfView;
+            playerCamera.fieldOfView = DefaultFieldOfView;
         }
     }
 
@@ -825,6 +919,8 @@ public abstract class Weapon : MonoBehaviour{
 
         CacheAimOffsets();
         CacheCameraFieldOfView();
+        ResolveOwner();
+        ResolveHittableLayers();
     }
 
     protected virtual void Update(){

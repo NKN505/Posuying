@@ -30,6 +30,14 @@ public class EnemyHealthBar : MonoBehaviour
     {
         if (enemy == null || !enemy.gameObject.activeSelf) return;
 
+        // Cadaver: la barra sobra (el cuerpo se queda un rato en el suelo)
+        if (enemy.IsDead)
+        {
+            if (fillBar != null) fillBar.enabled = false;
+            if (background != null) background.enabled = false;
+            return;
+        }
+
         Transform cam = ActiveCamera();
         if (cam == null) return;
 

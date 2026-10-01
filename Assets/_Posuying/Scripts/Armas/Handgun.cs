@@ -68,7 +68,16 @@ public class Handgun : Weapon
         SetIsShooting(false);
         SetIsReloading(false);
         SetIsSwitchingWeapon(false);
-        SetNoAmmo(true);
+        SetNoAmmo(GetReserveAmmo() <= 0.0f);
+
+        // El "muzzle" del prefab apuntaba a un asset (el prefab de la estela) y
+        // no al canon de ESTA pistola, asi que la estela salia de un punto fijo
+        // del mundo. Si no es un objeto de la escena, se usa Barrel_Location.
+        Transform muzzle = GetMuzzle();
+        if (barrelLocation != null && (muzzle == null || !muzzle.gameObject.scene.IsValid()))
+        {
+            SetMuzzle(barrelLocation);
+        }
 
         // La luz del fogonazo empieza siempre apagada.
         if (muzzleLight != null)
@@ -83,7 +92,8 @@ public class Handgun : Weapon
         base.Update();
 
         // Con una ventana de interfaz abierta, los clics son para la UI.
-        if (UIState.BlocksGameplay)
+        // Abatido no se dispara ni se recarga.
+        if (UIState.BlocksGameplay || !OwnerCanAct)
         {
             return;
         }
@@ -144,6 +154,10 @@ public class Handgun : Weapon
         SetIsEmpty(GetCurrentAmmo() <= 0.0f);
         SetIsFull(GetCurrentAmmo() >= GetCapacity());
         SetNoAmmo(GetReserveAmmo() <= 0.0f);
+
+        // Los enemigos con oido tienen que enterarse del disparo (antes solo lo
+        // hacia el disparo de PlayerCombat, que ahora no actua con arma en mano)
+        MakeShotNoise();
 
         // ---- LOGICA: el rayo decide que pasa ----
         if (ShootRay(GetCurrentSpread(), out RaycastHit hit, out Vector3 direction))

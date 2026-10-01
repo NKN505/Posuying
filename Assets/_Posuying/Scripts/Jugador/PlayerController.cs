@@ -143,9 +143,12 @@ public class PlayerController : Character, IPassiveRegenerator
             return;
         }
 
-        // DEBUG: matar al jugador con K para probar el spawn
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // DEBUG: matar al jugador con K para probar el spawn.
+        // Solo en el editor y en builds de desarrollo, nunca en la build final.
         if (Input.GetKeyDown(KeyCode.K))
             RequestDamage(GetHealth());
+#endif
 
         // MOVIMIENTO DE CAMARA (siempre activo, incluso escalando)
         float sensitivity = GameSettings.MouseSensitivity;

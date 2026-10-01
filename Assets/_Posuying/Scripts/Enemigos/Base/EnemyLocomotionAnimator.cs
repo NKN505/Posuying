@@ -77,7 +77,8 @@ public class EnemyLocomotionAnimator : MonoBehaviour
     /// </summary>
     public void PlayOneShot(string estado, float duracion, float mezcla)
     {
-        if (_anim == null || _anim.runtimeAnimatorController == null) return;
+        // Con el Animator apagado (ragdoll) no hay nada que reproducir
+        if (_anim == null || _anim.runtimeAnimatorController == null || !_anim.isActiveAndEnabled) return;
         if (string.IsNullOrEmpty(estado) || duracion <= 0f) return;
 
         _anim.speed = 1f;
@@ -114,7 +115,8 @@ public class EnemyLocomotionAnimator : MonoBehaviour
 
     void Update()
     {
-        if (_anim == null || _anim.runtimeAnimatorController == null) return;
+        // Con el Animator apagado (ragdoll) no hay nada que animar
+        if (_anim == null || _anim.runtimeAnimatorController == null || !_anim.isActiveAndEnabled) return;
 
         Medir();
         ActualizarUmbralCorrer();
