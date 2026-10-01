@@ -1,0 +1,1052 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WwiseDocument Type="WorkUnit" ID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}" SchemaVersion="133">
+	<Containers>
+		<WorkUnit Name="Default Work Unit" ID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}" PersistMode="Standalone">
+			<ChildrenList>
+				<Sound Name="SFX_Ambience_City" ID="{57A1868F-9842-4AB2-B7D8-F88A40A405E4}" ShortID="441157399">
+					<PropertyList>
+						<Property Name="IsLoopingEnabled" Type="bool" Value="True"/>
+					</PropertyList>
+					<ReferenceList>
+						<Reference Name="Conversion">
+							<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+						</Reference>
+						<Reference Name="OutputBus">
+							<ObjectRef Name="Ambience" ID="{C851392A-CF95-474D-A3B8-399A980132B1}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+						</Reference>
+					</ReferenceList>
+					<ChildrenList>
+						<AudioFileSource Name="Ambience City" ID="{C4B38349-19B0-4EEE-8500-7B260434069B}">
+							<Language>SFX</Language>
+							<AudioFile>Ambience City.wav</AudioFile>
+							<MediaIDList>
+								<MediaID ID="816346049"/>
+							</MediaIDList>
+						</AudioFileSource>
+					</ChildrenList>
+					<ActiveSourceList>
+						<ActiveSource Name="Ambience City" ID="{C4B38349-19B0-4EEE-8500-7B260434069B}" Platform="Linked"/>
+					</ActiveSourceList>
+				</Sound>
+				<Sound Name="SFX_Menu_Music" ID="{6BA78110-74F0-4821-B991-23F284F518E3}" ShortID="982466915">
+					<PropertyList>
+						<Property Name="IsLoopingEnabled" Type="bool" Value="True"/>
+					</PropertyList>
+					<ReferenceList>
+						<Reference Name="Conversion">
+							<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+						</Reference>
+						<Reference Name="OutputBus">
+							<ObjectRef Name="Music" ID="{1F3C1573-4A07-4F7C-B5F4-D377E64ED62C}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+						</Reference>
+					</ReferenceList>
+					<ChildrenList>
+						<AudioFileSource Name="If I'm Gone - Official Menu Theme" ID="{7F52D95E-90DA-42E9-8F4B-32016393C7F5}">
+							<Language>SFX</Language>
+							<AudioFile>If I'm Gone - Official Menu Theme.wav</AudioFile>
+							<MediaIDList>
+								<MediaID ID="710371120"/>
+							</MediaIDList>
+						</AudioFileSource>
+					</ChildrenList>
+					<ActiveSourceList>
+						<ActiveSource Name="If I'm Gone - Official Menu Theme" ID="{7F52D95E-90DA-42E9-8F4B-32016393C7F5}" Platform="Linked"/>
+					</ActiveSourceList>
+				</Sound>
+				<RandomSequenceContainer Name="SC_Player_Jog" ID="{FF097914-0D0D-4E0D-94FA-52452566560F}" ShortID="210354598">
+					<PropertyList>
+						<Property Name="GlobalOrPerObject" Type="int16" Value="0"/>
+						<Property Name="OverridePositioning" Type="bool" Value="True"/>
+						<Property Name="RandomOrSequence" Type="int16" Value="0"/>
+						<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+					</PropertyList>
+					<ReferenceList>
+						<Reference Name="Attenuation">
+							<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+						</Reference>
+						<Reference Name="Conversion">
+							<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+						</Reference>
+						<Reference Name="OutputBus">
+							<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+						</Reference>
+					</ReferenceList>
+					<ChildrenList>
+						<Sound Name="Trote1" ID="{BE9EA8B7-65B4-49EB-92EE-411A87D9CCF4}" ShortID="917605187">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Trote1" ID="{6043280F-2EFF-4032-A88B-9609E68CFB5E}">
+									<Language>SFX</Language>
+									<AudioFile>Trote1.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="809240413"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Trote1" ID="{6043280F-2EFF-4032-A88B-9609E68CFB5E}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Trote2" ID="{3EB09F2F-7D2E-48E0-B187-F5F563693D18}" ShortID="546163017">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Trote2" ID="{D70756F5-E4A3-4246-9321-1D9F9C42C003}">
+									<Language>SFX</Language>
+									<AudioFile>Trote2.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="101796764"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Trote2" ID="{D70756F5-E4A3-4246-9321-1D9F9C42C003}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Trote3" ID="{2E4F252C-A467-4156-9F33-0F6FAB76F4DC}" ShortID="397089196">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Trote3" ID="{46F7CAFD-06BB-4AFF-9A50-BE0404993155}">
+									<Language>SFX</Language>
+									<AudioFile>Trote3.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="35036812"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Trote3" ID="{46F7CAFD-06BB-4AFF-9A50-BE0404993155}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Trote4" ID="{14896C00-B6C4-46B3-965C-01A3CD13E1AB}" ShortID="766540300">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Trote4" ID="{EECD5017-C70B-4A47-AEE7-3BC6EB18CDEE}">
+									<Language>SFX</Language>
+									<AudioFile>Trote4.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="435709707"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Trote4" ID="{EECD5017-C70B-4A47-AEE7-3BC6EB18CDEE}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Trote5" ID="{22DA1408-6E50-4320-A603-AFDD98160EB3}" ShortID="520066741">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Trote5" ID="{B78CDBF3-8DEF-4E6F-B592-B34C31F778DE}">
+									<Language>SFX</Language>
+									<AudioFile>Trote5.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="949757251"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Trote5" ID="{B78CDBF3-8DEF-4E6F-B592-B34C31F778DE}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Trote6" ID="{6CC03FCC-6D04-4114-A9C6-AF6BB95C8DF6}" ShortID="1059030963">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Trote6" ID="{23949A67-8D2E-44B5-A05E-26D3FCD9E61C}">
+									<Language>SFX</Language>
+									<AudioFile>Trote6.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="355742726"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Trote6" ID="{23949A67-8D2E-44B5-A05E-26D3FCD9E61C}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Trote7" ID="{264C5CF0-905F-40F3-82A2-0F3BE12084A0}" ShortID="147829597">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Trote7" ID="{7AA91F36-3143-43C2-B1DC-190924597A2C}">
+									<Language>SFX</Language>
+									<AudioFile>Trote7.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="711383431"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Trote7" ID="{7AA91F36-3143-43C2-B1DC-190924597A2C}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Trote8" ID="{E8DED0D1-BA80-444B-ABB9-DFF73BD5D219}" ShortID="825597092">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Trote8" ID="{3C4E2F68-FE49-49F8-8E91-5F8AFFF92454}">
+									<Language>SFX</Language>
+									<AudioFile>Trote8.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="619708094"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Trote8" ID="{3C4E2F68-FE49-49F8-8E91-5F8AFFF92454}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Trote9" ID="{E8897E56-5BC2-4B3F-9373-83C8A412FB2A}" ShortID="510135998">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Trote9" ID="{C9EC0A73-950E-4195-A014-4CADBBFBBC1F}">
+									<Language>SFX</Language>
+									<AudioFile>Trote9.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="463570140"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Trote9" ID="{C9EC0A73-950E-4195-A014-4CADBBFBBC1F}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+					</ChildrenList>
+					<ObjectLists>
+						<ObjectList Name="Playlist">
+							<PluginInnerObject Name="" ID="{2281E221-A495-4553-BBC6-AFEDE9AA6083}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Trote1" ID="{BE9EA8B7-65B4-49EB-92EE-411A87D9CCF4}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{03CDEFBF-7795-471D-B2A2-D2CE69F5956E}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Trote2" ID="{3EB09F2F-7D2E-48E0-B187-F5F563693D18}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{969036CB-F294-4C7C-A282-47DFA2D9828C}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Trote3" ID="{2E4F252C-A467-4156-9F33-0F6FAB76F4DC}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{85978330-CC88-44BD-9F1F-632001288A7B}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Trote4" ID="{14896C00-B6C4-46B3-965C-01A3CD13E1AB}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{71B3DDCB-0229-4902-9630-E7A90598B6C1}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Trote5" ID="{22DA1408-6E50-4320-A603-AFDD98160EB3}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{CBE38A42-66AC-4CB9-AABF-C04D6C6E17DB}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Trote6" ID="{6CC03FCC-6D04-4114-A9C6-AF6BB95C8DF6}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{1808AC92-B19E-4AA7-9313-B760DBEDD504}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Trote7" ID="{264C5CF0-905F-40F3-82A2-0F3BE12084A0}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{BD1E7C4B-0706-4D93-AFF4-555F992E3FEA}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Trote8" ID="{E8DED0D1-BA80-444B-ABB9-DFF73BD5D219}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{17D8BFF7-981B-4ED7-B36C-814E59021351}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Trote9" ID="{E8897E56-5BC2-4B3F-9373-83C8A412FB2A}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+						</ObjectList>
+					</ObjectLists>
+				</RandomSequenceContainer>
+				<RandomSequenceContainer Name="SC_Player_Sprint" ID="{67F1E11B-8989-41B6-974D-ED544BFE4279}" ShortID="862438362">
+					<PropertyList>
+						<Property Name="3DSpatialization" Type="int16" Value="1"/>
+						<Property Name="GlobalOrPerObject" Type="int16" Value="0"/>
+						<Property Name="RandomOrSequence" Type="int16" Value="0"/>
+						<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+					</PropertyList>
+					<ReferenceList>
+						<Reference Name="Attenuation">
+							<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+						</Reference>
+						<Reference Name="Conversion">
+							<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+						</Reference>
+						<Reference Name="OutputBus">
+							<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+						</Reference>
+					</ReferenceList>
+					<ChildrenList>
+						<Sound Name="Sprint_Clean_09" ID="{15EFD8D5-6C02-43F8-9D97-08AAA4BDEACF}" ShortID="357427888">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_09" ID="{00CBA0B0-1261-4D54-9ECE-185B82F24BEC}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_09.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="126577639"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_09" ID="{00CBA0B0-1261-4D54-9ECE-185B82F24BEC}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_10" ID="{B63FB229-56D7-4BD6-91F9-92DE6EAA3D33}" ShortID="210765740">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_10" ID="{91845AEC-C19E-4CD5-BD5E-FD9C0CF80FDA}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_10.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="768592374"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_10" ID="{91845AEC-C19E-4CD5-BD5E-FD9C0CF80FDA}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_11" ID="{59DA6F0B-53EB-453A-9691-E31E1212DD46}" ShortID="458012336">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_11" ID="{023F8DA0-BC25-4131-838D-7D099DE3F176}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_11.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="164061238"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_11" ID="{023F8DA0-BC25-4131-838D-7D099DE3F176}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_12" ID="{9D21F2AE-39FF-4647-B8B9-5CF5A218E980}" ShortID="599014270">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_12" ID="{498378A8-AA74-4DF3-9123-614190C9EF15}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_12.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="64534276"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_12" ID="{498378A8-AA74-4DF3-9123-614190C9EF15}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_13" ID="{1F752EBA-055B-4817-B6DF-6768314EF708}" ShortID="55689198">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_13" ID="{FFEBA22B-0879-4DF3-A6CF-4110A0506A04}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_13.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="684716753"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_13" ID="{FFEBA22B-0879-4DF3-A6CF-4110A0506A04}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_14" ID="{EBD99E63-C18C-4DB5-BC82-BBEA136B39C9}" ShortID="40169557">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_14" ID="{04841350-0DEA-4DC1-AD7B-729A633695C7}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_14.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="329240228"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_14" ID="{04841350-0DEA-4DC1-AD7B-729A633695C7}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_15" ID="{9E245A44-65A2-4063-A15E-9748187C6CCF}" ShortID="1003680795">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_15" ID="{0726C9FA-B96F-4522-B957-EA7E321A6E0B}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_15.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="400172578"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_15" ID="{0726C9FA-B96F-4522-B957-EA7E321A6E0B}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_16" ID="{0ABF172F-C924-4B47-ABAB-416A82BE2365}" ShortID="201178992">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_16" ID="{CC2E1F97-9A96-462A-A7C3-03D240D47832}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_16.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="840532976"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_16" ID="{CC2E1F97-9A96-462A-A7C3-03D240D47832}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_17" ID="{753F9EEC-F8D0-4071-A439-0C32CF44DB1E}" ShortID="687298189">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_17" ID="{BAA0CD92-F4BD-43B5-8744-C30E51613FCB}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_17.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="77527541"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_17" ID="{BAA0CD92-F4BD-43B5-8744-C30E51613FCB}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_18" ID="{43FA81CD-E1A9-4DF0-A711-CDB46118DA8A}" ShortID="1046565904">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_18" ID="{2FCAAC4D-E8AE-433A-99CD-9C477149927B}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_18.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="341656294"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_18" ID="{2FCAAC4D-E8AE-433A-99CD-9C477149927B}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_19" ID="{405061BB-5EB4-43C3-8C25-908A76F1DB28}" ShortID="42889243">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_19" ID="{129729A7-DCE7-47FC-AD9C-0F54FCD24F74}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_19.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="502950740"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_19" ID="{129729A7-DCE7-47FC-AD9C-0F54FCD24F74}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_20" ID="{8C7B6012-FDEC-48DC-89EB-93174A102DA7}" ShortID="207648738">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_20" ID="{623A42B2-61CC-4A90-9BA8-826341D72574}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_20.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="356577106"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_20" ID="{623A42B2-61CC-4A90-9BA8-826341D72574}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_21" ID="{B6CA273C-A938-4269-901D-CB2975BAD299}" ShortID="882544159">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_21" ID="{BFE6FCF2-23E9-4E0D-86C9-06EB83742A2C}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_21.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="255323385"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_21" ID="{BFE6FCF2-23E9-4E0D-86C9-06EB83742A2C}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_22" ID="{FD16971B-9D10-4ABA-8CF0-6CDB4EF21F05}" ShortID="441811592">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_22" ID="{4A7A7094-DE70-4E5F-BE16-D43498080699}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_22.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="745823409"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_22" ID="{4A7A7094-DE70-4E5F-BE16-D43498080699}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+						<Sound Name="Sprint_Clean_23" ID="{6EDE4838-C2A3-4560-85FD-519FB8010A3E}" ShortID="687239650">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="1"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ReferenceList>
+								<Reference Name="Attenuation">
+									<ObjectRef Name="Att_Player_Footsteps" ID="{C66699C7-05EE-4177-B38B-7AE21FC7D4C9}" WorkUnitID="{48C058A1-1840-4E07-B87C-89CAD9D4C508}"/>
+								</Reference>
+								<Reference Name="Conversion">
+									<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+								</Reference>
+								<Reference Name="OutputBus">
+									<ObjectRef Name="SFX" ID="{83737F22-E9AC-4287-B1A8-691C71F2A0EF}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+								</Reference>
+							</ReferenceList>
+							<ChildrenList>
+								<AudioFileSource Name="Sprint_Clean_23" ID="{25B432EC-CC1F-47FF-A0C1-11413E69795D}">
+									<Language>SFX</Language>
+									<AudioFile>Sprint_Clean_23.wav</AudioFile>
+									<MediaIDList>
+										<MediaID ID="750183019"/>
+									</MediaIDList>
+								</AudioFileSource>
+							</ChildrenList>
+							<ActiveSourceList>
+								<ActiveSource Name="Sprint_Clean_23" ID="{25B432EC-CC1F-47FF-A0C1-11413E69795D}" Platform="Linked"/>
+							</ActiveSourceList>
+						</Sound>
+					</ChildrenList>
+					<ObjectLists>
+						<ObjectList Name="Playlist">
+							<PluginInnerObject Name="" ID="{2007B782-2929-435C-9BD4-E5A7EF4C9DD7}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_09" ID="{15EFD8D5-6C02-43F8-9D97-08AAA4BDEACF}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{B78A8499-3B92-4D54-9990-CBE267886DB9}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_10" ID="{B63FB229-56D7-4BD6-91F9-92DE6EAA3D33}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{341DBBFB-BBCB-4D5D-92A7-FB503A3DED6A}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_11" ID="{59DA6F0B-53EB-453A-9691-E31E1212DD46}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{B5442B55-6BF8-469A-BD6F-358949D7D713}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_12" ID="{9D21F2AE-39FF-4647-B8B9-5CF5A218E980}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{C95B90DA-4B51-4468-BDB3-A3C8205A85D6}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_13" ID="{1F752EBA-055B-4817-B6DF-6768314EF708}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{8E64385B-5984-4BFB-A171-1D3308C2B10B}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_14" ID="{EBD99E63-C18C-4DB5-BC82-BBEA136B39C9}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{866DF76E-0880-4725-9C6C-133D6B52D0C4}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_15" ID="{9E245A44-65A2-4063-A15E-9748187C6CCF}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{1822DEEF-1E0A-48B7-9E4E-4E6AF9836C16}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_16" ID="{0ABF172F-C924-4B47-ABAB-416A82BE2365}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{E60BD6E1-9779-4C46-8485-7601FFE574EB}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_17" ID="{753F9EEC-F8D0-4071-A439-0C32CF44DB1E}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{B9EAD84A-5368-417F-90EC-F31C2165B73C}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_18" ID="{43FA81CD-E1A9-4DF0-A711-CDB46118DA8A}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{5195AA93-103A-43E3-A2E8-1C3ABC92994F}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_19" ID="{405061BB-5EB4-43C3-8C25-908A76F1DB28}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{C1C4BAF3-53BA-4558-9112-F00768659BE8}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_20" ID="{8C7B6012-FDEC-48DC-89EB-93174A102DA7}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{7ADCFAEF-7BED-489E-8029-4D120C370E17}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_21" ID="{B6CA273C-A938-4269-901D-CB2975BAD299}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{D595115E-427F-407A-816F-E052488DFBC9}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_22" ID="{FD16971B-9D10-4ABA-8CF0-6CDB4EF21F05}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+							<PluginInnerObject Name="" ID="{E3D8C201-59CF-498A-9D09-C3D095745C78}" PluginName="PlaylistSlot" CompanyID="0" PluginID="86">
+								<ReferenceList>
+									<Reference Name="PlaylistObject">
+										<ObjectRef Name="Sprint_Clean_23" ID="{6EDE4838-C2A3-4560-85FD-519FB8010A3E}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+									</Reference>
+								</ReferenceList>
+							</PluginInnerObject>
+						</ObjectList>
+					</ObjectLists>
+				</RandomSequenceContainer>
+				<Sound Name="SFX_UI_Menu_Hover" ID="{A3ECE8FD-6089-4CDA-95EC-00BACFFC8520}" ShortID="590813355">
+					<ReferenceList>
+						<Reference Name="Conversion">
+							<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+						</Reference>
+						<Reference Name="OutputBus">
+							<ObjectRef Name="UI" ID="{9E7168C4-FC99-44B1-BBD1-46600FE80FA9}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+						</Reference>
+					</ReferenceList>
+					<ChildrenList>
+						<AudioFileSource Name="Mouse_HOVER" ID="{D03663CB-57EB-40FA-8CCA-FE3C638929D8}">
+							<PropertyList>
+								<Property Name="FadeOutDuration" Type="Real64" Value="1.59867"/>
+								<Property Name="OverrideWavLoop" Type="bool" Value="True"/>
+							</PropertyList>
+							<Language>SFX</Language>
+							<AudioFile>Mouse_HOVER.wav</AudioFile>
+							<MediaIDList>
+								<MediaID ID="430451479"/>
+							</MediaIDList>
+						</AudioFileSource>
+					</ChildrenList>
+					<ActiveSourceList>
+						<ActiveSource Name="Mouse_HOVER" ID="{D03663CB-57EB-40FA-8CCA-FE3C638929D8}" Platform="Linked"/>
+					</ActiveSourceList>
+				</Sound>
+				<Sound Name="SFX_UI_Menu_Click" ID="{A03685B0-BE7A-440D-AB9A-F22494C6A168}" ShortID="169005513">
+					<ReferenceList>
+						<Reference Name="Conversion">
+							<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+						</Reference>
+						<Reference Name="OutputBus">
+							<ObjectRef Name="UI" ID="{9E7168C4-FC99-44B1-BBD1-46600FE80FA9}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+						</Reference>
+					</ReferenceList>
+					<ChildrenList>
+						<AudioFileSource Name="Mouse_Menu_Click" ID="{D25FC669-B7E1-40F2-9802-EA90642CCCC2}">
+							<PropertyList>
+								<Property Name="FadeOutDuration" Type="Real64" Value="0.24596"/>
+								<Property Name="LoopBegin" Type="Real64" Value="0"/>
+								<Property Name="OverrideWavLoop" Type="bool" Value="True"/>
+							</PropertyList>
+							<Language>SFX</Language>
+							<AudioFile>Mouse_Menu_Click.wav</AudioFile>
+							<MediaIDList>
+								<MediaID ID="802771433"/>
+							</MediaIDList>
+						</AudioFileSource>
+					</ChildrenList>
+					<ActiveSourceList>
+						<ActiveSource Name="Mouse_Menu_Click" ID="{D25FC669-B7E1-40F2-9802-EA90642CCCC2}" Platform="Linked"/>
+					</ActiveSourceList>
+				</Sound>
+				<Sound Name="SFX_UI_Menu_Start" ID="{5235DC15-F7A9-4091-A27F-099CD236D84C}" ShortID="664060971">
+					<ReferenceList>
+						<Reference Name="Conversion">
+							<ObjectRef Name="Default Conversion Settings" ID="{6D1B890C-9826-4384-BF07-C15223E9FB56}" WorkUnitID="{27A5FBD9-262C-4BEE-A6A4-4E43DB5DEA7B}"/>
+						</Reference>
+						<Reference Name="OutputBus">
+							<ObjectRef Name="UI" ID="{9E7168C4-FC99-44B1-BBD1-46600FE80FA9}" WorkUnitID="{893001A1-433B-4DA6-8EB3-C78FC39D57DA}"/>
+						</Reference>
+					</ReferenceList>
+					<ChildrenList>
+						<AudioFileSource Name="Mouse_Menu_Start_Game" ID="{382C5E25-E818-449D-A52F-CCB6EE0ACD40}">
+							<PropertyList>
+								<Property Name="FadeOutDuration" Type="Real64" Value="0.45474"/>
+								<Property Name="OverrideWavLoop" Type="bool" Value="True"/>
+							</PropertyList>
+							<Language>SFX</Language>
+							<AudioFile>Mouse_Menu_Start_Game.wav</AudioFile>
+							<MediaIDList>
+								<MediaID ID="359301465"/>
+							</MediaIDList>
+						</AudioFileSource>
+					</ChildrenList>
+					<ActiveSourceList>
+						<ActiveSource Name="Mouse_Menu_Start_Game" ID="{382C5E25-E818-449D-A52F-CCB6EE0ACD40}" Platform="Linked"/>
+					</ActiveSourceList>
+				</Sound>
+			</ChildrenList>
+		</WorkUnit>
+	</Containers>
+</WwiseDocument>
