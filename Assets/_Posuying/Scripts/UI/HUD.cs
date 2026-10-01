@@ -94,6 +94,7 @@ public class HUD : MonoBehaviour
 
     private Camera _camara;
     private static Texture2D _anillo;
+    private float _radioSuave;
 
     private void DibujarReticula()
     {
@@ -106,6 +107,12 @@ public class HUD : MonoBehaviour
         float mitadFov = _camara.fieldOfView * 0.5f * Mathf.Deg2Rad;
         float radio = Mathf.Tan(_arma.GetCurrentSpread() * Mathf.Deg2Rad) / Mathf.Tan(mitadFov) * (Screen.height * 0.5f);
         radio = Mathf.Max(radio, radioMinimoReticula);
+
+        // Suavizado: al agacharse o al disparar seguido el circulo se cierra y se
+        // abre de forma continua en vez de dar saltos
+        _radioSuave = _radioSuave <= 0f ? radio
+                    : Mathf.Lerp(_radioSuave, radio, 1f - Mathf.Exp(-18f * Time.unscaledDeltaTime));
+        radio = _radioSuave;
 
         if (_anillo == null) _anillo = CrearAnillo(256, 5f);
 
