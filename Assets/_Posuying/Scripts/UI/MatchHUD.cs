@@ -31,8 +31,14 @@ public class MatchHUD : MonoBehaviour
         else
         {
             DrawLives(refWidth);
-            DrawLocalState(refWidth);
-            DrawReviveBar(refWidth);
+
+            // Con el menu de pausa abierto estos avisos se pintaban encima de el
+            // (OnGUI va siempre por delante del Canvas) y no se leia ninguno
+            if (!UIState.NetMenuOpen)
+            {
+                DrawLocalState(refWidth);
+                DrawReviveBar(refWidth);
+            }
         }
 
         GUI.matrix = previous;
