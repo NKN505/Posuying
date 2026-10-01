@@ -10347,28 +10347,28 @@ MonoBehaviour:
   menuMusicPlay:
     idInternal: 0
     valueGuidInternal: 
-    WwiseObjectReference: {fileID: 0}
+    WwiseObjectReference: {fileID: 11400000, guid: 79d337e80aa4ecf4cbd7c48fdb32068a, type: 2}
   menuMusicStop:
     idInternal: 0
     valueGuidInternal: 
-    WwiseObjectReference: {fileID: 0}
+    WwiseObjectReference: {fileID: 11400000, guid: 936d819fcb35ace42bd44c1a503d7364, type: 2}
   ambiencePlay:
     idInternal: 0
     valueGuidInternal: 
-    WwiseObjectReference: {fileID: 0}
+    WwiseObjectReference: {fileID: 11400000, guid: 0af318cc47139cd4fb50b177603088e7, type: 2}
   ambienceFadeOutMs: 1500
   uiHover:
     idInternal: 0
     valueGuidInternal: 
-    WwiseObjectReference: {fileID: 0}
+    WwiseObjectReference: {fileID: 11400000, guid: 77153ea9281600543b05d412316173b3, type: 2}
   uiClick:
     idInternal: 0
     valueGuidInternal: 
-    WwiseObjectReference: {fileID: 0}
+    WwiseObjectReference: {fileID: 11400000, guid: 0aa1087a0ff302b4c833264cc204a03e, type: 2}
   uiStart:
     idInternal: 0
     valueGuidInternal: 
-    WwiseObjectReference: {fileID: 0}
+    WwiseObjectReference: {fileID: 11400000, guid: 2a9e720ef377f3a41a9445d5add2b4db, type: 2}
 --- !u!114 &1945602601
 MonoBehaviour:
   m_ObjectHideFlags: 0
