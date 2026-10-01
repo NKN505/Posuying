@@ -12,8 +12,8 @@ public class MatchManager : NetworkBehaviour
     [Header("Vidas compartidas")]
     [Tooltip("Vidas del equipo cuando hay mas de un jugador")]
     public int coopLives = 5;
-    [Tooltip("Vidas jugando solo (nadie puede levantarte, por eso son menos)")]
-    public int soloLives = 3;
+    [Tooltip("Vidas jugando solo. Por diseno son las mismas que en cooperativo: 5 para toda la partida")]
+    public int soloLives = 5;
 
     private readonly NetworkVariable<int> netLives = new NetworkVariable<int>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -136,6 +136,11 @@ public class MatchManager : NetworkBehaviour
         _startedAsCoop = isCoop;
         netMatchOver.Value = false;
 
+        // Se vuelve a empezar desde el 1er tercio. ANTES de reaparecer a nadie:
+        // el cliente elige su punto con este valor, y si le llegara despues
+        // reapareceria en el tercio de la partida anterior.
+        if (ProgresoTercios.Instance != null) ProgresoTercios.Instance.Reiniciar();
+
         // Todos vuelven a estar en pie y en su punto de aparicion
         foreach (var player in NetworkPlayer.AllPlayers)
         {
@@ -150,6 +155,13 @@ public class MatchManager : NetworkBehaviour
         {
             if (enemy != null && enemy.NetworkObject != null && enemy.NetworkObject.IsSpawned)
                 Destroy(enemy.gameObject);
+        }
+
+        // Y de lo que quedo tirado (municion, botiquines, mochilas de la partida anterior)
+        foreach (var objeto in FindObjectsByType<ObjetoSoltado>(FindObjectsSortMode.None))
+        {
+            if (objeto != null && objeto.NetworkObject != null && objeto.NetworkObject.IsSpawned)
+                objeto.NetworkObject.Despawn(true);
         }
 
         AnnounceRestartClientRpc();

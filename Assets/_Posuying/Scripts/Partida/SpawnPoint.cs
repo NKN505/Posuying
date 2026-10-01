@@ -4,6 +4,10 @@ using UnityEngine;
 // La flecha del gizmo indica hacia donde mirara el jugador al reaparecer.
 public class SpawnPoint : MonoBehaviour
 {
+    [Tooltip("Tercio al que pertenece. Se reaparece en los puntos del tercio " +
+             "mas avanzado que haya alcanzado el equipo (ProgresoTercios).")]
+    public int tercio = 1;
+
     void OnDrawGizmos()
     {
         Gizmos.color = Color.green;
