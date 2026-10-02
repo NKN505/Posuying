@@ -1,0 +1,48 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Windows",
+  "BasePlatform": "Windows",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "260885120",
+    "Type": "Bus",
+    "GUID": "{73D0F44B-3E1F-4BF0-85EC-40F061410EA1}",
+    "Language": "SFX",
+    "Hash": "{36EB4D18-65B6-3364-1793-339FEC82A185}",
+    "ObjectPath": "AB_Room_Medium",
+    "ShortName": "AB_Room_Medium",
+    "Path": "Bus/AB_Room_Medium.bnk",
+    "Plugins": {
+     "Custom": [
+      {
+       "Id": "188902142",
+       "Name": "Wwise_RoomVerb_(Custom)",
+       "ObjectPath": "\\Busses\\Default Work Unit\\Main Audio Bus\\AB_Room_Medium\\[Effect Slot [0]: (RoomVerb)]\\Wwise_RoomVerb_(Custom)",
+       "GUID": "{9573E2A9-111F-4FEE-8CD9-0C7420E90E23}",
+       "LibName": "Wwise RoomVerb",
+       "LibId": "7733251"
+      }
+     ]
+    },
+    "AuxBusses": [
+     {
+      "Id": "260885120",
+      "Name": "AB_Room_Medium",
+      "ObjectPath": "\\Busses\\Default Work Unit\\Main Audio Bus\\AB_Room_Medium",
+      "GUID": "{73D0F44B-3E1F-4BF0-85EC-40F061410EA1}",
+      "PluginRefs": {
+       "Custom": [
+        {
+         "Id": "188902142"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  ],
+  "FileHash": "{5BC79C09-B9AB-35BD-C671-61E4ABF166E9}"
+ }
+}

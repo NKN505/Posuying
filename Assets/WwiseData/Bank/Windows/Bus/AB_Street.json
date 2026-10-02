@@ -1,0 +1,48 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Windows",
+  "BasePlatform": "Windows",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "2851550650",
+    "Type": "Bus",
+    "GUID": "{BBE5BC72-82FB-4E0F-B8C3-624EFAABF8C0}",
+    "Language": "SFX",
+    "Hash": "{6FA59F43-D5C8-AE29-E3A4-AD5F966B4295}",
+    "ObjectPath": "AB_Street",
+    "ShortName": "AB_Street",
+    "Path": "Bus/AB_Street.bnk",
+    "Plugins": {
+     "ShareSets": [
+      {
+       "Id": "2512606865",
+       "Name": "RV_Street",
+       "ObjectPath": "\\Effects\\Default Work Unit\\RV_Street",
+       "GUID": "{5A8E81F7-6F99-4674-BD0B-75D05596A785}",
+       "LibName": "Wwise RoomVerb",
+       "LibId": "7733251"
+      }
+     ]
+    },
+    "AuxBusses": [
+     {
+      "Id": "2851550650",
+      "Name": "AB_Street",
+      "ObjectPath": "\\Busses\\Default Work Unit\\Main Audio Bus\\AB_Street",
+      "GUID": "{BBE5BC72-82FB-4E0F-B8C3-624EFAABF8C0}",
+      "PluginRefs": {
+       "ShareSets": [
+        {
+         "Id": "2512606865"
+        }
+       ]
+      }
+     }
+    ]
+   }
+  ],
+  "FileHash": "{1C48B7A8-AF33-2B92-ECF0-AC1C12D9EAE3}"
+ }
+}

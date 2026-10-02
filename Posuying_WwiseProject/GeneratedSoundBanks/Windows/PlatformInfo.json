@@ -10,7 +10,7 @@
    "SourceFilesRoot": "../../.cache",
    "SoundBanksRoot": ".",
    "ExternalSourcesInputFile": "",
-   "ExternalSourcesOutputRoot": "../../../Assets/GeneratedSoundBanks/Windows"
+   "ExternalSourcesOutputRoot": "."
   },
   "DefaultAlign": "16",
   "Settings": {
@@ -33,6 +33,6 @@
    "PrintObjectPath": "true",
    "PrintObjectColor": "true"
   },
-  "FileHash": "{BB5C4272-EC6D-4C8A-4145-B4B645CF6A8D}"
+  "FileHash": "{BEF3867A-7965-D5DC-59E6-3F779639ECBC}"
  }
 }

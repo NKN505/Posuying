@@ -325,7 +325,11 @@ public class PlayerController : Character, IPassiveRegenerator
 
         AK.Wwise.Event evt = sprinting ? sprintEvent : jogEvent;
         if (evt != null && evt.IsValid())
+        {
+            // Reverb del edificio en el que se pisa (fuera, ninguna)
+            WwiseRoomAcoustics.ApplyReverb(gameObject, WwiseRoomAcoustics.GetRoom(transform.position, transform));
             evt.Post(gameObject);
+        }
     }
 
     // Hook para la fase de ragdoll: dispara el estado Death del Animator.

@@ -9,11 +9,13 @@ Auxiliary Bus	ID	Name			Wwise Object Path	Notes
 	233237770	AB_Room_Small			\Default Work Unit\Main Audio Bus\AB_Room_Small	
 	260885120	AB_Room_Medium			\Default Work Unit\Main Audio Bus\AB_Room_Medium	
 	521134190	AB_Room_Large			\Default Work Unit\Main Audio Bus\AB_Room_Large	
+	2851550650	AB_Street			\Default Work Unit\Main Audio Bus\AB_Street	
 
 Effect plug-ins	ID	Name	Type				Notes
 	188902142	Wwise_RoomVerb_(Custom)	Wwise RoomVerb			
 	201039027	Wwise_RoomVerb_(Custom)	Wwise RoomVerb			
 	236666062	Wwise_RoomVerb_(Custom)	Wwise RoomVerb			
+	2512606865	RV_Street	Wwise RoomVerb			
 
 Audio Devices	ID	Name	Type				Notes
 	2317455096	No_Output	No Output			

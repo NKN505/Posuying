@@ -1,3 +1,6 @@
 Event	ID	Name			Wwise Object Path	Notes
 	2880217405	Play_UI_Menu_Hover			\Default Work Unit\Play_UI_Menu_Hover	
 
+Effect plug-ins	ID	Name	Type				Notes
+	2141574376	Parametric_EQ	Wwise Parametric EQ			
+

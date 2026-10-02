@@ -1,0 +1,214 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Mac",
+  "BasePlatform": "Mac",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "834668433",
+    "Type": "Event",
+    "GUID": "{F39A5377-2737-4BAC-AABA-CBBA043255F7}",
+    "Language": "SFX",
+    "Hash": "{6C1B702A-227F-3911-8597-1F59D94E6DE3}",
+    "ObjectPath": "Play_Pistol_Dryfire",
+    "ShortName": "Play_Pistol_Dryfire",
+    "Path": "Event/Play_Pistol_Dryfire.bnk",
+    "Media": [
+     {
+      "Id": "80179189",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Pistol_DryFire_08.wav",
+      "Path": "Media/80179189.wem",
+      "CachePath": "31/{3144213D-7A93-B504-118F-913534C3BDD9}.wem"
+     },
+     {
+      "Id": "289974365",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Pistol_DryFire_09.wav",
+      "Path": "Media/289974365.wem",
+      "CachePath": "B5/{B5291C56-D73A-77AA-73DE-8B592B1CC01D}.wem"
+     },
+     {
+      "Id": "379471697",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Pistol_DryFire_03.wav",
+      "Path": "Media/379471697.wem",
+      "CachePath": "45/{4508E9F4-120A-54CA-45BD-F5112C54547B}.wem"
+     },
+     {
+      "Id": "452208756",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Pistol_DryFire_06.wav",
+      "Path": "Media/452208756.wem",
+      "CachePath": "F3/{F3A10689-8D14-748F-4D6B-9D80DAEB3781}.wem"
+     },
+     {
+      "Id": "676837976",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Pistol_DryFire_02.wav",
+      "Path": "Media/676837976.wem",
+      "CachePath": "56/{56B3D63B-9DC4-686E-0D26-E83B783AE304}.wem"
+     },
+     {
+      "Id": "688030961",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Pistol_DryFire_04.wav",
+      "Path": "Media/688030961.wem",
+      "CachePath": "20/{200741DE-B1CF-7136-EEC7-4EFC780F8F9A}.wem"
+     },
+     {
+      "Id": "730304017",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Pistol_DryFire_01.wav",
+      "Path": "Media/730304017.wem",
+      "CachePath": "FF/{FFDC261B-99F3-21BC-8E64-5C753EE09532}.wem"
+     },
+     {
+      "Id": "1031995712",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Pistol_DryFire_07.wav",
+      "Path": "Media/1031995712.wem",
+      "CachePath": "F7/{F7B6C643-6D4E-667B-F59B-35C380B4A54F}.wem"
+     },
+     {
+      "Id": "1069114579",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Pistol_DryFire_05.wav",
+      "Path": "Media/1069114579.wem",
+      "CachePath": "6D/{6DBB86D6-F7FA-F0E1-DA86-5CB79A0D15B6}.wem"
+     }
+    ],
+    "Events": [
+     {
+      "Id": "834668433",
+      "Name": "Play_Pistol_Dryfire",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Pistol_Dryfire",
+      "GUID": "{F39A5377-2737-4BAC-AABA-CBBA043255F7}",
+      "MaxAttenuation": "100",
+      "DurationType": "OneShot",
+      "DurationMin": "0.57",
+      "DurationMax": "0.6562358",
+      "SwitchContainers": [
+       {
+        "SwitchValue": {
+         "GroupType": "Switch",
+         "GroupId": "1339508341",
+         "Id": "438105790",
+         "GUID": "{E5ED8572-CFB2-477B-B2C5-F5FABBE042FE}"
+        },
+        "MediaRefs": [
+         {
+          "Id": "80179189"
+         },
+         {
+          "Id": "289974365"
+         },
+         {
+          "Id": "379471697"
+         },
+         {
+          "Id": "452208756"
+         },
+         {
+          "Id": "676837976"
+         },
+         {
+          "Id": "688030961"
+         },
+         {
+          "Id": "730304017"
+         },
+         {
+          "Id": "1031995712"
+         },
+         {
+          "Id": "1069114579"
+         }
+        ]
+       },
+       {
+        "SwitchValue": {
+         "GroupType": "Switch",
+         "GroupId": "1339508341",
+         "Id": "3553349781",
+         "GUID": "{87D68DF8-06F9-4512-9497-15297C6984BC}"
+        },
+        "MediaRefs": [
+         {
+          "Id": "80179189"
+         },
+         {
+          "Id": "289974365"
+         },
+         {
+          "Id": "379471697"
+         },
+         {
+          "Id": "452208756"
+         },
+         {
+          "Id": "676837976"
+         },
+         {
+          "Id": "688030961"
+         },
+         {
+          "Id": "730304017"
+         },
+         {
+          "Id": "1031995712"
+         },
+         {
+          "Id": "1069114579"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "SwitchGroups": [
+     {
+      "Id": "1339508341",
+      "Name": "SG_Environment",
+      "ObjectPath": "\\Switches\\Default Work Unit\\SG_Environment",
+      "GUID": "{01EF52F4-A771-4C21-BFA1-D1463DD3AE9A}",
+      "Switches": [
+       {
+        "Id": "438105790",
+        "Name": "Outside",
+        "ObjectPath": "\\Switches\\Default Work Unit\\SG_Environment\\Outside",
+        "GUID": "{E5ED8572-CFB2-477B-B2C5-F5FABBE042FE}"
+       },
+       {
+        "Id": "3553349781",
+        "Name": "Inside",
+        "ObjectPath": "\\Switches\\Default Work Unit\\SG_Environment\\Inside",
+        "GUID": "{87D68DF8-06F9-4512-9497-15297C6984BC}"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "FileHash": "{D6B47318-9E77-BE8E-B98E-89023BF4D87D}"
+ }
+}

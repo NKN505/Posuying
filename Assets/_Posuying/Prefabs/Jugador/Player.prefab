@@ -847,6 +847,34 @@ MonoBehaviour:
   ejectPower: 150
   muzzleLightIntensity: 8
   muzzleLightTime: 0.05
+  shotEvent:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: 895a514cb4bf4c3c97c0d56ca5393511, type: 2}
+  lastBullet01Event:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: 491e3d5a7e4944b1abf7b525984b833e, type: 2}
+  lastBullet02Event:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: ac1c6ad691f84931a923d2dd3057b189, type: 2}
+  dryFireEvent:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: 21f15933fbf54f3eb5896e3063d49115, type: 2}
+  reloadEvent:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: cad35af9818a4f999a72a58c01f2860a, type: 2}
+  hitMarkerEvent:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: aa103198291348fa9269b30c903b7f95, type: 2}
+  bodyImpactEvent:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: 6e49a67f178e4e0cac8a60ef9ef09c64, type: 2}
 --- !u!1001 &8706869791174039202
 PrefabInstance:
   m_ObjectHideFlags: 0

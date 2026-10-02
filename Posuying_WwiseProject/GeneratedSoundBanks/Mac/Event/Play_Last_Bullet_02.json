@@ -1,0 +1,111 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Mac",
+  "BasePlatform": "Mac",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "2621760586",
+    "Type": "Event",
+    "GUID": "{6D29F84A-F7D5-45B8-A3C3-A4D539EA366F}",
+    "Language": "SFX",
+    "Hash": "{9D9AC634-EE98-FA67-7A2F-156D28490029}",
+    "ObjectPath": "Play_Last_Bullet_02",
+    "ShortName": "Play_Last_Bullet_02",
+    "Path": "Event/Play_Last_Bullet_02.bnk",
+    "Media": [
+     {
+      "Id": "83427592",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Last_Bullet_02.wav",
+      "Path": "Media/83427592.wem",
+      "CachePath": "0C/{0C7FF8EF-5CD3-791B-1808-529D294DD232}.wem"
+     },
+     {
+      "Id": "262642735",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Last_Bullet_02_Outdoor.wav",
+      "Path": "Media/262642735.wem",
+      "CachePath": "BB/{BB7A0020-C349-4223-7751-DEDAAEBE443A}.wem"
+     }
+    ],
+    "Events": [
+     {
+      "Id": "2621760586",
+      "Name": "Play_Last_Bullet_02",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Last_Bullet_02",
+      "GUID": "{6D29F84A-F7D5-45B8-A3C3-A4D539EA366F}",
+      "MaxAttenuation": "100",
+      "DurationType": "OneShot",
+      "DurationMin": "2",
+      "DurationMax": "3.25",
+      "AuxBusRefs": [
+       {
+        "Id": "2851550650",
+        "Name": "AB_Street",
+        "ObjectPath": "\\Busses\\Default Work Unit\\Main Audio Bus\\AB_Street",
+        "GUID": "{BBE5BC72-82FB-4E0F-B8C3-624EFAABF8C0}"
+       }
+      ],
+      "SwitchContainers": [
+       {
+        "SwitchValue": {
+         "GroupType": "Switch",
+         "GroupId": "1339508341",
+         "Id": "438105790",
+         "GUID": "{E5ED8572-CFB2-477B-B2C5-F5FABBE042FE}"
+        },
+        "MediaRefs": [
+         {
+          "Id": "262642735"
+         }
+        ]
+       },
+       {
+        "SwitchValue": {
+         "GroupType": "Switch",
+         "GroupId": "1339508341",
+         "Id": "3553349781",
+         "GUID": "{87D68DF8-06F9-4512-9497-15297C6984BC}"
+        },
+        "MediaRefs": [
+         {
+          "Id": "83427592"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "SwitchGroups": [
+     {
+      "Id": "1339508341",
+      "Name": "SG_Environment",
+      "ObjectPath": "\\Switches\\Default Work Unit\\SG_Environment",
+      "GUID": "{01EF52F4-A771-4C21-BFA1-D1463DD3AE9A}",
+      "Switches": [
+       {
+        "Id": "438105790",
+        "Name": "Outside",
+        "ObjectPath": "\\Switches\\Default Work Unit\\SG_Environment\\Outside",
+        "GUID": "{E5ED8572-CFB2-477B-B2C5-F5FABBE042FE}"
+       },
+       {
+        "Id": "3553349781",
+        "Name": "Inside",
+        "ObjectPath": "\\Switches\\Default Work Unit\\SG_Environment\\Inside",
+        "GUID": "{87D68DF8-06F9-4512-9497-15297C6984BC}"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "FileHash": "{221630D5-E86F-B573-6BC5-95AA7885E916}"
+ }
+}
