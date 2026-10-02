@@ -159,6 +159,7 @@ public class Inventory : NetworkBehaviour
                 var nombre = GetComponent<PlayerName>();
                 suelto.PrepararMochila(OwnerClientId, nombre != null ? nombre.Name : "un companero",
                     new System.Collections.Generic.List<Vector2Int> { new Vector2Int(slot.itemId, slot.count) });
+                suelto.MostrarComoObjeto(slot.itemId);   // que se vea la llave, no una mochila
             }
         }
 

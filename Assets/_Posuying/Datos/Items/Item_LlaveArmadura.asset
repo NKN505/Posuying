@@ -10,14 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cb9f391dcd641de458017c4f6940c3d3, type: 3}
-  m_Name: Item_Pistola
+  m_Name: Item_LlaveArmadura
   m_EditorClassIdentifier: 
-  itemName: Pistola
-  icon: {fileID: 21300000, guid: 6c8cb9b210fc47044bc1f94378aafe1f, type: 3}
-  type: 1
+  itemName: Llave de la armadura
+  icon: {fileID: 21300000, guid: 3323407b5dcb9d840a0fbd8adb8d0ce0, type: 3}
+  type: 2
   maxStack: 1
-  modeloSuelo: {fileID: 7757947126742549135, guid: 5c59210965ffbcc4093fe99a29edb777, type: 3}
-  tamanoSuelo: 0.45
-  rotacionSuelo: {x: 0, y: 0, z: 0}
-  materialSuelo: {fileID: 2100000, guid: 6dff3975f15e0f64d92972b003daf971, type: 2}
+  modeloSuelo: {fileID: 919132149155446097, guid: ba2b0ffa1175e4a419065f62a9900757, type: 3}
+  tamanoSuelo: 0.55
+  rotacionSuelo: {x: -0, y: -0, z: 70.619156}
+  materialSuelo: {fileID: 0}
   healAmount: 0

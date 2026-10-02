@@ -16,6 +16,10 @@ public class CatalogoObjetosSoltados : MonoBehaviour
     public ObjetoSoltado mochila;
 
     [Header("Inventario")]
+    [Tooltip("El catalogo de objetos: lo que hay en el suelo necesita traducir el numero que " +
+             "viaja por red al objeto (y a su modelo) en todas las maquinas.")]
+    public ItemDatabase database;
+
     [Tooltip("El botiquin como objeto del inventario. Con esto, los botiquines del suelo " +
              "se guardan en el inventario en vez de curar al pisarlos. Vacio = como antes.")]
     public ItemData itemBotiquin;

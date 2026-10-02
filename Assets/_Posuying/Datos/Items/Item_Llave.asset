@@ -16,4 +16,8 @@ MonoBehaviour:
   icon: {fileID: 21300000, guid: 4edf612501dfffb43bb747da7702f67b, type: 3}
   type: 2
   maxStack: 1
+  modeloSuelo: {fileID: 919132149155446097, guid: 3b17a0df5f8abb34e964b6ecc3bb52e9, type: 3}
+  tamanoSuelo: 0.55
+  rotacionSuelo: {x: -0, y: -0, z: 70.619156}
+  materialSuelo: {fileID: 0}
   healAmount: 0

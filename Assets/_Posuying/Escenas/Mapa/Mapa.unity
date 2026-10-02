@@ -13611,6 +13611,7 @@ MonoBehaviour:
   municion: {fileID: 5362257221517761709, guid: 064ca80de35ecce49b7eb9c2120ce3a6, type: 3}
   botiquin: {fileID: 6645528361548131841, guid: e25f90ae0b769734b99fb0990ed37cf1, type: 3}
   mochila: {fileID: 4620490575057615903, guid: e08a00ab449ea1f4aa65bb074bff3952, type: 3}
+  database: {fileID: 11400000, guid: 162debf0a9b023d489be4888842e61bc, type: 2}
   itemBotiquin: {fileID: 11400000, guid: 58cd73e0f6ea901429649ed0f745396c, type: 2}
   itemsLlave:
   - {fileID: 11400000, guid: 6e36784ebad509347b788021a13ccd32, type: 2}
