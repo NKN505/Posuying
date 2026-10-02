@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 5304387494353124345}
   - component: {fileID: 3543311986625321897}
   - component: {fileID: 1451884082408247965}
+  - component: {fileID: 9147470827512903381}
   m_Layer: 0
   m_Name: EnemigoRapido
   m_TagString: Untagged
@@ -257,6 +258,33 @@ MonoBehaviour:
   probabilidadMunicion: 0.25
   probabilidadBotiquin: 0.06
   soloUnObjeto: 1
+--- !u!114 &9147470827512903381
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600133933191842801}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa8aec9b8651b8d45a1e2028de4fb2cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  idleState: idle
+  walkState: walk
+  runState: run
+  startMovingSpeed: 0.35
+  stopMovingSpeed: 0.15
+  umbralCorrerAutomatico: 1
+  fraccionCorrer: 0.65
+  runThreshold: 2.5
+  runHysteresis: 0.75
+  minStateTime: 0.25
+  walkClipSpeed: 1.5
+  runClipSpeed: 5
+  minAnimSpeed: 0.5
+  maxAnimSpeed: 2
+  crossFade: 0.15
 --- !u!1 &3614262117423714527
 GameObject:
   m_ObjectHideFlags: 0
@@ -535,6 +563,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 6446120775194234853}
     m_Modifications:
+    - target: {fileID: 3568628872616989892, guid: 06cb2b131fe009c47a523671a8fa9ed8, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 637ee0a01e3e12648b795422d8a668b9, type: 2}
+    - target: {fileID: 3568628872616989892, guid: 06cb2b131fe009c47a523671a8fa9ed8, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4803014352389650695, guid: 06cb2b131fe009c47a523671a8fa9ed8, type: 3}
       propertyPath: m_Name
       value: Zombie3

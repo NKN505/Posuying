@@ -287,6 +287,7 @@ GameObject:
   - component: {fileID: 7541080209916940550}
   - component: {fileID: 8152732470169670286}
   - component: {fileID: 4037012280604135043}
+  - component: {fileID: 2484105177563537354}
   m_Layer: 0
   m_Name: EnemigoNormal
   m_TagString: Untagged
@@ -527,6 +528,33 @@ MonoBehaviour:
   probabilidadMunicion: 0.25
   probabilidadBotiquin: 0.06
   soloUnObjeto: 1
+--- !u!114 &2484105177563537354
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8841650882520684944}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa8aec9b8651b8d45a1e2028de4fb2cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  idleState: idle
+  walkState: walk
+  runState: run
+  startMovingSpeed: 0.35
+  stopMovingSpeed: 0.15
+  umbralCorrerAutomatico: 1
+  fraccionCorrer: 0.65
+  runThreshold: 2.5
+  runHysteresis: 0.75
+  minStateTime: 0.25
+  walkClipSpeed: 1.5
+  runClipSpeed: 5
+  minAnimSpeed: 0.5
+  maxAnimSpeed: 2
+  crossFade: 0.15
 --- !u!1001 &3767634683963282058
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -575,9 +603,25 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3861926348294934413, guid: 6dc4cf4496348884d8ee27743ae38562, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.029767752
+      objectReference: {fileID: 0}
+    - target: {fileID: 3861926348294934413, guid: 6dc4cf4496348884d8ee27743ae38562, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0.08611501
+      objectReference: {fileID: 0}
     - target: {fileID: 4493914613880827488, guid: 6dc4cf4496348884d8ee27743ae38562, type: 3}
       propertyPath: m_Name
       value: Zombie1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7389507112651452681, guid: 6dc4cf4496348884d8ee27743ae38562, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 637ee0a01e3e12648b795422d8a668b9, type: 2}
+    - target: {fileID: 7389507112651452681, guid: 6dc4cf4496348884d8ee27743ae38562, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
