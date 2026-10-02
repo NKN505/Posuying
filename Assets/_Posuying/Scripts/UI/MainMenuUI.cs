@@ -714,9 +714,35 @@ public class MainMenuUI : MonoBehaviour
         ToggleRow(4, "Chat de voz", () => GameSettings.OnOff(GameSettings.VoiceEnabled),
             () => { GameSettings.VoiceEnabled = !GameSettings.VoiceEnabled; GameSettings.ApplyVolumes(); PlayerPrefs.Save(); });
 
+        MicRow(5);
+
         Label("aviso", "Los cambios se aplican al momento.\nLos efectos aun no tienen sonidos: su volumen queda guardado.",
-            _content, new Vector2(0f, RowY(6)),new Vector2(_content.sizeDelta.x, 40f),
+            _content, new Vector2(0f, RowY(7)), new Vector2(_content.sizeDelta.x, 40f),
             12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
+    }
+
+    // Fila para elegir microfono: < nombre >. Mas ancha que StepRow porque los
+    // nombres de los dispositivos son largos; si aun asi no cabe, la letra encoge.
+    private void MicRow(int index)
+    {
+        float w = _content.sizeDelta.x;
+        float y = RowY(index);
+
+        Label("l_mic", "Microfono", _content, new Vector2(-w / 2f + 60f, y),
+            new Vector2(120f, 22f), 14, TextAnchor.MiddleLeft, Color.white);
+
+        float centro = w / 2f - 185f;
+        Text value = Label("v_mic", GameSettings.MicLabel(), _content, new Vector2(centro, y),
+            new Vector2(290f, 24f), 14, TextAnchor.MiddleCenter, Color.white);
+        value.resizeTextForBestFit = true;
+        value.resizeTextMinSize = 9;
+        value.resizeTextMaxSize = 14;
+
+        Button("<", _content, new Vector2(centro - 165f, y), new Vector2(30f, 24f),
+            () => { GameSettings.StepMic(-1); value.text = GameSettings.MicLabel(); });
+
+        Button(">", _content, new Vector2(centro + 165f, y), new Vector2(30f, 24f),
+            () => { GameSettings.StepMic(1); value.text = GameSettings.MicLabel(); });
     }
 
     // Las teclas se guardan nada mas elegirlas: aqui tampoco hace falta APLICAR
@@ -724,9 +750,10 @@ public class MainMenuUI : MonoBehaviour
     {
         KeyRow(0, "Chat de texto", () => GameSettings.ChatKey, k => GameSettings.ChatKey = k);
         KeyRow(1, "Chat de voz (mantener)", () => GameSettings.VoiceKey, k => GameSettings.VoiceKey = k);
+        KeyRow(2, "Marcar para el equipo", () => GameSettings.PingKey, k => GameSettings.PingKey = k);
 
         Label("aviso_teclas", "Pulsa el boton y despues la tecla nueva. Escape cancela.",
-            _content, new Vector2(0f, RowY(3)), new Vector2(_content.sizeDelta.x, 40f),
+            _content, new Vector2(0f, RowY(4)), new Vector2(_content.sizeDelta.x, 40f),
             12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
     }
 

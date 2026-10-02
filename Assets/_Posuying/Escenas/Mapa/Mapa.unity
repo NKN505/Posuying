@@ -7291,6 +7291,7 @@ GameObject:
   - component: {fileID: 1310377250}
   - component: {fileID: 1310377251}
   - component: {fileID: 1310377252}
+  - component: {fileID: 1310377253}
   m_Layer: 0
   m_Name: MatchManager
   m_TagString: Untagged
@@ -7445,6 +7446,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   oirmeAMiMismo: 0
+--- !u!114 &1310377253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1310377243}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c769a6f4dd3085148a40d8b98bee1016, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  alcance: 200
+  duracion: 8
+  maxCada5s: 4
 --- !u!1 &1316100061
 GameObject:
   m_ObjectHideFlags: 0

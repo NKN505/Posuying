@@ -26,6 +26,13 @@ public class PuntoBomba : MonoBehaviour
     [Tooltip("Solo Colocar: la bomba ya puesta, durante la cuenta atras")]
     public GameObject despues;
 
+    private Vector3 _sitioInicial;
+
+    void Awake()
+    {
+        _sitioInicial = transform.position;
+    }
+
     void OnEnable() => Todos.Add(this);
     void OnDisable() => Todos.Remove(this);
 
@@ -41,6 +48,13 @@ public class PuntoBomba : MonoBehaviour
         var mision = MisionBomba.Instance;
         bool enPartida = mision != null && mision.IsSpawned;
         FaseBomba fase = enPartida ? mision.Fase : FaseBomba.BuscarBomba;
+
+        // La bomba esta en su sitio de la escena o, si se le cayo a alguien, donde cayo
+        if (tipo == Tipo.Recoger)
+        {
+            Vector3 sitio = enPartida && mision.BombaCaida ? mision.DondeCayo : _sitioInicial;
+            if ((transform.position - sitio).sqrMagnitude > 0.0001f) transform.position = sitio;
+        }
 
         bool verAntes = tipo == Tipo.Recoger ? fase == FaseBomba.BuscarBomba
                                              : fase == FaseBomba.LlevarBomba;

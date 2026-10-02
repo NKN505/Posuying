@@ -31,6 +31,7 @@ public class ChatVoz : NetworkBehaviour
 
     private AudioClip _micro;
     private string _dispositivo;
+    private string _elegido = "";
     private int _leido;
     private float _soltadoEn = -999f;
     private bool _avisadoSinMicro;
@@ -65,6 +66,10 @@ public class ChatVoz : NetworkBehaviour
         bool quiereHablar = GameSettings.VoiceEnabled && !UIState.ChatOpen && !MainMenuUI.CapturingKey &&
                             NetworkPlayer.LocalPlayer != null && Input.GetKey(GameSettings.VoiceKey);
 
+        // Si cambian de microfono en Opciones con el anterior abierto, se suelta
+        // y el siguiente arranque coge el nuevo
+        if (_micro != null && _elegido != GameSettings.MicDevice) PararMicro();
+
         if (quiereHablar && _micro == null) EmpezarMicro();
 
         _transmitiendo = quiereHablar && _micro != null;
@@ -87,7 +92,11 @@ public class ChatVoz : NetworkBehaviour
             return;
         }
 
-        _dispositivo = null;   // el predeterminado del sistema
+        // El elegido en Opciones. null = el predeterminado del sistema, que es
+        // tambien lo que se usa si el elegido ya no esta enchufado.
+        _elegido = GameSettings.MicDevice;
+        _dispositivo = !string.IsNullOrEmpty(_elegido) && System.Array.IndexOf(Microphone.devices, _elegido) >= 0
+                     ? _elegido : null;
         _micro = Microphone.Start(_dispositivo, true, 1, Frecuencia);
         _leido = 0;
     }

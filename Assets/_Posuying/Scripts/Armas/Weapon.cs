@@ -736,6 +736,13 @@ public abstract class Weapon : MonoBehaviour{
 
         float finalDamage = damage * GetDamageMultiplier(hit.distance);
 
+        // Aviso visual para quien dispara (marca en la reticula y numero de dano).
+        // A un cadaver no: sus huesos siguen ahi unos segundos y confundiria.
+        if (!enemy.IsDead)
+        {
+            FeedbackCombate.Impacto(hit.point, finalDamage, enemy.GetHealth() - finalDamage <= 0.0f);
+        }
+
         enemy.RequestDamage(finalDamage, hit.point, direction);
 
         return finalDamage;

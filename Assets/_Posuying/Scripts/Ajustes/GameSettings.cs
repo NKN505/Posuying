@@ -31,8 +31,10 @@ public static class GameSettings
     private const string KeyMinimapRange = "opt_minimap_range";
     private const string KeyChatKey = "opt_key_chat";
     private const string KeyVoiceKey = "opt_key_voice";
+    private const string KeyPingKey = "opt_key_ping";
     private const string KeyVoiceOn = "opt_voice_on";
     private const string KeyVoiceVol = "opt_vol_voice";
+    private const string KeyMic = "opt_mic";
 
     // ---------- Valores disponibles ----------
     // Un unico control para los fotogramas: VSync y limite manual se excluyen
@@ -70,10 +72,13 @@ public static class GameSettings
     // Teclas configurables (Opciones > Controles)
     public static KeyCode ChatKey = KeyCode.T;
     public static KeyCode VoiceKey = KeyCode.V;   // pulsar para hablar
+    public static KeyCode PingKey = KeyCode.Q;    // marcar lo que miras para el equipo
 
     // Chat de voz: cada jugador decide si lo usa y a que volumen oye a los demas
     public static bool VoiceEnabled = true;
     public static float VoiceVolume = 1f;
+    // Nombre del microfono elegido. Vacio = el predeterminado del sistema.
+    public static string MicDevice = "";
 
     // Avisa a quien dependa de un ajuste (camara del jugador, contador de FPS...)
     public static event System.Action Changed;
@@ -116,8 +121,10 @@ public static class GameSettings
 
         ChatKey = (KeyCode)PlayerPrefs.GetInt(KeyChatKey, (int)KeyCode.T);
         VoiceKey = (KeyCode)PlayerPrefs.GetInt(KeyVoiceKey, (int)KeyCode.V);
+        PingKey = (KeyCode)PlayerPrefs.GetInt(KeyPingKey, (int)KeyCode.Q);
         VoiceEnabled = PlayerPrefs.GetInt(KeyVoiceOn, 1) == 1;
         VoiceVolume = PlayerPrefs.GetFloat(KeyVoiceVol, 1f);
+        MicDevice = PlayerPrefs.GetString(KeyMic, "");
 
         _loaded = true;
     }
@@ -146,8 +153,10 @@ public static class GameSettings
 
         PlayerPrefs.SetInt(KeyChatKey, (int)ChatKey);
         PlayerPrefs.SetInt(KeyVoiceKey, (int)VoiceKey);
+        PlayerPrefs.SetInt(KeyPingKey, (int)PingKey);
         PlayerPrefs.SetInt(KeyVoiceOn, VoiceEnabled ? 1 : 0);
         PlayerPrefs.SetFloat(KeyVoiceVol, VoiceVolume);
+        PlayerPrefs.SetString(KeyMic, MicDevice);
 
         PlayerPrefs.Save();
     }
@@ -179,11 +188,36 @@ public static class GameSettings
         PlayerPrefs.SetFloat(KeySensitivity, MouseSensitivity);
     }
 
+    // Cambia al microfono anterior (-1) o siguiente (+1) de los enchufados.
+    // La lista da la vuelta y empieza por "predeterminado del sistema".
+    public static void StepMic(int direction)
+    {
+        string[] devices = Microphone.devices;
+        int index = System.Array.IndexOf(devices, MicDevice);   // -1 = predeterminado
+        int count = devices.Length + 1;
+        int next = ((index + 1 + direction) % count + count) % count - 1;
+
+        MicDevice = next < 0 ? "" : devices[next];
+        PlayerPrefs.SetString(KeyMic, MicDevice);
+        PlayerPrefs.Save();
+    }
+
+    // Lo que se ensena en Opciones. Si el elegido ya no esta enchufado se avisa:
+    // mientras tanto se usa el predeterminado.
+    public static string MicLabel()
+    {
+        if (Microphone.devices.Length == 0) return "No hay microfonos";
+        if (string.IsNullOrEmpty(MicDevice)) return "Predeterminado del sistema";
+        if (System.Array.IndexOf(Microphone.devices, MicDevice) < 0) return MicDevice + " (desconectado)";
+        return MicDevice;
+    }
+
     // Las teclas se guardan en cuanto se eligen, sin pasar por APLICAR
     public static void SaveKeys()
     {
         PlayerPrefs.SetInt(KeyChatKey, (int)ChatKey);
         PlayerPrefs.SetInt(KeyVoiceKey, (int)VoiceKey);
+        PlayerPrefs.SetInt(KeyPingKey, (int)PingKey);
         PlayerPrefs.Save();
     }
 

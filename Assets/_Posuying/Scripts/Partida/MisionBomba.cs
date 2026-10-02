@@ -4,8 +4,10 @@ using UnityEngine;
 public enum FaseBomba { BuscarBomba = 0, LlevarBomba = 1, Escapar = 2, Explotada = 3 }
 
 // La mision del juego:
-//   1. Recoger la bomba (esta en el 2o tercio).
-//   2. Colocarla en el edificio grande del 3er tercio.
+//   1. Recoger la bomba (esta en el 2o tercio). La LLEVA quien la coge: no puede
+//      correr, anda mas despacio y, si le abaten, la bomba se queda en el suelo
+//      donde cayo y otro tiene que recogerla.
+//   2. Colocarla en el edificio grande del 3er tercio (solo quien la lleva).
 //   3. Se activa una cuenta atras que ven todos: hay que volver al 1er tercio y
 //      escapar por el punto de salida antes de que explote.
 // Si la cuenta llega a cero con el equipo dentro, la partida se pierde.
@@ -32,7 +34,35 @@ public class MisionBomba : NetworkBehaviour
     private readonly NetworkVariable<double> netExplota = new NetworkVariable<double>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    // Quien lleva la bomba (id de cliente). SinPortador = nadie.
+    private const ulong SinPortador = ulong.MaxValue;
+    private readonly NetworkVariable<ulong> netPortador = new NetworkVariable<ulong>(
+        SinPortador, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    // Donde esta la bomba si se le ha caido a alguien. Mientras nadie la haya
+    // movido esta en su sitio de la escena (PuntoBomba de tipo Recoger).
+    private readonly NetworkVariable<bool> netCaida = new NetworkVariable<bool>(
+        false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    private readonly NetworkVariable<Vector3> netDondeCayo = new NetworkVariable<Vector3>(
+        Vector3.zero, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    /// <summary>Cuanto anda quien lleva la bomba respecto a lo normal.</summary>
+    public const float VelocidadConBomba = 0.8f;
+
     public FaseBomba Fase => (FaseBomba)netFase.Value;
+    public bool BombaCaida => netCaida.Value;
+    public Vector3 DondeCayo => netDondeCayo.Value;
+
+    /// <summary>True en la maquina del jugador que carga con la bomba.</summary>
+    public static bool LocalLlevaBomba
+    {
+        get
+        {
+            var m = Instance;
+            return m != null && m.IsSpawned && m.Fase == FaseBomba.LlevarBomba &&
+                   m.netPortador.Value == m.NetworkManager.LocalClientId;
+        }
+    }
 
     public float SegundosRestantes
     {
@@ -53,6 +83,8 @@ public class MisionBomba : NetworkBehaviour
         if (IsServer && Fase == FaseBomba.Escapar && NetworkManager.ServerTime.Time >= netExplota.Value)
             Explotar();
 
+        if (IsServer && Fase == FaseBomba.LlevarBomba) VigilarPortador();
+
         ComprobarTeclaColocar();
     }
 
@@ -63,8 +95,50 @@ public class MisionBomba : NetworkBehaviour
         if (!IsServer || Fase != FaseBomba.BuscarBomba) return;
         if (MatchManager.Instance != null && MatchManager.Instance.MatchOver) return;
 
+        netPortador.Value = jugador.OwnerClientId;
         netFase.Value = (int)FaseBomba.LlevarBomba;
-        AvisarClientRpc(Nombre(jugador) + " ha recogido la bomba: llevadla al edificio del 3er tercio");
+        AvisarClientRpc(Nombre(jugador) + " lleva la bomba: protegedle hasta el edificio del 3er tercio");
+    }
+
+    // Si quien la lleva cae abatido, queda eliminado o se desconecta, la bomba se
+    // queda en el suelo donde estaba y hay que volver a recogerla.
+    private void VigilarPortador()
+    {
+        PlayerController portador = null;
+        foreach (var player in NetworkPlayer.AllPlayers)
+            if (player != null && player.OwnerClientId == netPortador.Value &&
+                player.GetComponent<NetworkPlayer>() != null) { portador = player; break; }
+
+        if (portador == null)
+        {
+            // Se ha ido de la partida: la bomba vuelve a su sitio inicial
+            netCaida.Value = false;
+            netPortador.Value = SinPortador;
+            netFase.Value = (int)FaseBomba.BuscarBomba;
+            AvisarClientRpc("Quien llevaba la bomba se ha ido: ha vuelto a su sitio");
+            return;
+        }
+
+        var estado = portador.GetComponent<PlayerDownedState>();
+        if (estado == null || estado.CanAct) return;
+
+        // Al suelo bajo el jugador (sin contar a los personajes, como los objetos soltados)
+        Vector3 donde = portador.transform.position;
+        var golpes = Physics.RaycastAll(donde + Vector3.up, Vector3.down, 20f,
+                                        Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        float mejor = float.NegativeInfinity;
+        foreach (var g in golpes)
+        {
+            if (g.collider.GetComponentInParent<Character>() != null) continue;
+            if (g.point.y > mejor) { mejor = g.point.y; donde = g.point; }
+        }
+
+        netDondeCayo.Value = donde;
+        netCaida.Value = true;
+        netPortador.Value = SinPortador;
+        netFase.Value = (int)FaseBomba.BuscarBomba;
+        var nombre = portador.GetComponent<PlayerName>();
+        AvisarClientRpc((nombre != null ? nombre.Name : "Un jugador") + " ha caido: la bomba esta en el suelo");
     }
 
     private void ColocarBomba(NetworkPlayer jugador)
@@ -73,6 +147,7 @@ public class MisionBomba : NetworkBehaviour
         if (MatchManager.Instance != null && MatchManager.Instance.MatchOver) return;
 
         netExplota.Value = NetworkManager.ServerTime.Time + segundosParaEscapar;
+        netPortador.Value = SinPortador;
         netFase.Value = (int)FaseBomba.Escapar;
         AvisarClientRpc(Nombre(jugador) + " ha colocado la bomba. ¡Volved al 1er tercio y escapad!");
     }
@@ -90,6 +165,19 @@ public class MisionBomba : NetworkBehaviour
         if (!IsServer) return;
         netFase.Value = (int)FaseBomba.BuscarBomba;
         netExplota.Value = 0;
+        netPortador.Value = SinPortador;
+        netCaida.Value = false;
+    }
+
+    private string NombrePortador()
+    {
+        foreach (var player in NetworkPlayer.AllPlayers)
+        {
+            if (player == null || player.OwnerClientId != netPortador.Value) continue;
+            var nombre = player.GetComponent<PlayerName>();
+            if (nombre != null) return nombre.Name;
+        }
+        return "Un companero";
     }
 
     [ClientRpc]
@@ -110,7 +198,7 @@ public class MisionBomba : NetworkBehaviour
     private PuntoBomba SitioCercano()
     {
         var yo = NetworkPlayer.LocalPlayer;
-        if (yo == null || Fase != FaseBomba.LlevarBomba) return null;
+        if (yo == null || !LocalLlevaBomba) return null;   // solo la coloca quien la lleva
 
         var estado = yo.GetComponent<PlayerDownedState>();
         if (estado != null && !estado.CanAct) return null;
@@ -134,6 +222,7 @@ public class MisionBomba : NetworkBehaviour
         foreach (var player in NetworkPlayer.AllPlayers)
         {
             if (player == null || player.OwnerClientId != rpc.Receive.SenderClientId) continue;
+            if (player.OwnerClientId != netPortador.Value) return;   // solo quien la lleva
             var jugador = player.GetComponent<NetworkPlayer>();
             if (jugador == null) continue;   // un NPC no coloca bombas
 
@@ -167,8 +256,15 @@ public class MisionBomba : NetworkBehaviour
         string objetivo = "";
         switch (Fase)
         {
-            case FaseBomba.BuscarBomba: objetivo = "OBJETIVO: encuentra la bomba en el 2º tercio"; break;
-            case FaseBomba.LlevarBomba: objetivo = "OBJETIVO: coloca la bomba en el edificio del 3er tercio"; break;
+            case FaseBomba.BuscarBomba:
+                objetivo = BombaCaida ? "OBJETIVO: recupera la bomba, se ha quedado en el suelo"
+                                      : "OBJETIVO: encuentra la bomba en el 2º tercio";
+                break;
+            case FaseBomba.LlevarBomba:
+                objetivo = LocalLlevaBomba
+                    ? "LLEVAS LA BOMBA (no puedes correr): colocala en el edificio del 3er tercio"
+                    : "OBJETIVO: protege a " + NombrePortador() + ", que lleva la bomba al edificio del 3er tercio";
+                break;
             case FaseBomba.Escapar: objetivo = "OBJETIVO: vuelve al 1er tercio y escapa"; break;
         }
 
