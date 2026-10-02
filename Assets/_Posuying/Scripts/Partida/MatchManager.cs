@@ -117,6 +117,13 @@ public class MatchManager : NetworkBehaviour
         AnnounceDefeatClientRpc();
     }
 
+    // Derrota por algo que no es quedarse sin jugadores (la bomba ha explotado)
+    public void DeclararDerrota()
+    {
+        if (!IsServer || netMatchOver.Value) return;
+        netMatchOver.Value = true;
+    }
+
     [ClientRpc]
     private void AnnounceDefeatClientRpc()
     {
@@ -140,6 +147,7 @@ public class MatchManager : NetworkBehaviour
         // el cliente elige su punto con este valor, y si le llegara despues
         // reapareceria en el tercio de la partida anterior.
         if (ProgresoTercios.Instance != null) ProgresoTercios.Instance.Reiniciar();
+        if (MisionBomba.Instance != null) MisionBomba.Instance.Reiniciar();
 
         // Todos vuelven a estar en pie y en su punto de aparicion
         foreach (var player in NetworkPlayer.AllPlayers)
