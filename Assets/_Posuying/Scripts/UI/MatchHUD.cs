@@ -31,8 +31,14 @@ public class MatchHUD : MonoBehaviour
         else
         {
             DrawLives(refWidth);
-            DrawLocalState(refWidth);
-            DrawReviveBar(refWidth);
+
+            // Con el menu de pausa abierto estos avisos se pintaban encima de el
+            // (OnGUI va siempre por delante del Canvas) y no se leia ninguno
+            if (!UIState.NetMenuOpen)
+            {
+                DrawLocalState(refWidth);
+                DrawReviveBar(refWidth);
+            }
         }
 
         GUI.matrix = previous;
@@ -123,11 +129,15 @@ public class MatchHUD : MonoBehaviour
         GUI.DrawTexture(panel, Texture2D.whiteTexture);
         GUI.color = previousColor;
 
+        // Se puede perder por caer todos o porque la bomba explota con el equipo dentro
+        bool porBomba = MisionBomba.Instance != null && MisionBomba.Instance.Fase == FaseBomba.Explotada;
+
         GUI.Label(new Rect(panel.x, panel.y + 30f, w, 60f),
-            "<color=#ff6666><b>HABEIS CAIDO</b></color>", Centered(40));
+            "<color=#ff6666><b>" + (porBomba ? "LA BOMBA HA EXPLOTADO" : "HABEIS CAIDO") + "</b></color>",
+            Centered(porBomba ? 34 : 40));
 
         GUI.Label(new Rect(panel.x, panel.y + 95f, w, 40f),
-            "No quedan vidas de equipo", Centered(20));
+            porBomba ? "No habeis llegado a la salida a tiempo" : "No quedan vidas de equipo", Centered(20));
 
         GUIStyle button = new GUIStyle(GUI.skin.button) { fontSize = 18 };
 

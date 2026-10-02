@@ -1,0 +1,93 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Windows",
+  "BasePlatform": "Windows",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "1420097335",
+    "Type": "Event",
+    "GUID": "{86CE53A3-A518-4F93-A59E-1FDB09D8B773}",
+    "Language": "SFX",
+    "Hash": "{9D7D050B-CBEE-37AA-4027-7EFF8EE91D0D}",
+    "ObjectPath": "Play_Body_Impact",
+    "ShortName": "Play_Body_Impact",
+    "Path": "Event/Play_Body_Impact.bnk",
+    "Media": [
+     {
+      "Id": "131474081",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "BodyImpact_01.wav",
+      "Path": "Media/131474081.wem",
+      "CachePath": "56/{56AB41A0-408A-02B0-62D1-B9516B1A3918}.wem"
+     }
+    ],
+    "Events": [
+     {
+      "Id": "1420097335",
+      "Name": "Play_Body_Impact",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Body_Impact",
+      "GUID": "{86CE53A3-A518-4F93-A59E-1FDB09D8B773}",
+      "DurationType": "OneShot",
+      "DurationMin": "1",
+      "DurationMax": "1",
+      "SwitchContainers": [
+       {
+        "SwitchValue": {
+         "GroupType": "Switch",
+         "GroupId": "1339508341",
+         "Id": "438105790",
+         "GUID": "{E5ED8572-CFB2-477B-B2C5-F5FABBE042FE}"
+        },
+        "MediaRefs": [
+         {
+          "Id": "131474081"
+         }
+        ]
+       },
+       {
+        "SwitchValue": {
+         "GroupType": "Switch",
+         "GroupId": "1339508341",
+         "Id": "3553349781",
+         "GUID": "{87D68DF8-06F9-4512-9497-15297C6984BC}"
+        },
+        "MediaRefs": [
+         {
+          "Id": "131474081"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "SwitchGroups": [
+     {
+      "Id": "1339508341",
+      "Name": "SG_Environment",
+      "ObjectPath": "\\Switches\\Default Work Unit\\SG_Environment",
+      "GUID": "{01EF52F4-A771-4C21-BFA1-D1463DD3AE9A}",
+      "Switches": [
+       {
+        "Id": "438105790",
+        "Name": "Outside",
+        "ObjectPath": "\\Switches\\Default Work Unit\\SG_Environment\\Outside",
+        "GUID": "{E5ED8572-CFB2-477B-B2C5-F5FABBE042FE}"
+       },
+       {
+        "Id": "3553349781",
+        "Name": "Inside",
+        "ObjectPath": "\\Switches\\Default Work Unit\\SG_Environment\\Inside",
+        "GUID": "{87D68DF8-06F9-4512-9497-15297C6984BC}"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "FileHash": "{192FCD04-5E2E-F14E-8AE4-2B7CFCEBA3D0}"
+ }
+}

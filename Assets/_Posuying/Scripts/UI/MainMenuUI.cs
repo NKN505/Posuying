@@ -7,11 +7,15 @@ using UnityEngine.UI;
 // Pantalla inicial del juego: crear partida, buscar partidas abiertas,
 // entrar por codigo y opciones. Se construye por codigo sobre el Canvas.
 //
-// Solo se ve cuando NO estamos en partida; dentro del juego manda el panel
-// rapido de NetworkUI (tecla Escape).
+// Fuera de partida es el menu de inicio. Dentro, el mismo panel hace de menu de
+// pausa (tecla Escape, que gestiona NetworkUI) y de opciones, para que todo
+// tenga el mismo aspecto.
 public class MainMenuUI : MonoBehaviour
 {
-    private enum Tab { Crear, Buscar, Codigo, Opciones }
+    private enum Tab { Crear, Buscar, Codigo, Opciones, Pausa }
+
+    // Lo que se esta mostrando: decide que pestanas y que fondo se ven
+    private enum Vista { Inicio, Pausa, OpcionesEnPartida, Oculto }
 
     [Header("Referencias")]
     public OnlineSession onlineSession;
@@ -22,6 +26,8 @@ public class MainMenuUI : MonoBehaviour
     public Sprite background;
     [Tooltip("Oscurecido sobre el fondo, para que se lea el texto")]
     public Color backgroundTint = new Color(0f, 0f, 0f, 0.35f);
+    [Tooltip("Oscurecido sobre el juego con el menu de pausa abierto")]
+    public Color pauseTint = new Color(0f, 0f, 0f, 0.6f);
 
     [Header("Estilo")]
     public Vector2 panelSize = new Vector2(620f, 460f);
@@ -63,6 +69,14 @@ public class MainMenuUI : MonoBehaviour
 
     private readonly List<GameObject> _tabButtons = new List<GameObject>();
 
+    private Vista _vista = Vista.Inicio;
+    private GameObject _fondo;
+    private Image _velo;
+    private GameObject _quitButton;
+    private Text _pauseInfo;
+    private Text _pauseLock;
+    private Text _pauseLockButton;
+
     private RectTransform _root;
     private RectTransform _content;
     private Text _status;
@@ -82,7 +96,7 @@ public class MainMenuUI : MonoBehaviour
     private string _selectedSessionId = "";
 
     // Opciones
-    private enum OptionsTab { General, Graficos, Audio }
+    private enum OptionsTab { General, Graficos, Audio, Controles }
     private OptionsTab _optionsTab = OptionsTab.General;
 
     private int _resIndex = -1;
@@ -91,6 +105,7 @@ public class MainMenuUI : MonoBehaviour
     void Update()
     {
         UpdateVolumes();
+        UpdateKeyCapture();
 
         if (!_built)
         {
@@ -106,13 +121,38 @@ public class MainMenuUI : MonoBehaviour
                       (NetworkManager.Singleton != null &&
                        (NetworkManager.Singleton.IsClient || NetworkManager.Singleton.IsServer));
 
-        // Se ve fuera de partida, o dentro si han abierto las opciones desde Escape
-        bool show = !inGame || OptionsOverlayOpen;
+        // Fuera de partida, el menu de inicio. Dentro, la pausa (Escape) o las
+        // opciones abiertas desde ella; el resto del tiempo, oculto.
+        if (!inGame) OptionsOverlayOpen = false;   // no arrastrarla a la siguiente partida
+
+        Vista vista = !inGame ? Vista.Inicio
+                    : migrating ? Vista.Oculto
+                    : OptionsOverlayOpen ? Vista.OpcionesEnPartida
+                    : NetworkUI.MenuOpen ? Vista.Pausa
+                    : Vista.Oculto;
 
         UpdateMenuAudio(inGame);
 
-        if (_root.gameObject.activeSelf != show)
-            _root.gameObject.SetActive(show);
+        if (vista != _vista)
+        {
+            _vista = vista;
+            _root.gameObject.SetActive(vista != Vista.Oculto);
+
+            // En partida no se pone el arte del menu: se deja ver el juego, oscurecido
+            if (_fondo != null) _fondo.SetActive(vista == Vista.Inicio);
+            if (_velo != null)
+                _velo.color = vista != Vista.Inicio ? pauseTint
+                            : (background != null ? backgroundTint : Color.clear);
+            // SALIR cierra el juego entero: en partida se sale desde la pausa
+            if (_quitButton != null) _quitButton.SetActive(vista == Vista.Inicio);
+            if (_status != null && vista != Vista.Inicio) _status.text = "";
+
+            if (vista == Vista.Inicio) ShowTab(Tab.Crear);
+            else if (vista == Vista.Pausa) ShowTab(Tab.Pausa);
+            else if (vista == Vista.OpcionesEnPartida) ShowTab(Tab.Opciones);
+        }
+
+        if (vista == Vista.Pausa) UpdatePauseTexts();
 
         if (!inGame && _status != null && onlineSession != null)
             _status.text = onlineSession.Busy ? onlineSession.Status + " ..." : onlineSession.Status;
@@ -126,8 +166,7 @@ public class MainMenuUI : MonoBehaviour
     // Lo llama el menu de Escape para abrir las opciones sin salir de la partida
     public void OpenOptionsOverlay()
     {
-        OptionsOverlayOpen = true;
-        ShowTab(Tab.Opciones);
+        OptionsOverlayOpen = true;   // Update cambia la vista y monta la pestana
     }
 
     public void CloseOptionsOverlay()
@@ -203,8 +242,8 @@ public class MainMenuUI : MonoBehaviour
         _status = Label("Estado", "", panel, new Vector2(-50f, -panelSize.y / 2f + 22f),
             new Vector2(w - 160f, 36f), 13, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.8f));
 
-        Button("SALIR", panel, new Vector2(w / 2f - 60f, -panelSize.y / 2f + 24f),
-            new Vector2(96f, 30f), QuitGame, new Color(0.35f, 0.1f, 0.1f, 1f));
+        _quitButton = Button("SALIR", panel, new Vector2(w / 2f - 60f, -panelSize.y / 2f + 24f),
+            new Vector2(96f, 30f), QuitGame, new Color(0.35f, 0.1f, 0.1f, 1f)).gameObject;
     }
 
     private void QuitGame()
@@ -218,18 +257,20 @@ public class MainMenuUI : MonoBehaviour
 
     private void BuildBackground()
     {
-        if (background == null) return;
+        if (background != null)
+        {
+            RectTransform bg = NewRect("Fondo", _root, Vector2.zero);
+            bg.anchorMin = Vector2.zero;
+            bg.anchorMax = Vector2.one;
+            bg.offsetMin = Vector2.zero;
+            bg.offsetMax = Vector2.zero;
 
-        RectTransform bg = NewRect("Fondo", _root, Vector2.zero);
-        bg.anchorMin = Vector2.zero;
-        bg.anchorMax = Vector2.one;
-        bg.offsetMin = Vector2.zero;
-        bg.offsetMax = Vector2.zero;
-
-        Image image = bg.gameObject.AddComponent<Image>();
-        image.sprite = background;
-        image.color = Color.white;
-        image.raycastTarget = false;
+            Image image = bg.gameObject.AddComponent<Image>();
+            image.sprite = background;
+            image.color = Color.white;
+            image.raycastTarget = false;
+            _fondo = bg.gameObject;
+        }
 
         // Velo oscuro encima para que los textos se lean sobre el arte
         RectTransform tint = NewRect("Velo", _root, Vector2.zero);
@@ -237,19 +278,22 @@ public class MainMenuUI : MonoBehaviour
         tint.anchorMax = Vector2.one;
         tint.offsetMin = Vector2.zero;
         tint.offsetMax = Vector2.zero;
-        AddImage(tint, backgroundTint).raycastTarget = false;
+        // Sin arte no hace falta velo en el menu de inicio, pero si en la pausa
+        _velo = AddImage(tint, background != null ? backgroundTint : Color.clear);
+        _velo.raycastTarget = false;
     }
 
     private void ShowTab(Tab tab)
     {
-        // En partida solo tienen sentido las opciones: crear o buscar otra
-        // partida desde aqui no aplica
-        if (OptionsOverlayOpen) tab = Tab.Opciones;
+        // En partida solo tienen sentido la pausa y las opciones: crear o buscar
+        // otra partida desde aqui no aplica
+        bool enPartida = _vista != Vista.Inicio;
+        if (enPartida && tab != Tab.Pausa) tab = Tab.Opciones;
 
         _tab = tab;
 
         foreach (var button in _tabButtons)
-            if (button != null) button.SetActive(!OptionsOverlayOpen);
+            if (button != null) button.SetActive(!enPartida);
 
         foreach (Transform child in _content)
             Destroy(child.gameObject);
@@ -260,6 +304,78 @@ public class MainMenuUI : MonoBehaviour
             case Tab.Buscar: BuildBrowseTab(); break;
             case Tab.Codigo: BuildCodeTab(); break;
             case Tab.Opciones: BuildOptionsTab(); break;
+            case Tab.Pausa: BuildPauseTab(); break;
+        }
+    }
+
+    // ---------- PAUSA (Escape dentro de la partida) ----------
+
+    private void BuildPauseTab()
+    {
+        float w = _content.sizeDelta.x;
+        float y = _content.sizeDelta.y / 2f + 6f;
+        var session = onlineSession;
+
+        Label("pausa", "PAUSA", _content, new Vector2(0f, y), new Vector2(w, 36f),
+            24, TextAnchor.MiddleCenter, Color.white);
+
+        y -= 34f;
+        _pauseInfo = Label("info", "", _content, new Vector2(0f, y), new Vector2(w, 22f),
+            14, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.75f));
+
+        if (session != null && !string.IsNullOrEmpty(session.JoinCode))
+        {
+            y -= 38f;
+            Label("codigo", "CODIGO:  " + session.JoinCode, _content, new Vector2(-70f, y),
+                new Vector2(w - 160f, 28f), 20, TextAnchor.MiddleLeft, Color.white);
+            Button("Copiar", _content, new Vector2(w / 2f - 70f, y), new Vector2(130f, 28f),
+                () => GUIUtility.systemCopyBuffer = session.JoinCode);
+        }
+
+        // Solo el anfitrion decide si puede entrar gente con la partida empezada
+        _pauseLock = null;
+        _pauseLockButton = null;
+        if (session != null && session.IsHost)
+        {
+            y -= 38f;
+            _pauseLock = Label("cerrada", "", _content, new Vector2(-70f, y),
+                new Vector2(w - 160f, 24f), 14, TextAnchor.MiddleLeft, Color.white);
+            Button boton = Button("Cerrar partida", _content, new Vector2(w / 2f - 70f, y),
+                new Vector2(130f, 28f), () => session.SetGameLocked(!session.IsGameLocked));
+            _pauseLockButton = boton.GetComponentInChildren<Text>();
+        }
+
+        float abajo = -_content.sizeDelta.y / 2f;
+        Button("SEGUIR JUGANDO", _content, new Vector2(0f, abajo + 122f), new Vector2(280f, 40f),
+            NetworkUI.CloseMenu, accentColor);
+        Button("OPCIONES", _content, new Vector2(0f, abajo + 74f), new Vector2(280f, 40f),
+            OpenOptionsOverlay);
+        Button("SALIR DE LA PARTIDA", _content, new Vector2(0f, abajo + 26f), new Vector2(280f, 40f),
+            NetworkUI.LeaveGame, new Color(0.35f, 0.1f, 0.1f, 1f));
+
+        UpdatePauseTexts();
+    }
+
+    // Lo que puede cambiar con la pausa abierta: jugadores conectados y el candado
+    private void UpdatePauseTexts()
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null) return;
+
+        if (_pauseInfo != null)
+        {
+            string rol = nm.IsHost ? "Anfitrion" : (nm.IsServer ? "Servidor" : "Invitado");
+            _pauseInfo.text = nm.IsServer
+                ? rol + "   |   Jugadores conectados: " + nm.ConnectedClientsIds.Count
+                : rol;
+        }
+
+        if (_pauseLock != null && onlineSession != null)
+        {
+            bool cerrada = onlineSession.IsGameLocked;
+            _pauseLock.text = cerrada ? "Partida CERRADA (no entra nadie mas)"
+                                      : "Partida ABIERTA (se puede entrar en marcha)";
+            if (_pauseLockButton != null) _pauseLockButton.text = cerrada ? "Abrir partida" : "Cerrar partida";
         }
     }
 
@@ -447,13 +563,13 @@ public class MainMenuUI : MonoBehaviour
         float top = _content.sizeDelta.y / 2f;
 
         // Sub-pestanas de categoria
-        string[] names = { "GENERAL", "GRAFICOS", "AUDIO" };
-        float tabW = 130f;
+        string[] names = { "GENERAL", "GRAFICOS", "AUDIO", "CONTROLES" };
+        float tabW = 122f;
 
         for (int i = 0; i < names.Length; i++)
         {
             OptionsTab tab = (OptionsTab)i;
-            float x = -tabW * 1.05f + i * tabW * 1.05f;
+            float x = (i - (names.Length - 1) * 0.5f) * tabW * 1.05f;
             Color color = _optionsTab == tab ? accentColor : buttonColor;
 
             Button(names[i], _content, new Vector2(x, top - 16f), new Vector2(tabW, 28f),
@@ -465,11 +581,12 @@ public class MainMenuUI : MonoBehaviour
             case OptionsTab.General: BuildGeneralOptions(); break;
             case OptionsTab.Graficos: BuildGraphicsOptions(); break;
             case OptionsTab.Audio: BuildAudioOptions(); break;
+            case OptionsTab.Controles: BuildControlsOptions(); break;
         }
 
         // El audio se aplica solo al mover los sliders: en esa pestana APLICAR
         // sobra y solo haria pensar que hay que pulsarlo
-        bool needsApply = _optionsTab != OptionsTab.Audio;
+        bool needsApply = _optionsTab != OptionsTab.Audio && _optionsTab != OptionsTab.Controles;
 
         // En partida el boton comparte fila con el de volver
         float applyX = OptionsOverlayOpen ? -110f : 0f;
@@ -485,7 +602,7 @@ public class MainMenuUI : MonoBehaviour
 
         if (OptionsOverlayOpen)
         {
-            Button("VOLVER AL JUEGO", _content, new Vector2(needsApply ? 110f : 0f, -top + 24f),
+            Button("VOLVER", _content, new Vector2(needsApply ? 110f : 0f, -top + 24f),
                 new Vector2(200f, 34f), CloseOptionsOverlay);
         }
     }
@@ -506,9 +623,12 @@ public class MainMenuUI : MonoBehaviour
         nameField.characterLimit = PlayerProfile.MaxLength;
         nameField.onEndEdit.AddListener(value => PlayerProfile.Name = value);
 
-        StepRow(1, "Sensibilidad raton", () => GameSettings.MouseSensitivity.ToString("0.00"),
-            () => GameSettings.MouseSensitivity = Mathf.Max(0.25f, GameSettings.MouseSensitivity - 0.25f),
-            () => GameSettings.MouseSensitivity = Mathf.Min(5f, GameSettings.MouseSensitivity + 0.25f));
+        // Deslizante y en vivo: con los pasos de 0,25 de antes no se podia afinar,
+        // y asi se nota al momento si la ajustas con la partida en marcha
+        SliderRow(1, "Sensibilidad raton", GameSettings.MouseSensitivity,
+            v => { GameSettings.MouseSensitivity = Mathf.Round(v * 20f) / 20f; GameSettings.ApplySensitivity(); },
+            () => GameSettings.MouseSensitivity.ToString("0.00"),
+            GameSettings.MinSensitivity, GameSettings.MaxSensitivity);
 
         ToggleRow(2, "Invertir eje Y", () => GameSettings.OnOff(GameSettings.InvertY),
             () => GameSettings.InvertY = !GameSettings.InvertY);
@@ -587,9 +707,121 @@ public class MainMenuUI : MonoBehaviour
             v => { GameSettings.SfxVolume = v; GameSettings.ApplyVolumes(); },
             () => GameSettings.Percent(GameSettings.SfxVolume));
 
+        SliderRow(3, "Voces (chat de voz)", GameSettings.VoiceVolume,
+            v => { GameSettings.VoiceVolume = v; GameSettings.ApplyVolumes(); },
+            () => GameSettings.Percent(GameSettings.VoiceVolume));
+
+        ToggleRow(4, "Chat de voz", () => GameSettings.OnOff(GameSettings.VoiceEnabled),
+            () => { GameSettings.VoiceEnabled = !GameSettings.VoiceEnabled; GameSettings.ApplyVolumes(); PlayerPrefs.Save(); });
+
+        MicRow(5);
+
         Label("aviso", "Los cambios se aplican al momento.\nLos efectos aun no tienen sonidos: su volumen queda guardado.",
+            _content, new Vector2(0f, RowY(7)), new Vector2(_content.sizeDelta.x, 40f),
+            12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
+    }
+
+    // Fila para elegir microfono: < nombre >. Mas ancha que StepRow porque los
+    // nombres de los dispositivos son largos; si aun asi no cabe, la letra encoge.
+    private void MicRow(int index)
+    {
+        float w = _content.sizeDelta.x;
+        float y = RowY(index);
+
+        Label("l_mic", "Microfono", _content, new Vector2(-w / 2f + 60f, y),
+            new Vector2(120f, 22f), 14, TextAnchor.MiddleLeft, Color.white);
+
+        float centro = w / 2f - 185f;
+        Text value = Label("v_mic", GameSettings.MicLabel(), _content, new Vector2(centro, y),
+            new Vector2(290f, 24f), 14, TextAnchor.MiddleCenter, Color.white);
+        value.resizeTextForBestFit = true;
+        value.resizeTextMinSize = 9;
+        value.resizeTextMaxSize = 14;
+
+        Button("<", _content, new Vector2(centro - 165f, y), new Vector2(30f, 24f),
+            () => { GameSettings.StepMic(-1); value.text = GameSettings.MicLabel(); });
+
+        Button(">", _content, new Vector2(centro + 165f, y), new Vector2(30f, 24f),
+            () => { GameSettings.StepMic(1); value.text = GameSettings.MicLabel(); });
+    }
+
+    // Las teclas se guardan nada mas elegirlas: aqui tampoco hace falta APLICAR
+    private void BuildControlsOptions()
+    {
+        KeyRow(0, "Chat de texto", () => GameSettings.ChatKey, k => GameSettings.ChatKey = k);
+        KeyRow(1, "Chat de voz (mantener)", () => GameSettings.VoiceKey, k => GameSettings.VoiceKey = k);
+        KeyRow(2, "Marcar para el equipo", () => GameSettings.PingKey, k => GameSettings.PingKey = k);
+
+        Label("aviso_teclas", "Pulsa el boton y despues la tecla nueva. Escape cancela.",
             _content, new Vector2(0f, RowY(4)), new Vector2(_content.sizeDelta.x, 40f),
             12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
+    }
+
+    // ---------- Eleccion de teclas ----------
+
+    /// <summary>True mientras se espera la tecla nueva: Escape cancela en vez de cerrar el menu.</summary>
+    public static bool CapturingKey { get; private set; }
+
+    private System.Action<KeyCode> _alCapturar;
+    private Text _textoCaptura;
+    private System.Func<KeyCode> _leerCaptura;
+    private int _frameCaptura;
+
+    // Fila con un boton que muestra la tecla y, al pulsarlo, espera la nueva
+    private void KeyRow(int index, string label, System.Func<KeyCode> read, System.Action<KeyCode> write)
+    {
+        float w = _content.sizeDelta.x;
+        float y = RowY(index);
+
+        Label("l_" + label, label, _content, new Vector2(-w / 2f + 110f, y),
+            new Vector2(220f, 22f), 14, TextAnchor.MiddleLeft, Color.white);
+
+        Button button = null;
+        button = Button(GameSettings.KeyLabel(read()), _content, new Vector2(w / 2f - 105f, y),
+            new Vector2(170f, 26f), () =>
+            {
+                CancelKeyCapture();
+                _textoCaptura = button.GetComponentInChildren<Text>();
+                _textoCaptura.text = "Pulsa una tecla...";
+                _leerCaptura = read;
+                _alCapturar = write;
+                _frameCaptura = Time.frameCount;
+                CapturingKey = true;
+            });
+    }
+
+    private void CancelKeyCapture()
+    {
+        if (_textoCaptura != null && _leerCaptura != null)
+            _textoCaptura.text = GameSettings.KeyLabel(_leerCaptura());
+        _alCapturar = null;
+        _textoCaptura = null;
+        _leerCaptura = null;
+        CapturingKey = false;
+    }
+
+    private void UpdateKeyCapture()
+    {
+        if (!CapturingKey) return;
+
+        // Si la fila ya no existe (se cambio de pestana o se cerro el menu), se cancela
+        if (_textoCaptura == null || !_textoCaptura.gameObject.activeInHierarchy) { CancelKeyCapture(); return; }
+        if (Time.frameCount == _frameCaptura || !UnityEngine.Input.anyKeyDown) return;
+
+        if (UnityEngine.Input.GetKeyDown(KeyCode.Escape)) { CancelKeyCapture(); return; }
+
+        foreach (KeyCode key in System.Enum.GetValues(typeof(KeyCode)))
+        {
+            // El clic izquierdo y el derecho son disparar y apuntar; los mandos, otro dia
+            if (key == KeyCode.None || key == KeyCode.Mouse0 || key == KeyCode.Mouse1) continue;
+            if (key >= KeyCode.JoystickButton0) continue;
+            if (!UnityEngine.Input.GetKeyDown(key)) continue;
+
+            _alCapturar(key);
+            GameSettings.SaveKeys();
+            CancelKeyCapture();
+            return;
+        }
     }
 
     // ---------- Filas reutilizables ----------
@@ -620,7 +852,7 @@ public class MainMenuUI : MonoBehaviour
     // Fila con barra deslizante y el valor a la derecha. Cada movimiento llama a
     // onChange, asi que lo que haga onChange se nota mientras arrastras.
     private void SliderRow(int index, string label, float initial,
-        System.Action<float> onChange, System.Func<string> read)
+        System.Action<float> onChange, System.Func<string> read, float min = 0f, float max = 1f)
     {
         float w = _content.sizeDelta.x;
         float y = RowY(index);
@@ -636,7 +868,9 @@ public class MainMenuUI : MonoBehaviour
             new Vector2(170f, 24f));
 
         // Sin notificar: poner el valor inicial no debe contar como un cambio
-        slider.SetValueWithoutNotify(Mathf.Clamp01(initial));
+        slider.minValue = min;
+        slider.maxValue = max;
+        slider.SetValueWithoutNotify(Mathf.Clamp(initial, min, max));
         slider.onValueChanged.AddListener(v => { onChange(v); value.text = read(); });
 
         // Mientras arrastras solo se guarda en memoria; a disco, al soltar

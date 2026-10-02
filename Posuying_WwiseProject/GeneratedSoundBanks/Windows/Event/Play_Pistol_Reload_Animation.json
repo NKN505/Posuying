@@ -1,0 +1,93 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Windows",
+  "BasePlatform": "Windows",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "2077039894",
+    "Type": "Event",
+    "GUID": "{E58877BA-953F-48A9-9991-0F617E35371A}",
+    "Language": "SFX",
+    "Hash": "{EF1F1FFE-5BA0-9AD1-D551-0109C174565F}",
+    "ObjectPath": "Play_Pistol_Reload_Animation",
+    "ShortName": "Play_Pistol_Reload_Animation",
+    "Path": "Event/Play_Pistol_Reload_Animation.bnk",
+    "Media": [
+     {
+      "Id": "1056082949",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Pistol_Reload.wav",
+      "Path": "Media/1056082949.wem",
+      "CachePath": "53/{5308ADFE-E984-559A-046A-4874D374CFED}.wem"
+     }
+    ],
+    "Events": [
+     {
+      "Id": "2077039894",
+      "Name": "Play_Pistol_Reload_Animation",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Pistol_Reload_Animation",
+      "GUID": "{E58877BA-953F-48A9-9991-0F617E35371A}",
+      "DurationType": "OneShot",
+      "DurationMin": "3",
+      "DurationMax": "3",
+      "SwitchContainers": [
+       {
+        "SwitchValue": {
+         "GroupType": "Switch",
+         "GroupId": "1339508341",
+         "Id": "438105790",
+         "GUID": "{E5ED8572-CFB2-477B-B2C5-F5FABBE042FE}"
+        },
+        "MediaRefs": [
+         {
+          "Id": "1056082949"
+         }
+        ]
+       },
+       {
+        "SwitchValue": {
+         "GroupType": "Switch",
+         "GroupId": "1339508341",
+         "Id": "3553349781",
+         "GUID": "{87D68DF8-06F9-4512-9497-15297C6984BC}"
+        },
+        "MediaRefs": [
+         {
+          "Id": "1056082949"
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "SwitchGroups": [
+     {
+      "Id": "1339508341",
+      "Name": "SG_Environment",
+      "ObjectPath": "\\Switches\\Default Work Unit\\SG_Environment",
+      "GUID": "{01EF52F4-A771-4C21-BFA1-D1463DD3AE9A}",
+      "Switches": [
+       {
+        "Id": "438105790",
+        "Name": "Outside",
+        "ObjectPath": "\\Switches\\Default Work Unit\\SG_Environment\\Outside",
+        "GUID": "{E5ED8572-CFB2-477B-B2C5-F5FABBE042FE}"
+       },
+       {
+        "Id": "3553349781",
+        "Name": "Inside",
+        "ObjectPath": "\\Switches\\Default Work Unit\\SG_Environment\\Inside",
+        "GUID": "{87D68DF8-06F9-4512-9497-15297C6984BC}"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "FileHash": "{C87718A9-A230-389F-E7D7-817E389BB44E}"
+ }
+}

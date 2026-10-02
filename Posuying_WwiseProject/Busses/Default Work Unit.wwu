@@ -101,6 +101,24 @@
 						<Bus Name="Ambience" ID="{C851392A-CF95-474D-A3B8-399A980132B1}"/>
 						<Bus Name="Music" ID="{1F3C1573-4A07-4F7C-B5F4-D377E64ED62C}"/>
 						<Bus Name="UI" ID="{9E7168C4-FC99-44B1-BBD1-46600FE80FA9}"/>
+						<AuxBus Name="AB_Street" ID="{BBE5BC72-82FB-4E0F-B8C3-624EFAABF8C0}">
+							<PropertyList>
+								<Property Name="3DSpatialization" Type="int16" Value="2"/>
+								<Property Name="ListenerRelativeRouting" Type="bool" Value="True"/>
+								<Property Name="UseGameAuxSends" Type="bool" Value="True"/>
+							</PropertyList>
+							<ObjectLists>
+								<ObjectList Name="Effects">
+									<EffectSlot Name="" ID="{91644AC9-0B2F-49F5-9BB8-096E33A2B92F}" ShortID="13832464">
+										<ReferenceList>
+											<Reference Name="Effect" PluginName="Wwise RoomVerb" CompanyID="0" PluginID="118" PluginType="3">
+												<ObjectRef Name="RV_Street" ID="{5A8E81F7-6F99-4674-BD0B-75D05596A785}" WorkUnitID="{1C202A8F-09FF-4681-A8B1-6B3B02822015}"/>
+											</Reference>
+										</ReferenceList>
+									</EffectSlot>
+								</ObjectList>
+							</ObjectLists>
+						</AuxBus>
 					</ChildrenList>
 				</Bus>
 			</ChildrenList>

@@ -23,8 +23,8 @@
         </Property>
         <Property Name="ExternalSourcesOutputPath" Type="string">
           <ValueList>
-            <Value Platform="Windows">..\Assets\GeneratedSoundBanks\Windows\</Value>
-            <Value Platform="Mac">..\Assets\GeneratedSoundBanks\Mac\</Value>
+            <Value Platform="Windows">GeneratedSoundBanks\Windows\</Value>
+            <Value Platform="Mac">GeneratedSoundBanks\Mac\</Value>
           </ValueList>
         </Property>
         <Property Name="SoundBankGenerateEstimatedDuration" Type="bool" Value="True" />
@@ -873,7 +873,8 @@
             </Property>
             <Property Name="ExternalSourcesOutputPath" Type="string">
               <ValueList>
-                <Value>..\Assets\GeneratedSoundBanks\</Value>
+                <Value>
+                </Value>
               </ValueList>
             </Property>
             <Property Name="FilterBehavior" Type="int16">
@@ -6845,7 +6846,8 @@
             </Property>
             <Property Name="ExternalSourcesOutputPath" Type="string">
               <ValueList>
-                <Value>..\Assets\GeneratedSoundBanks\</Value>
+                <Value>
+                </Value>
               </ValueList>
             </Property>
             <Property Name="ExternalSourcesOverrideInputPath" Type="bool">

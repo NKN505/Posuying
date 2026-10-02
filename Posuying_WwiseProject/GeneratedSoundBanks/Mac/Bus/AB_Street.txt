@@ -1,0 +1,6 @@
+Auxiliary Bus	ID	Name			Wwise Object Path	Notes
+	2851550650	AB_Street			\Default Work Unit\Main Audio Bus\AB_Street	
+
+Effect plug-ins	ID	Name	Type				Notes
+	2512606865	RV_Street	Wwise RoomVerb			
+

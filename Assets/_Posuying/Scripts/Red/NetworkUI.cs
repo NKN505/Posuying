@@ -2,11 +2,10 @@ using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using UnityEngine;
 
-// Menu rapido DENTRO de la partida (tecla Escape): estado, codigo, abrir/cerrar
-// la partida y desconectar.
-//
-// La pantalla inicial (crear / buscar / codigo / opciones) la lleva MainMenuUI,
-// que es una interfaz de Canvas en condiciones.
+// Controla el menu DENTRO de la partida (tecla Escape): cuando esta abierto y
+// la desconexion. El menu en si lo dibuja MainMenuUI, igual que el de inicio,
+// para que los dos tengan el mismo aspecto; aqui solo queda el aviso de la
+// esquina y el cartel de cambio de anfitrion.
 //
 // Este script tambien manda sobre el cursor y sobre si el jugador puede moverse.
 public class NetworkUI : MonoBehaviour
@@ -33,6 +32,7 @@ public class NetworkUI : MonoBehaviour
 
     void Awake()
     {
+        _instance = this;
         if (onlineSession == null)
             onlineSession = GetComponent<OnlineSession>();
     }
@@ -55,7 +55,8 @@ public class NetworkUI : MonoBehaviour
             if (!_wasConnected) _menuOpen = false;   // al entrar, a jugar
 
             // Con las opciones abiertas, Escape las cierra en vez de volver al juego
-            if (Input.GetKeyDown(menuKey))
+            // Escape cierra antes el chat o cancela la eleccion de una tecla: ahi no es "abrir el menu"
+            if (Input.GetKeyDown(menuKey) && !UIState.ChatOpen && !MainMenuUI.CapturingKey)
             {
                 if (MainMenuUI.Instance != null && MainMenuUI.Instance.OptionsOverlayOpen)
                     MainMenuUI.Instance.CloseOptionsOverlay();
@@ -128,74 +129,21 @@ public class NetworkUI : MonoBehaviour
             return;
         }
 
-        // Panel centrado en pantalla
-        float refWidth = ReferenceHeight * ((float)Screen.width / Screen.height);
-        float panelW = 460f;
-        float panelH = 540f;   // hay que dejar sitio a todos los botones
-        Rect panel = new Rect((refWidth - panelW) / 2f, (ReferenceHeight - panelH) / 2f,
-                              panelW, panelH);
+        // El menu de pausa lo dibuja MainMenuUI, con el mismo aspecto que el de inicio
+    }
 
-        // Fondo oscuro para que se lea sobre el juego
-        Color previousColor = GUI.color;
-        GUI.color = new Color(0f, 0f, 0f, 0.85f);
-        GUI.DrawTexture(panel, Texture2D.whiteTexture);
-        GUI.color = previousColor;
+    // ---------- Lo que usa el menu de pausa de MainMenuUI ----------
 
-        GUIStyle buttonStyle = new GUIStyle(GUI.skin.button) { fontSize = 17 };
+    private static NetworkUI _instance;
 
-        GUILayout.BeginArea(new Rect(panel.x + 24f, panel.y + 20f, panelW - 48f, panelH - 40f));
+    public static void CloseMenu()
+    {
+        if (_instance != null) _instance._menuOpen = false;
+    }
 
-        string rol = nm.IsHost ? "HOST" : (nm.IsServer ? "SERVIDOR" : "CLIENTE");
-        GUILayout.Label("<b>" + rol + "</b>", RichLabel(26));
-
-        GUILayout.Space(4);
-        GUILayout.Label("Mi id de cliente: " + nm.LocalClientId, RichLabel(15));
-
-        if (nm.IsServer)
-            GUILayout.Label("Jugadores conectados: " + nm.ConnectedClientsIds.Count, RichLabel(15));
-
-        if (onlineSession != null && !string.IsNullOrEmpty(onlineSession.JoinCode))
-        {
-            GUILayout.Space(14);
-            GUILayout.Label("<b>CODIGO: " + onlineSession.JoinCode + "</b>", RichLabel(24));
-
-            if (GUILayout.Button("Copiar codigo", buttonStyle, GUILayout.Height(34)))
-                GUIUtility.systemCopyBuffer = onlineSession.JoinCode;
-        }
-
-        // Solo el host decide si puede entrar gente con la partida empezada
-        if (onlineSession != null && onlineSession.IsHost)
-        {
-            GUILayout.Space(14);
-            bool locked = onlineSession.IsGameLocked;
-
-            GUILayout.Label(locked
-                ? "Partida CERRADA (no entra nadie mas)"
-                : "Partida ABIERTA (se puede entrar en marcha)", RichLabel(15));
-
-            if (GUILayout.Button(locked ? "Abrir partida" : "Cerrar partida",
-                                 buttonStyle, GUILayout.Height(36)))
-                onlineSession.SetGameLocked(!locked);
-        }
-
-        GUILayout.FlexibleSpace();
-
-        // Reutiliza la pantalla de opciones del menu principal como capa encima
-        if (MainMenuUI.Instance != null &&
-            GUILayout.Button("Opciones", buttonStyle, GUILayout.Height(38)))
-        {
-            MainMenuUI.Instance.OpenOptionsOverlay();
-        }
-
-        GUILayout.Space(8);
-        if (GUILayout.Button("Seguir jugando  [" + menuKey + "]", buttonStyle, GUILayout.Height(40)))
-            _menuOpen = false;
-
-        GUILayout.Space(8);
-        if (GUILayout.Button("Salir de la partida", buttonStyle, GUILayout.Height(40)))
-            Disconnect();
-
-        GUILayout.EndArea();
+    public static void LeaveGame()
+    {
+        if (_instance != null) _instance.Disconnect();
     }
 
     private void Disconnect()

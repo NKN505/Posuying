@@ -1,6 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <WwiseDocument Type="WorkUnit" ID="{1C202A8F-09FF-4681-A8B1-6B3B02822015}" SchemaVersion="133">
 	<Effects>
-		<WorkUnit Name="Default Work Unit" ID="{1C202A8F-09FF-4681-A8B1-6B3B02822015}" PersistMode="Standalone"/>
+		<WorkUnit Name="Default Work Unit" ID="{1C202A8F-09FF-4681-A8B1-6B3B02822015}" PersistMode="Standalone">
+			<ChildrenList>
+				<Effect Name="RV_Street" ID="{5A8E81F7-6F99-4674-BD0B-75D05596A785}" PluginName="Wwise RoomVerb" CompanyID="0" PluginID="118" PluginType="3">
+					<PropertyList>
+						<Property Name="DecayTime" Type="Real32" Value="0.6"/>
+						<Property Name="Diffusion" Type="Real32" Value="85"/>
+						<Property Name="EnableEarlyReflections" Type="bool" Value="False"/>
+						<Property Name="HFDamping" Type="Real32" Value="3"/>
+						<Property Name="PreDelay" Type="Real32" Value="10"/>
+						<Property Name="RoomShape" Type="Real32" Value="35"/>
+					</PropertyList>
+				</Effect>
+				<Effect Name="Parametric_EQ" ID="{A5CA8B83-EC97-4204-9B2F-1A48DAD70018}" PluginName="Wwise Parametric EQ" CompanyID="0" PluginID="105" PluginType="3">
+					<PropertyList>
+						<Property Name="FrequencyBand1" Type="Real32" Value="66.44309"/>
+						<Property Name="FrequencyBand2" Type="Real32" Value="1796.877"/>
+						<Property Name="FrequencyBand3" Type="Real32" Value="6071.306"/>
+						<Property Name="GainBand1" Type="Real32" Value="2.458101"/>
+						<Property Name="GainBand2" Type="Real32" Value="-4.960894"/>
+						<Property Name="GainBand3" Type="Real32" Value="-13.36313"/>
+						<Property Name="OnOffBand3" Type="bool" Value="True"/>
+						<Property Name="QFactorBand3" Type="Real32" Value="0.1"/>
+					</PropertyList>
+				</Effect>
+			</ChildrenList>
+		</WorkUnit>
 	</Effects>
 </WwiseDocument>

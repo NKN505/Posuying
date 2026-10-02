@@ -30,7 +30,7 @@
 						<Action Name="" ID="{5772D63B-364D-4885-ACD0-78E558A22EB4}" ShortID="222493047">
 							<PropertyList>
 								<Property Name="FadeInCurve" Type="int16" Value="5"/>
-								<Property Name="FadeTime" Type="Real64" Value="4">
+								<Property Name="FadeTime" Type="Real64" Value="6">
 									<ModifierList>
 										<ModifierInfo>
 											<Modifier Name="" ID="{5E107043-78C9-4BBB-8D57-8E83219329DD}"/>
@@ -67,7 +67,7 @@
 							<PropertyList>
 								<Property Name="ActionType" Type="int16" Value="2"/>
 								<Property Name="FadeOutCurve" Type="int16" Value="5"/>
-								<Property Name="FadeTime" Type="Real64" Value="0.5"/>
+								<Property Name="FadeTime" Type="Real64" Value="2"/>
 							</PropertyList>
 							<ReferenceList>
 								<Reference Name="Target">
@@ -105,6 +105,83 @@
 							<ReferenceList>
 								<Reference Name="Target">
 									<ObjectRef Name="SFX_UI_Menu_Start" ID="{5235DC15-F7A9-4091-A27F-099CD236D84C}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_Pistol_Shot" ID="{A0878B50-8BDF-40AC-BF84-9056B4B02C76}">
+					<ChildrenList>
+						<Action Name="" ID="{65F96BDF-92FE-43A5-AEA0-599218AB7746}" ShortID="921916917">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SC_Pistol_Shot_Environment" ID="{980B6C1C-828C-4EDC-B0C2-74A3CCC620B3}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_Last_Bullet_01" ID="{020F058F-FC69-41E9-964C-10AA97ACB701}">
+					<ChildrenList>
+						<Action Name="" ID="{E6A96541-D6E6-4B54-BAD3-EFB5ACD17455}" ShortID="1003369604">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SC_Last_Bullet_01_Environment" ID="{36092524-57B3-4DE0-BD4F-C9FD097F4B73}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_Last_Bullet_02" ID="{6D29F84A-F7D5-45B8-A3C3-A4D539EA366F}">
+					<ChildrenList>
+						<Action Name="" ID="{092AEA29-F3A0-4BE4-A407-59A7B5A9265B}" ShortID="379334064">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SC_Last_Bullet_02_Environment" ID="{EE43EE5D-6189-4CB4-A182-64D096548B63}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_Body_Impact" ID="{86CE53A3-A518-4F93-A59E-1FDB09D8B773}">
+					<ChildrenList>
+						<Action Name="" ID="{D21044E2-274B-4ECA-8D9E-DD84542DB752}" ShortID="94945064">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SC_Body_Impact_Environment" ID="{0ADD1C28-1506-43F6-80E9-17898E5988B1}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_Pistol_HitMarker" ID="{566EC586-F5C5-438D-9626-AD001BBF143B}">
+					<ChildrenList>
+						<Action Name="" ID="{DC2BDD75-09BC-43D2-AF7F-A0DFC26FC4D7}" ShortID="235924240">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SFX_Pistol_Hitmarker" ID="{C0049B1B-4242-4CA5-89BD-CBF5F82CC967}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_Pistol_Reload_Animation" ID="{E58877BA-953F-48A9-9991-0F617E35371A}">
+					<ChildrenList>
+						<Action Name="" ID="{EF539AA5-B49E-43BB-AC51-DD73EE81356E}" ShortID="166822280">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SC_Pistol_Animation_Environment" ID="{7035B0C5-C378-4A33-A6D2-EAC34BB07855}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
+								</Reference>
+							</ReferenceList>
+						</Action>
+					</ChildrenList>
+				</Event>
+				<Event Name="Play_Pistol_Dryfire" ID="{F39A5377-2737-4BAC-AABA-CBBA043255F7}">
+					<ChildrenList>
+						<Action Name="" ID="{79776D0F-CA91-4C32-A117-198FCFE12BF7}" ShortID="660581263">
+							<ReferenceList>
+								<Reference Name="Target">
+									<ObjectRef Name="SC_Pistol_Dryfire_Environment" ID="{95D18AB1-748B-44A7-B60F-23F11940C591}" WorkUnitID="{F1B7CCCA-27FC-4B3D-A72E-98C126A85954}"/>
 								</Reference>
 							</ReferenceList>
 						</Action>

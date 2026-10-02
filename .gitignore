@@ -97,3 +97,9 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Wwise: copia de los bancos de Windows que Unity genera al abrir o compilar.
+# Los bancos de verdad estan en Posuying_WwiseProject/GeneratedSoundBanks.
+/[Aa]ssets/StreamingAssets/Audio/GeneratedSoundBanks/Windows/
+/[Aa]ssets/StreamingAssets/Audio/GeneratedSoundBanks/Windows.meta
+Posuying_WwiseProject.zip

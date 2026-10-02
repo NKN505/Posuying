@@ -349,6 +349,14 @@ MonoBehaviour:
   damageRoll: 1.5
   springStiffness: 150
   springDamping: 18
+  nearClip: 0.02
+  wallGuard: 1
+  wallLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  wallPadding: 0.02
+  armsOverlay: 1
+  armsLayerName: FPArms
   dynamicFov: 1
   sprintFov: 3
   landingFov: 1
@@ -805,6 +813,15 @@ MonoBehaviour:
   muzzle: {fileID: 0}
   hipSpread: 2
   aimSpread: 0.2
+  crouchSpreadMultiplier: 0.35
+  stillSpreadMultiplier: 0.7
+  walkSpreadMultiplier: 1.25
+  sprintSpreadMultiplier: 2
+  walkSpeedForSpread: 2.5
+  spreadPerShot: 0.6
+  maxExtraSpread: 4
+  spreadRecoveryDelay: 0.25
+  spreadRecoveryPerSecond: 5
   effectiveRange: 10
   minDamageMultiplier: 0.15
   falloffShape:
@@ -847,6 +864,39 @@ MonoBehaviour:
   ejectPower: 150
   muzzleLightIntensity: 8
   muzzleLightTime: 0.05
+  shotEvent:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: 895a514cb4bf4c3c97c0d56ca5393511, type: 2}
+  lastBullet01Event:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: 491e3d5a7e4944b1abf7b525984b833e, type: 2}
+  lastBullet02Event:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: ac1c6ad691f84931a923d2dd3057b189, type: 2}
+  dryFireEvent:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: 21f15933fbf54f3eb5896e3063d49115, type: 2}
+  reloadEvent:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: cad35af9818a4f999a72a58c01f2860a, type: 2}
+  hitMarkerEvent:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: aa103198291348fa9269b30c903b7f95, type: 2}
+  bodyImpactEvent:
+    idInternal: 0
+    valueGuidInternal: 
+    WwiseObjectReference: {fileID: 11400000, guid: 6e49a67f178e4e0cac8a60ef9ef09c64, type: 2}
+  environmentSwitchGroup: SG_Environment
+  insideSwitch: Inside
+  outsideSwitch: Outside
+  roofCheckDistance: 12
+  bodyImpactEmitterLife: 3
 --- !u!1001 &8706869791174039202
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1289,6 +1339,7 @@ MonoBehaviour:
   rechargeWhenOff: 1
   lowBatteryThreshold: 20
   flickerInterval: 0.1
+  noIluminarManos: 1
 --- !u!114 &4801174243040028731
 MonoBehaviour:
   m_ObjectHideFlags: 0
