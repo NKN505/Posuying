@@ -21,6 +21,9 @@ public class ObjetoSoltado : NetworkBehaviour
     [Tooltip("Balas (municion) o puntos de vida (botiquin). En la mochila no se usa.")]
     public float cantidad = 15f;
 
+    [Tooltip("Botiquin: cuantos botiquines hay aqui (se guardan en el inventario)")]
+    public int unidades = 1;
+
     [Tooltip("Segundos hasta que desaparece si nadie lo coge (0 = nunca)")]
     public float segundosDeVida = 90f;
 
@@ -78,6 +81,14 @@ public class ObjetoSoltado : NetworkBehaviour
             if (o.x >= 0 && o.y > 0) _objetos.Add(o);
     }
 
+    // Para lo que suelta un jugador a proposito desde el inventario
+    public void BloquearPara(ulong dueno, float segundos)
+    {
+        if (!IsServer) return;
+        _dueno = dueno;
+        _duenoPuedeCogerDesde = Time.time + segundos;
+    }
+
     public void AnadirMunicion(float balas)
     {
         if (!IsServer) return;
@@ -105,6 +116,9 @@ public class ObjetoSoltado : NetworkBehaviour
 
         var pertenencias = jugador.GetComponent<Pertenencias>();
 
+        // Quien acaba de soltar algo no lo recoge al instante: lo tiene a los pies
+        if (jugador.OwnerClientId == _dueno && Time.time < _duenoPuedeCogerDesde) return;
+
         switch (tipo)
         {
             case TipoSoltado.Municion:
@@ -115,6 +129,23 @@ public class ObjetoSoltado : NetworkBehaviour
                 break;
 
             case TipoSoltado.Botiquin:
+                // Al inventario: se usa cuando haga falta, no al pisarlo
+                var catalogo = CatalogoObjetosSoltados.Instance;
+                var inventario = jugador.GetComponent<Inventory>();
+                if (catalogo != null && catalogo.itemBotiquin != null && inventario != null)
+                {
+                    int sobran = inventario.AddItem(catalogo.itemBotiquin, Mathf.Max(1, unidades));
+                    if (sobran >= Mathf.Max(1, unidades)) return;   // no le cabe: se queda para otro
+
+                    if (pertenencias != null)
+                        pertenencias.AvisarClientRpc("Botiquin guardado (" +
+                            GameSettings.KeyLabel(GameSettings.UseKey) + " para usarlo)");
+                    unidades = sobran;
+                    if (sobran <= 0) Retirar();
+                    break;
+                }
+
+                // Sin inventario configurado: cura al momento, como antes
                 var personaje = jugador.GetComponent<Character>();
                 if (personaje == null || personaje.GetHealth() >= personaje.GetMaxHealth()) return;
                 personaje.Heal(cantidad);
@@ -123,7 +154,6 @@ public class ObjetoSoltado : NetworkBehaviour
                 break;
 
             case TipoSoltado.Mochila:
-                if (jugador.OwnerClientId == _dueno && Time.time < _duenoPuedeCogerDesde) return;
                 RecogerMochila(jugador, pertenencias);
                 break;
         }

@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cb9f391dcd641de458017c4f6940c3d3, type: 3}
-  m_Name: Item_Pistola
+  m_Name: Item_Bomba
   m_EditorClassIdentifier: 
-  itemName: Pistola
-  icon: {fileID: 21300000, guid: 6c8cb9b210fc47044bc1f94378aafe1f, type: 3}
-  type: 1
+  itemName: Bomba
+  icon: {fileID: 21300000, guid: c3c515e145a444b499e957a3f4e7a3ba, type: 3}
+  type: 2
   maxStack: 1
   healAmount: 0

@@ -751,9 +751,11 @@ public class MainMenuUI : MonoBehaviour
         KeyRow(0, "Chat de texto", () => GameSettings.ChatKey, k => GameSettings.ChatKey = k);
         KeyRow(1, "Chat de voz (mantener)", () => GameSettings.VoiceKey, k => GameSettings.VoiceKey = k);
         KeyRow(2, "Marcar para el equipo", () => GameSettings.PingKey, k => GameSettings.PingKey = k);
+        KeyRow(3, "Usar objeto elegido", () => GameSettings.UseKey, k => GameSettings.UseKey = k);
+        KeyRow(4, "Soltar objeto elegido", () => GameSettings.DropKey, k => GameSettings.DropKey = k);
 
         Label("aviso_teclas", "Pulsa el boton y despues la tecla nueva. Escape cancela.",
-            _content, new Vector2(0f, RowY(4)), new Vector2(_content.sizeDelta.x, 40f),
+            _content, new Vector2(0f, RowY(6)), new Vector2(_content.sizeDelta.x, 40f),
             12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
     }
 

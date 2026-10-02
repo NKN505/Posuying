@@ -13611,6 +13611,12 @@ MonoBehaviour:
   municion: {fileID: 5362257221517761709, guid: 064ca80de35ecce49b7eb9c2120ce3a6, type: 3}
   botiquin: {fileID: 6645528361548131841, guid: e25f90ae0b769734b99fb0990ed37cf1, type: 3}
   mochila: {fileID: 4620490575057615903, guid: e08a00ab449ea1f4aa65bb074bff3952, type: 3}
+  itemBotiquin: {fileID: 11400000, guid: 58cd73e0f6ea901429649ed0f745396c, type: 2}
+  itemsLlave:
+  - {fileID: 11400000, guid: 6e36784ebad509347b788021a13ccd32, type: 2}
+  - {fileID: 11400000, guid: 0417a32f0fdeb4e4c8222bda1f005c03, type: 2}
+  - {fileID: 11400000, guid: 40c07f04d6775d04fa54902ce2adb33a, type: 2}
+  - {fileID: 11400000, guid: 580839a4a1ab0424198492311e36a722, type: 2}
 --- !u!114 &1310377248
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13656,6 +13662,8 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   segundosParaEscapar: 180
   teclaColocar: 101
+  itemBomba: {fileID: 11400000, guid: c24e1ec9cee598048a192601fc0b3561, type: 2}
+  distanciaParaRecogerOtraVez: 3
 --- !u!114 &1310377251
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -26210,4 +26218,3 @@ SceneRoots:
   - {fileID: 1799426752}
   - {fileID: 1831067526}
   - {fileID: 1717194490}
-

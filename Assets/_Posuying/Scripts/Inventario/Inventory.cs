@@ -41,8 +41,7 @@ public class Inventory : NetworkBehaviour
     [Tooltip("Huecos de la mochila (se ven al abrir el inventario con TAB)")]
     public int backpackSize = 24;
 
-    [Header("Teclas")]
-    public KeyCode useKey = KeyCode.F;
+    // Las teclas de usar y soltar estan en Opciones > Controles (GameSettings)
 
     // Contenido: solo lo escribe el servidor
     private readonly NetworkList<SlotData> netSlots = new NetworkList<SlotData>();
@@ -105,8 +104,67 @@ public class Inventory : NetworkBehaviour
         if (scroll > 0f) SelectSlot(SelectedIndex - 1);
         else if (scroll < 0f) SelectSlot(SelectedIndex + 1);
 
-        if (Input.GetKeyDown(useKey))
+        if (Input.GetKeyDown(GameSettings.UseKey))
             UseSelectedServerRpc();
+
+        if (Input.GetKeyDown(GameSettings.DropKey))
+            SoltarElegido();
+    }
+
+    // Suelta lo que hay en el hueco elegido del cinturon. La bomba va por su
+    // propio camino (la mision tiene que saber donde queda); y si el hueco esta
+    // vacio pero llevas la bomba en otro, se suelta la bomba.
+    private void SoltarElegido()
+    {
+        var mision = MisionBomba.Instance;
+        ItemData elegido = GetItemAt(SelectedIndex);
+
+        if (mision != null && mision.itemBomba != null && (elegido == mision.itemBomba || elegido == null))
+        {
+            mision.PedirSoltar();
+            return;
+        }
+
+        if (elegido != null) DropSlotServerRpc(SelectedIndex);
+    }
+
+    // Deja en el suelo, un paso por delante, lo que hay en un hueco. Un botiquin
+    // sale como botiquin; lo demas, en una mochila pequena con el objeto dentro.
+    [ServerRpc]
+    public void DropSlotServerRpc(int index)
+    {
+        SlotData slot = GetSlot(index);
+        if (slot.IsEmpty || database == null) return;
+
+        ItemData item = database.GetItem(slot.itemId);
+        var catalogo = CatalogoObjetosSoltados.Instance;
+        if (item == null || catalogo == null) return;
+
+        // La bomba no se suelta por aqui: la mision lleva la cuenta de donde esta
+        if (MisionBomba.Instance != null && item == MisionBomba.Instance.itemBomba) return;
+
+        Vector3 donde = transform.position + transform.forward * 1.5f;
+        ObjetoSoltado suelto;
+
+        if (item == catalogo.itemBotiquin && catalogo.botiquin != null)
+        {
+            suelto = catalogo.Soltar(catalogo.botiquin, donde);
+            if (suelto != null) suelto.unidades = slot.count;
+        }
+        else
+        {
+            suelto = catalogo.Soltar(catalogo.mochila, donde);
+            if (suelto != null)
+            {
+                var nombre = GetComponent<PlayerName>();
+                suelto.PrepararMochila(OwnerClientId, nombre != null ? nombre.Name : "un companero",
+                    new System.Collections.Generic.List<Vector2Int> { new Vector2Int(slot.itemId, slot.count) });
+            }
+        }
+
+        if (suelto == null) return;          // no se pudo crear: no se pierde el objeto
+        suelto.BloquearPara(OwnerClientId, 3f);
+        netSlots[index] = SlotData.Empty;
     }
 
     // ---------- Lectura (para la interfaz) ----------
@@ -219,6 +277,39 @@ public class Inventory : NetworkBehaviour
         }
 
         return amount;
+    }
+
+    // Quita objetos. Solo servidor. Devuelve cuantos se han quitado de verdad.
+    public int RemoveItem(ItemData item, int amount = 1)
+    {
+        if (!IsServer || item == null || database == null || amount <= 0) return 0;
+
+        int id = database.GetId(item);
+        if (id < 0) return 0;
+
+        int quitados = 0;
+        for (int i = 0; i < netSlots.Count && quitados < amount; i++)
+        {
+            SlotData slot = netSlots[i];
+            if (slot.IsEmpty || slot.itemId != id) continue;
+
+            int n = Mathf.Min(slot.count, amount - quitados);
+            slot.count -= n;
+            quitados += n;
+            netSlots[i] = slot.count > 0 ? slot : SlotData.Empty;
+        }
+        return quitados;
+    }
+
+    public bool HasItem(ItemData item)
+    {
+        if (item == null || database == null) return false;
+        int id = database.GetId(item);
+        if (id < 0) return false;
+
+        for (int i = 0; i < netSlots.Count; i++)
+            if (!netSlots[i].IsEmpty && netSlots[i].itemId == id) return true;
+        return false;
     }
 
     // ---------- Guardado / restauracion (migracion de host) ----------

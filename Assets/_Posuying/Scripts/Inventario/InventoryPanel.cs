@@ -170,6 +170,7 @@ public class InventoryPanel : MonoBehaviour
         var button = slotGO.AddComponent<InventorySlotButton>();
         button.index = slotIndex;
         button.onClick = OnSlotClicked;
+        button.onRightClick = OnSlotRightClicked;
 
         GameObject iconGO = new GameObject("Icon", typeof(RectTransform), typeof(Image));
         RectTransform irt = iconGO.GetComponent<RectTransform>();
@@ -216,6 +217,21 @@ public class InventoryPanel : MonoBehaviour
     {
         if (!_open) return;   // fuera del inventario, el cinturon no se toca
         OnSlotClicked(index);
+    }
+
+    // Clic derecho: soltar lo que hay en ese hueco, para dejarselo a un companero
+    private void OnSlotRightClicked(int index)
+    {
+        ItemData item = inventory.GetItemAt(index);
+        if (item == null) return;
+
+        _sourceIndex = -1;
+
+        var mision = MisionBomba.Instance;
+        if (mision != null && item == mision.itemBomba) mision.PedirSoltar();
+        else inventory.DropSlotServerRpc(index);
+
+        Refresh();
     }
 
     private void OnSlotClicked(int index)

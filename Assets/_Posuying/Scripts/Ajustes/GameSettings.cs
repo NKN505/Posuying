@@ -32,6 +32,8 @@ public static class GameSettings
     private const string KeyChatKey = "opt_key_chat";
     private const string KeyVoiceKey = "opt_key_voice";
     private const string KeyPingKey = "opt_key_ping";
+    private const string KeyDropKey = "opt_key_drop";
+    private const string KeyUseKey = "opt_key_use";
     private const string KeyVoiceOn = "opt_voice_on";
     private const string KeyVoiceVol = "opt_vol_voice";
     private const string KeyMic = "opt_mic";
@@ -73,6 +75,10 @@ public static class GameSettings
     public static KeyCode ChatKey = KeyCode.T;
     public static KeyCode VoiceKey = KeyCode.V;   // pulsar para hablar
     public static KeyCode PingKey = KeyCode.Q;    // marcar lo que miras para el equipo
+    public static KeyCode DropKey = KeyCode.G;    // soltar el objeto elegido (o la bomba)
+    // Usar el objeto elegido. Antes era la F, la misma tecla que la linterna:
+    // curarse la encendia o la apagaba.
+    public static KeyCode UseKey = KeyCode.X;
 
     // Chat de voz: cada jugador decide si lo usa y a que volumen oye a los demas
     public static bool VoiceEnabled = true;
@@ -122,6 +128,8 @@ public static class GameSettings
         ChatKey = (KeyCode)PlayerPrefs.GetInt(KeyChatKey, (int)KeyCode.T);
         VoiceKey = (KeyCode)PlayerPrefs.GetInt(KeyVoiceKey, (int)KeyCode.V);
         PingKey = (KeyCode)PlayerPrefs.GetInt(KeyPingKey, (int)KeyCode.Q);
+        DropKey = (KeyCode)PlayerPrefs.GetInt(KeyDropKey, (int)KeyCode.G);
+        UseKey = (KeyCode)PlayerPrefs.GetInt(KeyUseKey, (int)KeyCode.X);
         VoiceEnabled = PlayerPrefs.GetInt(KeyVoiceOn, 1) == 1;
         VoiceVolume = PlayerPrefs.GetFloat(KeyVoiceVol, 1f);
         MicDevice = PlayerPrefs.GetString(KeyMic, "");
@@ -154,6 +162,8 @@ public static class GameSettings
         PlayerPrefs.SetInt(KeyChatKey, (int)ChatKey);
         PlayerPrefs.SetInt(KeyVoiceKey, (int)VoiceKey);
         PlayerPrefs.SetInt(KeyPingKey, (int)PingKey);
+        PlayerPrefs.SetInt(KeyDropKey, (int)DropKey);
+        PlayerPrefs.SetInt(KeyUseKey, (int)UseKey);
         PlayerPrefs.SetInt(KeyVoiceOn, VoiceEnabled ? 1 : 0);
         PlayerPrefs.SetFloat(KeyVoiceVol, VoiceVolume);
         PlayerPrefs.SetString(KeyMic, MicDevice);
@@ -218,6 +228,8 @@ public static class GameSettings
         PlayerPrefs.SetInt(KeyChatKey, (int)ChatKey);
         PlayerPrefs.SetInt(KeyVoiceKey, (int)VoiceKey);
         PlayerPrefs.SetInt(KeyPingKey, (int)PingKey);
+        PlayerPrefs.SetInt(KeyDropKey, (int)DropKey);
+        PlayerPrefs.SetInt(KeyUseKey, (int)UseKey);
         PlayerPrefs.Save();
     }
 

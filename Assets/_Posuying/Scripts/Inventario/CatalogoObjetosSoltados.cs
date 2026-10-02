@@ -15,6 +15,23 @@ public class CatalogoObjetosSoltados : MonoBehaviour
     public ObjetoSoltado botiquin;
     public ObjetoSoltado mochila;
 
+    [Header("Inventario")]
+    [Tooltip("El botiquin como objeto del inventario. Con esto, los botiquines del suelo " +
+             "se guardan en el inventario en vez de curar al pisarlos. Vacio = como antes.")]
+    public ItemData itemBotiquin;
+
+    [Tooltip("Las cuatro llaves como objetos del inventario, en el orden de KeyType: " +
+             "Casco, Espada, Escudo, Armadura. Vacio = las llaves no aparecen en el inventario.")]
+    public ItemData[] itemsLlave;
+
+    /// <summary>El objeto de inventario de una llave, o null si no esta configurado.</summary>
+    public static ItemData ItemDeLlave(KeyType tipo)
+    {
+        var c = Instance;
+        int i = (int)tipo;
+        return c != null && c.itemsLlave != null && i >= 0 && i < c.itemsLlave.Length ? c.itemsLlave[i] : null;
+    }
+
     void Awake()
     {
         Instance = this;
