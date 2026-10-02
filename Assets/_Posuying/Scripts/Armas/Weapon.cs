@@ -70,6 +70,16 @@ public abstract class Weapon : MonoBehaviour{
     [Tooltip("Agachado la dispersion se multiplica por esto (menos de 1 = mas preciso)")]
     [SerializeField] private float crouchSpreadMultiplier = 0.5f;
 
+    [Header("Dispersion segun el movimiento (solo sin apuntar)")]
+    [Tooltip("De pie y quieto: algo mas preciso que andando")]
+    [SerializeField] private float stillSpreadMultiplier = 0.7f;
+    [Tooltip("Andando")]
+    [SerializeField] private float walkSpreadMultiplier = 1.25f;
+    [Tooltip("Corriendo")]
+    [SerializeField] private float sprintSpreadMultiplier = 2.0f;
+    [Tooltip("Velocidad (m/s) a partir de la cual cuenta como andar del todo")]
+    [SerializeField] private float walkSpeedForSpread = 2.5f;
+
     [Header("Dispersion acumulada al disparar seguido sin apuntar")]
     [Tooltip("Grados que se suman al cono por cada disparo sin apuntar")]
     [SerializeField] private float spreadPerShot = 0.6f;
@@ -151,6 +161,8 @@ public abstract class Weapon : MonoBehaviour{
     private Transform ownerRoot;
     private PlayerDownedState ownerDowned;
     private PlayerController ownerController;
+    private CharacterController ownerBody;
+    private bool ownerSprinting;
 
     // Dispersion acumulada: se guarda el valor en el ultimo disparo y el momento,
     // y la recuperacion se calcula al leerla (no hace falta un Update para esto).
@@ -311,12 +323,41 @@ public abstract class Weapon : MonoBehaviour{
     {
         float spread = (isAiming ? aimSpread : hipSpread) + GetExtraSpread();
 
+        // Moverse abre el cono: quieto < andando < corriendo. Apuntando no
+        // cuenta: quien apunta ya anda despacio y la mira manda.
+        if (!isAiming)
+        {
+            spread *= GetMovementSpreadMultiplier();
+        }
+
         if (ownerController != null && ownerController.GetIsCrouching())
         {
             spread *= crouchSpreadMultiplier;
         }
 
         return spread;
+    }
+
+    // Se usa la velocidad real del cuerpo y no las teclas: asi empujarse contra
+    // una pared (teclas pulsadas, cuerpo parado) no abre el cono.
+    private float GetMovementSpreadMultiplier()
+    {
+        if (ownerSprinting)
+        {
+            return sprintSpreadMultiplier;
+        }
+
+        if (ownerBody == null)
+        {
+            return 1.0f;
+        }
+
+        Vector3 velocity = ownerBody.velocity;
+        velocity.y = 0.0f;
+
+        float moving = Mathf.Clamp01(velocity.magnitude / Mathf.Max(0.1f, walkSpeedForSpread));
+
+        return Mathf.Lerp(stillSpreadMultiplier, walkSpreadMultiplier, moving);
     }
 
     // Lo acumulado por disparar seguido, ya descontado lo recuperado desde el ultimo tiro.
@@ -736,6 +777,13 @@ public abstract class Weapon : MonoBehaviour{
 
         float finalDamage = damage * GetDamageMultiplier(hit.distance);
 
+        // Aviso visual para quien dispara (marca en la reticula y numero de dano).
+        // A un cadaver no: sus huesos siguen ahi unos segundos y confundiria.
+        if (!enemy.IsDead)
+        {
+            FeedbackCombate.Impacto(hit.point, finalDamage, enemy.GetHealth() - finalDamage <= 0.0f);
+        }
+
         enemy.RequestDamage(finalDamage, hit.point, direction);
 
         return finalDamage;
@@ -776,6 +824,8 @@ public abstract class Weapon : MonoBehaviour{
 
     public void SetSprinting(bool sprinting)
     {
+        ownerSprinting = sprinting;   // tambien abre el cono de dispersion
+
         // Correr no debe interrumpir una recarga ya empezada.
         if (armsAnimator == null || !armsAnimator.isActiveAndEnabled)
         {
@@ -845,6 +895,7 @@ public abstract class Weapon : MonoBehaviour{
         PlayerController owner = GetComponentInParent<PlayerController>();
         ownerRoot = owner != null ? owner.transform : transform.root;
         ownerController = owner;
+        ownerBody = owner != null ? owner.GetComponent<CharacterController>() : null;
 
         ownerDowned = GetComponentInParent<PlayerDownedState>();
         ownerNoise = GetComponentInParent<PlayerNoise>();
