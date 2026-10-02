@@ -49,7 +49,7 @@ public class InventoryPanel : MonoBehaviour
         // Tecla (Tab) o el eje "Inventory" del Input Manager, que ademas trae el
         // boton del mando. Con un OR, pulsar Tab no cuenta dos veces.
         bool pulsado = Input.GetKeyDown(toggleKey) || Input.GetButtonDown("Inventory");
-        if (pulsado && (!UIState.NetMenuOpen || _open))
+        if (pulsado && !UIState.ChatOpen && (!UIState.NetMenuOpen || _open))
             SetOpen(!_open);
     }
 

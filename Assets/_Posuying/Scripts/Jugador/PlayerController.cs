@@ -225,7 +225,9 @@ public class PlayerController : Character, IPassiveRegenerator
         bool isMoving = !(Mathf.Approximately(movex, 0f) && Mathf.Approximately(movez, 0f));
 
         // SPRINT: solo si nos movemos, no agachados, con boton pulsado y queda estamina
-        bool wantsSprint = !wantsToCrouch && isMoving && Input.GetButton("Sprint");
+        // Quien carga con la bomba no puede correr y anda algo mas despacio
+        bool llevaBomba = MisionBomba.LocalLlevaBomba;
+        bool wantsSprint = !wantsToCrouch && isMoving && !llevaBomba && Input.GetButton("Sprint");
         bool sprinting = wantsSprint && GetStamina() > 0f;
         if (sprinting)
             DrainStamina(sprintStaminaPerSecond * Time.deltaTime);
@@ -253,7 +255,8 @@ public class PlayerController : Character, IPassiveRegenerator
         if (move.sqrMagnitude > 0f)
         {
             Vector3 before = transform.position;
-            controller.Move(move * GetSpeed() * Time.deltaTime);
+            float lastre = llevaBomba ? MisionBomba.VelocidadConBomba : 1f;
+            controller.Move(move * GetSpeed() * lastre * Time.deltaTime);
             UpdateFootsteps(before, sprinting);
         }
         else

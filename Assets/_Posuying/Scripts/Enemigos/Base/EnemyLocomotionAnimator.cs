@@ -97,6 +97,7 @@ public class EnemyLocomotionAnimator : MonoBehaviour
     public float ObservedSpeed { get { return _velocidad; } }
 
     private Animator _anim;
+    private EnemyBehaviour _enemigo;
     private UnityEngine.AI.NavMeshAgent _agente;
     private Vector3 _posicionAnterior;
     private float _velocidad;
@@ -108,7 +109,15 @@ public class EnemyLocomotionAnimator : MonoBehaviour
 
     void Awake()
     {
-        _anim = GetComponentInChildren<Animator>(true);
+        // El que tenga controlador. Con ragdoll montado hay DOS: RagdollDeath exige
+        // un Animator en la raiz y, cuando el modelo va en un hijo, el de la raiz
+        // esta vacio; cogerlo dejaria al enemigo sin animar.
+        foreach (var candidato in GetComponentsInChildren<Animator>(true))
+        {
+            if (_anim == null) _anim = candidato;
+            if (candidato.runtimeAnimatorController != null) { _anim = candidato; break; }
+        }
+        _enemigo = GetComponent<EnemyBehaviour>();
         _agente = GetComponent<UnityEngine.AI.NavMeshAgent>();
         _posicionAnterior = transform.position;
     }
@@ -117,6 +126,10 @@ public class EnemyLocomotionAnimator : MonoBehaviour
     {
         // Con el Animator apagado (ragdoll) no hay nada que animar
         if (_anim == null || _anim.runtimeAnimatorController == null || !_anim.isActiveAndEnabled) return;
+
+        // Muerto: manda el clip de muerte y despues el ragdoll. Si la locomocion
+        // siguiera, devolveria al cadaver a andar en mitad de la caida.
+        if (_enemigo != null && _enemigo.IsDead) { _anim.speed = 1f; return; }
 
         Medir();
         ActualizarUmbralCorrer();
