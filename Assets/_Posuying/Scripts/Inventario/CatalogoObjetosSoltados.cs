@@ -15,6 +15,52 @@ public class CatalogoObjetosSoltados : MonoBehaviour
     public ObjetoSoltado botiquin;
     public ObjetoSoltado mochila;
 
+    [Header("Inventario")]
+    [Tooltip("El catalogo de objetos: lo que hay en el suelo necesita traducir el numero que " +
+             "viaja por red al objeto (y a su modelo) en todas las maquinas.")]
+    public ItemDatabase database;
+
+    [Tooltip("El botiquin como objeto del inventario. Con esto, los botiquines del suelo " +
+             "se guardan en el inventario en vez de curar al pisarlos. Vacio = como antes.")]
+    public ItemData itemBotiquin;
+
+    [Tooltip("Las cuatro llaves como objetos del inventario, en el orden de KeyType: " +
+             "Casco, Espada, Escudo, Armadura. Vacio = las llaves no aparecen en el inventario.")]
+    public ItemData[] itemsLlave;
+
+    [Tooltip("Las tarjetas de acceso como objetos del inventario, en el orden de ColorTarjeta: " +
+             "Azul, Roja. Vacio = las tarjetas no aparecen en el inventario.")]
+    public ItemData[] itemsTarjeta;
+
+    /// <summary>El objeto de inventario de una tarjeta, o null si no esta configurado.</summary>
+    public static ItemData ItemDeTarjeta(ColorTarjeta color)
+    {
+        var c = Instance;
+        int i = (int)color;
+        return c != null && c.itemsTarjeta != null && i >= 0 && i < c.itemsTarjeta.Length ? c.itemsTarjeta[i] : null;
+    }
+
+    /// <summary>True si ese jugador lleva ese objeto en el inventario. Solo servidor.</summary>
+    public static bool LoLleva(ulong clientId, ItemData item)
+    {
+        if (item == null) return false;
+        foreach (var player in NetworkPlayer.AllPlayers)
+        {
+            if (player == null || player.OwnerClientId != clientId) continue;
+            var inventario = player.GetComponent<Inventory>();
+            if (inventario != null && inventario.HasItem(item)) return true;
+        }
+        return false;
+    }
+
+    /// <summary>El objeto de inventario de una llave, o null si no esta configurado.</summary>
+    public static ItemData ItemDeLlave(KeyType tipo)
+    {
+        var c = Instance;
+        int i = (int)tipo;
+        return c != null && c.itemsLlave != null && i >= 0 && i < c.itemsLlave.Length ? c.itemsLlave[i] : null;
+    }
+
     void Awake()
     {
         Instance = this;

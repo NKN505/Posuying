@@ -25,6 +25,17 @@ public class MisionBomba : NetworkBehaviour
     [Tooltip("Tecla para colocar la bomba estando en el sitio")]
     public KeyCode teclaColocar = KeyCode.E;
 
+    [Tooltip("La bomba como objeto del inventario: ocupa un hueco de quien la lleva. " +
+             "Tiene que estar en el catalogo (ItemDatabase).")]
+    public ItemData itemBomba;
+
+    // Solo servidor: quien acaba de soltarla no la recoge al instante (la tiene a los pies)
+    [Tooltip("Quien suelta la bomba tiene que alejarse esto de ella antes de poder recogerla otra vez")]
+    public float distanciaParaRecogerOtraVez = 3f;
+
+    private ulong _soltadaPor = ulong.MaxValue;
+    private float _avisoLlenoHasta;
+
     private readonly NetworkVariable<int> netFase = new NetworkVariable<int>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
@@ -84,6 +95,7 @@ public class MisionBomba : NetworkBehaviour
             Explotar();
 
         if (IsServer && Fase == FaseBomba.LlevarBomba) VigilarPortador();
+        if (IsServer && _soltadaPor != ulong.MaxValue) VigilarQuienLaSolto();
 
         ComprobarTeclaColocar();
     }
@@ -95,19 +107,113 @@ public class MisionBomba : NetworkBehaviour
         if (!IsServer || Fase != FaseBomba.BuscarBomba) return;
         if (MatchManager.Instance != null && MatchManager.Instance.MatchOver) return;
 
+        // Quien la acaba de soltar no la recoge hasta que se haya apartado de ella:
+        // la tiene a los pies y, si no, volveria a su inventario sola.
+        // (el bloqueo se levanta en VigilarQuienLaSolto, cuando se aleja)
+        if (jugador.OwnerClientId == _soltadaPor) return;
+
+        // Tiene que caberle: la bomba ocupa un hueco del inventario
+        var inventario = jugador.GetComponent<Inventory>();
+        if (itemBomba != null && inventario != null && inventario.AddItem(itemBomba, 1) > 0)
+        {
+            if (Time.time >= _avisoLlenoHasta)
+            {
+                _avisoLlenoHasta = Time.time + 4f;
+                AvisarClientRpc(Nombre(jugador) + " no puede coger la bomba: tiene el inventario lleno");
+            }
+            return;
+        }
+
         netPortador.Value = jugador.OwnerClientId;
         netFase.Value = (int)FaseBomba.LlevarBomba;
         AvisarClientRpc(Nombre(jugador) + " lleva la bomba: protegedle hasta el edificio del 3er tercio");
+    }
+
+    private PlayerController JugadorDe(ulong cliente)
+    {
+        foreach (var player in NetworkPlayer.AllPlayers)
+            if (player != null && player.OwnerClientId == cliente &&
+                player.GetComponent<NetworkPlayer>() != null) return player;
+        return null;
+    }
+
+    private void QuitarDelInventario(PlayerController jugador)
+    {
+        if (jugador == null || itemBomba == null) return;
+        var inventario = jugador.GetComponent<Inventory>();
+        if (inventario != null) inventario.RemoveItem(itemBomba, 1);
+    }
+
+    // Deja la bomba en el suelo en 'donde' y la mision vuelve a "buscarla"
+    private void DejarEnElSuelo(PlayerController portador, Vector3 donde, string aviso)
+    {
+        var golpes = Physics.RaycastAll(donde + Vector3.up, Vector3.down, 20f,
+                                        Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+        float mejor = float.NegativeInfinity;
+        foreach (var g in golpes)
+        {
+            // Sin contar a los personajes, como los objetos soltados
+            if (g.collider.GetComponentInParent<Character>() != null) continue;
+            if (g.point.y > mejor) { mejor = g.point.y; donde = g.point; }
+        }
+
+        QuitarDelInventario(portador);
+        netDondeCayo.Value = donde;
+        netCaida.Value = true;
+        netPortador.Value = SinPortador;
+        netFase.Value = (int)FaseBomba.BuscarBomba;
+        AvisarClientRpc(aviso);
+    }
+
+    // Lo llama Pertenencias justo antes de vaciar el inventario de un caido
+    public void SoltarSiLaLleva(ulong cliente)
+    {
+        if (!IsServer || Fase != FaseBomba.LlevarBomba || netPortador.Value != cliente) return;
+        var portador = JugadorDe(cliente);
+        if (portador == null) return;
+        DejarEnElSuelo(portador, portador.transform.position,
+                       Nombre(portador.GetComponent<NetworkPlayer>()) + " ha caido: la bomba esta en el suelo");
+    }
+
+    // Se mira aqui y no al recogerla: mientras esta lejos no hay nada que avise
+    // de que ya puede volver a por ella.
+    private void VigilarQuienLaSolto()
+    {
+        var jugador = JugadorDe(_soltadaPor);
+        if (jugador == null || Fase != FaseBomba.BuscarBomba) { _soltadaPor = ulong.MaxValue; return; }
+
+        Vector3 d = jugador.transform.position - netDondeCayo.Value; d.y = 0f;
+        if (d.magnitude >= distanciaParaRecogerOtraVez) _soltadaPor = ulong.MaxValue;
+    }
+
+    // ---------- Soltarla a proposito ----------
+
+    /// <summary>El jugador local pide soltar la bomba (tecla o clic derecho en el inventario).</summary>
+    public void PedirSoltar()
+    {
+        if (LocalLlevaBomba) SoltarServerRpc();
+    }
+
+    [ServerRpc(RequireOwnership = false)]
+    private void SoltarServerRpc(ServerRpcParams rpc = default)
+    {
+        ulong quien = rpc.Receive.SenderClientId;
+        if (Fase != FaseBomba.LlevarBomba || netPortador.Value != quien) return;
+
+        var portador = JugadorDe(quien);
+        if (portador == null) return;
+
+        // Un paso por delante; el mismo no la recoge hasta que se aparte
+        _soltadaPor = quien;
+        DejarEnElSuelo(portador, portador.transform.position + portador.transform.forward * 1.2f,
+                       Nombre(portador.GetComponent<NetworkPlayer>()) + " ha soltado la bomba");
     }
 
     // Si quien la lleva cae abatido, queda eliminado o se desconecta, la bomba se
     // queda en el suelo donde estaba y hay que volver a recogerla.
     private void VigilarPortador()
     {
-        PlayerController portador = null;
-        foreach (var player in NetworkPlayer.AllPlayers)
-            if (player != null && player.OwnerClientId == netPortador.Value &&
-                player.GetComponent<NetworkPlayer>() != null) { portador = player; break; }
+        PlayerController portador = JugadorDe(netPortador.Value);
 
         if (portador == null)
         {
@@ -122,23 +228,9 @@ public class MisionBomba : NetworkBehaviour
         var estado = portador.GetComponent<PlayerDownedState>();
         if (estado == null || estado.CanAct) return;
 
-        // Al suelo bajo el jugador (sin contar a los personajes, como los objetos soltados)
-        Vector3 donde = portador.transform.position;
-        var golpes = Physics.RaycastAll(donde + Vector3.up, Vector3.down, 20f,
-                                        Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
-        float mejor = float.NegativeInfinity;
-        foreach (var g in golpes)
-        {
-            if (g.collider.GetComponentInParent<Character>() != null) continue;
-            if (g.point.y > mejor) { mejor = g.point.y; donde = g.point; }
-        }
-
-        netDondeCayo.Value = donde;
-        netCaida.Value = true;
-        netPortador.Value = SinPortador;
-        netFase.Value = (int)FaseBomba.BuscarBomba;
         var nombre = portador.GetComponent<PlayerName>();
-        AvisarClientRpc((nombre != null ? nombre.Name : "Un jugador") + " ha caido: la bomba esta en el suelo");
+        DejarEnElSuelo(portador, portador.transform.position,
+                       (nombre != null ? nombre.Name : "Un jugador") + " ha caido: la bomba esta en el suelo");
     }
 
     private void ColocarBomba(NetworkPlayer jugador)
@@ -146,6 +238,7 @@ public class MisionBomba : NetworkBehaviour
         if (!IsServer || Fase != FaseBomba.LlevarBomba) return;
         if (MatchManager.Instance != null && MatchManager.Instance.MatchOver) return;
 
+        QuitarDelInventario(JugadorDe(netPortador.Value));   // ya no la lleva: esta puesta
         netExplota.Value = NetworkManager.ServerTime.Time + segundosParaEscapar;
         netPortador.Value = SinPortador;
         netFase.Value = (int)FaseBomba.Escapar;
@@ -167,6 +260,10 @@ public class MisionBomba : NetworkBehaviour
         netExplota.Value = 0;
         netPortador.Value = SinPortador;
         netCaida.Value = false;
+        _soltadaPor = ulong.MaxValue;
+
+        // Que no quede ninguna bomba en un inventario de la partida anterior
+        foreach (var player in NetworkPlayer.AllPlayers) QuitarDelInventario(player);
     }
 
     private string NombrePortador()
@@ -211,8 +308,11 @@ public class MisionBomba : NetworkBehaviour
 
     private void ComprobarTeclaColocar()
     {
-        if (!IsSpawned || UIState.BlocksGameplay || !Input.GetKeyDown(teclaColocar)) return;
-        if (SitioCercano() != null) PedirColocarServerRpc();
+        if (!IsSpawned || UIState.BlocksGameplay) return;
+
+        // Soltar la bomba lo lleva el inventario (tecla de soltar o clic derecho en su hueco)
+
+        if (Input.GetKeyDown(teclaColocar) && SitioCercano() != null) PedirColocarServerRpc();
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -262,7 +362,8 @@ public class MisionBomba : NetworkBehaviour
                 break;
             case FaseBomba.LlevarBomba:
                 objetivo = LocalLlevaBomba
-                    ? "LLEVAS LA BOMBA (no puedes correr): colocala en el edificio del 3er tercio"
+                    ? "LLEVAS LA BOMBA (no puedes correr, " + GameSettings.KeyLabel(GameSettings.DropKey) +
+                      " la suelta): colocala en el edificio del 3er tercio"
                     : "OBJETIVO: protege a " + NombrePortador() + ", que lleva la bomba al edificio del 3er tercio";
                 break;
             case FaseBomba.Escapar: objetivo = "OBJETIVO: vuelve al 1er tercio y escapa"; break;

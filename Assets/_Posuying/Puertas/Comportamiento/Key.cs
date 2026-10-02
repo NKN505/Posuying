@@ -102,7 +102,25 @@ public class Key : NetworkBehaviour
 
     /// <summary>¿Tiene este jugador esta llave? Solo servidor.</summary>
     public static bool Tiene(ulong clientId, KeyType tipo) =>
-        _llaves.TryGetValue(clientId, out var s) && s.Contains(tipo);
+        (_llaves.TryGetValue(clientId, out var s) && s.Contains(tipo)) || LaLlevaEnElInventario(clientId, tipo);
+
+    // La llave tambien es un objeto del inventario: quien la recoge la ve en un
+    // hueco y puede pasarsela a un companero soltandola. Quien la cogio del mundo
+    // no pierde el acceso por soltarla (sigue en la lista de arriba), asi que una
+    // llave nunca se puede perder y dejar una puerta sin abrir.
+    static bool LaLlevaEnElInventario(ulong clientId, KeyType tipo)
+    {
+        ItemData item = CatalogoObjetosSoltados.ItemDeLlave(tipo);
+        if (item == null) return false;
+
+        foreach (var player in NetworkPlayer.AllPlayers)
+        {
+            if (player == null || player.OwnerClientId != clientId) continue;
+            var inventario = player.GetComponent<Inventory>();
+            if (inventario != null && inventario.HasItem(item)) return true;
+        }
+        return false;
+    }
 
     static void Dar(ulong clientId, KeyType tipo)
     {
@@ -160,6 +178,12 @@ public class Key : NetworkBehaviour
         if (estado != null && !estado.CanAct) return;
 
         Dar(jugador.OwnerClientId, tipo);
+
+        // Al inventario, para que se vea que la llevas (si no cabe, la tienes igualmente)
+        ItemData item = CatalogoObjetosSoltados.ItemDeLlave(tipo);
+        var inventario = jugador.GetComponent<Inventory>();
+        if (item != null && inventario != null) inventario.AddItem(item, 1);
+
         taken.Value = true;
         AvisarClientRpc("Has obtenido la " + Nombre(tipo) + ".", new ClientRpcParams
         { Send = new ClientRpcSendParams { TargetClientIds = new[] { jugador.OwnerClientId } } });

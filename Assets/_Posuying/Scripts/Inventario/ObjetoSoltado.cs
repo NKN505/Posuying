@@ -21,6 +21,9 @@ public class ObjetoSoltado : NetworkBehaviour
     [Tooltip("Balas (municion) o puntos de vida (botiquin). En la mochila no se usa.")]
     public float cantidad = 15f;
 
+    [Tooltip("Botiquin: cuantos botiquines hay aqui (se guardan en el inventario)")]
+    public int unidades = 1;
+
     [Tooltip("Segundos hasta que desaparece si nadie lo coge (0 = nunca)")]
     public float segundosDeVida = 90f;
 
@@ -33,6 +36,11 @@ public class ObjetoSoltado : NetworkBehaviour
     public Transform visual;
     public float velocidadGiro = 90f;
     public float alturaFlote = 0.08f;
+
+    // Cuando es UN solo objeto soltado a proposito (una llave, un arma), en vez de
+    // la mochila se ve ese objeto. Viaja su numero de catalogo; -1 = mochila normal.
+    private readonly NetworkVariable<int> netObjetoVisible = new NetworkVariable<int>(
+        -1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     // ---- Solo servidor: contenido de una mochila ----
     private readonly List<Vector2Int> _objetos = new List<Vector2Int>();   // (id, cantidad)
@@ -48,6 +56,67 @@ public class ObjetoSoltado : NetworkBehaviour
     {
         _nacio = Time.time;
         if (visual != null) _visualBase = visual.localPosition;
+
+        netObjetoVisible.OnValueChanged += AlCambiarAspecto;
+        AplicarAspecto(netObjetoVisible.Value);
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        netObjetoVisible.OnValueChanged -= AlCambiarAspecto;
+    }
+
+    private void AlCambiarAspecto(int antes, int ahora) => AplicarAspecto(ahora);
+
+    // Cambia la mochila por el modelo del objeto, en todas las maquinas
+    private void AplicarAspecto(int idObjeto)
+    {
+        if (idObjeto < 0 || visual == null) return;
+
+        var catalogo = CatalogoObjetosSoltados.Instance;
+        ItemData item = catalogo != null && catalogo.database != null ? catalogo.database.GetItem(idObjeto) : null;
+        if (item == null || item.modeloSuelo == null) return;
+
+        foreach (var r in visual.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+
+        // La luz que lo senala, del color del objeto (cada llave tiene el suyo)
+        if (item.colorLuzSuelo.a > 0f)
+            foreach (var luz in GetComponentsInChildren<Light>(true))
+                luz.color = new Color(item.colorLuzSuelo.r, item.colorLuzSuelo.g, item.colorLuzSuelo.b, 1f);
+
+        var modelo = Instantiate(item.modeloSuelo, visual);
+        modelo.name = "Modelo_" + item.itemName;
+        modelo.transform.localPosition = Vector3.zero;
+        modelo.transform.localRotation = Quaternion.Euler(item.rotacionSuelo);
+
+        // Solo interesa su aspecto: fuera scripts, fisicas y colisiones
+        foreach (var b in modelo.GetComponentsInChildren<Behaviour>(true)) if (!(b is Light)) b.enabled = false;
+        foreach (var c in modelo.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+        foreach (var rb in modelo.GetComponentsInChildren<Rigidbody>(true)) rb.isKinematic = true;
+        foreach (var t in modelo.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = gameObject.layer;
+
+        if (item.materialSuelo != null)
+            foreach (var r in modelo.GetComponentsInChildren<Renderer>())
+            {
+                var mats = new Material[r.sharedMaterials.Length];
+                for (int i = 0; i < mats.Length; i++) mats[i] = item.materialSuelo;
+                r.sharedMaterials = mats;
+            }
+
+        // Cada modelo viene a su escala: se ajusta para que su lado mas largo mida lo indicado
+        var renderers = modelo.GetComponentsInChildren<Renderer>();
+        if (renderers.Length > 0)
+        {
+            Bounds caja = renderers[0].bounds;
+            foreach (var r in renderers) caja.Encapsulate(r.bounds);
+            float largo = Mathf.Max(caja.size.x, caja.size.y, caja.size.z);
+            if (largo > 0.0001f) modelo.transform.localScale *= Mathf.Max(0.05f, item.tamanoSuelo) / largo;
+
+            // Y se centra sobre el punto donde estaba la mochila
+            caja = renderers[0].bounds;
+            foreach (var r in renderers) caja.Encapsulate(r.bounds);
+            modelo.transform.position += visual.position - caja.center;
+        }
     }
 
     void Update()
@@ -78,6 +147,20 @@ public class ObjetoSoltado : NetworkBehaviour
             if (o.x >= 0 && o.y > 0) _objetos.Add(o);
     }
 
+    /// <summary>Un solo objeto soltado a proposito: se vera como ese objeto y no como una mochila.</summary>
+    public void MostrarComoObjeto(int idObjeto)
+    {
+        if (IsServer) netObjetoVisible.Value = idObjeto;
+    }
+
+    // Para lo que suelta un jugador a proposito desde el inventario
+    public void BloquearPara(ulong dueno, float segundos)
+    {
+        if (!IsServer) return;
+        _dueno = dueno;
+        _duenoPuedeCogerDesde = Time.time + segundos;
+    }
+
     public void AnadirMunicion(float balas)
     {
         if (!IsServer) return;
@@ -105,6 +188,9 @@ public class ObjetoSoltado : NetworkBehaviour
 
         var pertenencias = jugador.GetComponent<Pertenencias>();
 
+        // Quien acaba de soltar algo no lo recoge al instante: lo tiene a los pies
+        if (jugador.OwnerClientId == _dueno && Time.time < _duenoPuedeCogerDesde) return;
+
         switch (tipo)
         {
             case TipoSoltado.Municion:
@@ -115,6 +201,23 @@ public class ObjetoSoltado : NetworkBehaviour
                 break;
 
             case TipoSoltado.Botiquin:
+                // Al inventario: se usa cuando haga falta, no al pisarlo
+                var catalogo = CatalogoObjetosSoltados.Instance;
+                var inventario = jugador.GetComponent<Inventory>();
+                if (catalogo != null && catalogo.itemBotiquin != null && inventario != null)
+                {
+                    int sobran = inventario.AddItem(catalogo.itemBotiquin, Mathf.Max(1, unidades));
+                    if (sobran >= Mathf.Max(1, unidades)) return;   // no le cabe: se queda para otro
+
+                    if (pertenencias != null)
+                        pertenencias.AvisarClientRpc("Botiquin guardado (" +
+                            GameSettings.KeyLabel(GameSettings.UseKey) + " para usarlo)");
+                    unidades = sobran;
+                    if (sobran <= 0) Retirar();
+                    break;
+                }
+
+                // Sin inventario configurado: cura al momento, como antes
                 var personaje = jugador.GetComponent<Character>();
                 if (personaje == null || personaje.GetHealth() >= personaje.GetMaxHealth()) return;
                 personaje.Heal(cantidad);
@@ -123,7 +226,6 @@ public class ObjetoSoltado : NetworkBehaviour
                 break;
 
             case TipoSoltado.Mochila:
-                if (jugador.OwnerClientId == _dueno && Time.time < _duenoPuedeCogerDesde) return;
                 RecogerMochila(jugador, pertenencias);
                 break;
         }
@@ -157,9 +259,18 @@ public class ObjetoSoltado : NetworkBehaviour
 
         if (pertenencias != null && (objetosCogidos > 0 || balas > 0f))
         {
-            string de = jugador.OwnerClientId == _dueno ? "tu mochila" : "la mochila de " + _nombreDueno;
-            pertenencias.AvisarClientRpc("Recoges " + de + ": " + objetosCogidos + " objeto(s), " +
-                                         Mathf.RoundToInt(balas) + " balas");
+            if (netObjetoVisible.Value >= 0 && inventario != null && inventario.database != null &&
+                inventario.database.GetItem(netObjetoVisible.Value) != null)
+            {
+                // Era un objeto suelto, no una mochila: se dice cual
+                pertenencias.AvisarClientRpc("Recoges: " + inventario.database.GetItem(netObjetoVisible.Value).itemName);
+            }
+            else
+            {
+                string de = jugador.OwnerClientId == _dueno ? "tu mochila" : "la mochila de " + _nombreDueno;
+                pertenencias.AvisarClientRpc("Recoges " + de + ": " + objetosCogidos + " objeto(s), " +
+                                             Mathf.RoundToInt(balas) + " balas");
+            }
         }
 
         if (EstaVacia) Retirar();

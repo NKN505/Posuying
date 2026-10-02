@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb9f391dcd641de458017c4f6940c3d3, type: 3}
   m_Name: Item_Botiquin
   m_EditorClassIdentifier: 
-  itemName: Item
-  icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
+  itemName: Botiquin
+  icon: {fileID: 21300000, guid: 0c7d58396a2b1ae41b406893b02d106a, type: 3}
   type: 0
   maxStack: 5
   healAmount: 250

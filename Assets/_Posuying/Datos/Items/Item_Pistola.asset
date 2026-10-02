@@ -12,8 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb9f391dcd641de458017c4f6940c3d3, type: 3}
   m_Name: Item_Pistola
   m_EditorClassIdentifier: 
-  itemName: Item
-  icon: {fileID: 0}
+  itemName: Pistola
+  icon: {fileID: 21300000, guid: 6c8cb9b210fc47044bc1f94378aafe1f, type: 3}
   type: 1
   maxStack: 1
+  modeloSuelo: {fileID: 7757947126742549135, guid: 5c59210965ffbcc4093fe99a29edb777, type: 3}
+  tamanoSuelo: 0.45
+  rotacionSuelo: {x: 0, y: 0, z: 0}
+  materialSuelo: {fileID: 2100000, guid: 6dff3975f15e0f64d92972b003daf971, type: 2}
   healAmount: 0

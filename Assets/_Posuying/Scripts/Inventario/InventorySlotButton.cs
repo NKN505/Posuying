@@ -7,9 +7,11 @@ public class InventorySlotButton : MonoBehaviour, IPointerClickHandler
 {
     public int index;
     public System.Action<int> onClick;
+    public System.Action<int> onRightClick;
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        onClick?.Invoke(index);
+        if (eventData.button == PointerEventData.InputButton.Right) onRightClick?.Invoke(index);
+        else onClick?.Invoke(index);
     }
 }

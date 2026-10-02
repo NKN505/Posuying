@@ -35,6 +35,10 @@ public class Pertenencias : NetworkBehaviour
         var catalogo = CatalogoObjetosSoltados.Instance;
         var inventario = GetComponent<Inventory>();
 
+        // La bomba no va a la mochila: se queda en el suelo por su cuenta, para
+        // que se vea y la mision sepa donde esta. Antes de exportar el inventario.
+        if (MisionBomba.Instance != null) MisionBomba.Instance.SoltarSiLaLleva(OwnerClientId);
+
         var objetos = new List<Vector2Int>();
         if (inventario != null)
         {
