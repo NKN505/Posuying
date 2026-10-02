@@ -43,7 +43,11 @@ public class Tarjeta : NetworkBehaviour
     static void Reiniciar() => _conTarjeta.Clear();
 
     /// <summary>¿Tiene este jugador la tarjeta de ese color? Solo servidor.</summary>
-    public static bool Tiene(ulong clientId, ColorTarjeta c) => _conTarjeta.Contains((clientId, c));
+    // Igual que las llaves: la tarjeta es tambien un objeto del inventario, asi
+    // que vale tanto haberla cogido del mapa como llevarla porque te la han pasado.
+    public static bool Tiene(ulong clientId, ColorTarjeta c) =>
+        _conTarjeta.Contains((clientId, c)) ||
+        CatalogoObjetosSoltados.LoLleva(clientId, CatalogoObjetosSoltados.ItemDeTarjeta(c));
 
     private readonly NetworkVariable<bool> taken = new NetworkVariable<bool>(
         false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -115,6 +119,12 @@ public class Tarjeta : NetworkBehaviour
         if (estado != null && !estado.CanAct) return;
 
         _conTarjeta.Add((jugador.OwnerClientId, color));
+
+        // Al inventario, para que se vea que la llevas (si no cabe, la tienes igualmente)
+        ItemData item = CatalogoObjetosSoltados.ItemDeTarjeta(color);
+        var inventario = jugador.GetComponent<Inventory>();
+        if (item != null && inventario != null) inventario.AddItem(item, 1);
+
         taken.Value = true;
         AvisarClientRpc("Has obtenido la " + Nombre(color) + ".", new ClientRpcParams
         { Send = new ClientRpcSendParams { TargetClientIds = new[] { jugador.OwnerClientId } } });

@@ -28,6 +28,31 @@ public class CatalogoObjetosSoltados : MonoBehaviour
              "Casco, Espada, Escudo, Armadura. Vacio = las llaves no aparecen en el inventario.")]
     public ItemData[] itemsLlave;
 
+    [Tooltip("Las tarjetas de acceso como objetos del inventario, en el orden de ColorTarjeta: " +
+             "Azul, Roja. Vacio = las tarjetas no aparecen en el inventario.")]
+    public ItemData[] itemsTarjeta;
+
+    /// <summary>El objeto de inventario de una tarjeta, o null si no esta configurado.</summary>
+    public static ItemData ItemDeTarjeta(ColorTarjeta color)
+    {
+        var c = Instance;
+        int i = (int)color;
+        return c != null && c.itemsTarjeta != null && i >= 0 && i < c.itemsTarjeta.Length ? c.itemsTarjeta[i] : null;
+    }
+
+    /// <summary>True si ese jugador lleva ese objeto en el inventario. Solo servidor.</summary>
+    public static bool LoLleva(ulong clientId, ItemData item)
+    {
+        if (item == null) return false;
+        foreach (var player in NetworkPlayer.AllPlayers)
+        {
+            if (player == null || player.OwnerClientId != clientId) continue;
+            var inventario = player.GetComponent<Inventory>();
+            if (inventario != null && inventario.HasItem(item)) return true;
+        }
+        return false;
+    }
+
     /// <summary>El objeto de inventario de una llave, o null si no esta configurado.</summary>
     public static ItemData ItemDeLlave(KeyType tipo)
     {
