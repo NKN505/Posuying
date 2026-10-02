@@ -7289,6 +7289,8 @@ GameObject:
   - component: {fileID: 1310377248}
   - component: {fileID: 1310377247}
   - component: {fileID: 1310377250}
+  - component: {fileID: 1310377251}
+  - component: {fileID: 1310377252}
   m_Layer: 0
   m_Name: MatchManager
   m_TagString: Untagged
@@ -7412,6 +7414,37 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   segundosParaEscapar: 180
   teclaColocar: 101
+--- !u!114 &1310377251
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1310377243}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4f333d3c308e13f4d809557aa42306e5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  maxCaracteres: 120
+  lineasVisibles: 8
+  segundosVisible: 10
+  maxMensajesCada5s: 5
+--- !u!114 &1310377252
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1310377243}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: acf37d8ef6a62e945b2cf0af2f4b6c6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  oirmeAMiMismo: 0
 --- !u!1 &1316100061
 GameObject:
   m_ObjectHideFlags: 0
@@ -8784,6 +8817,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1597335159}
   - component: {fileID: 1597335160}
+  - component: {fileID: 1597335161}
   m_Layer: 0
   m_Name: Brillo
   m_TagString: Untagged
@@ -8871,6 +8905,29 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
+--- !u!114 &1597335161
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1597335158}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 474bcb49853aa07438625e644c072ee6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Version: 3
+  m_UsePipelineSettings: 1
+  m_AdditionalLightsShadowResolutionTier: 2
+  m_LightLayerMask: 1
+  m_RenderingLayers: 1
+  m_CustomShadowLayers: 0
+  m_ShadowLayerMask: 1
+  m_ShadowRenderingLayers: 1
+  m_LightCookieSize: {x: 1, y: 1}
+  m_LightCookieOffset: {x: 0, y: 0}
+  m_SoftShadowQuality: 0
 --- !u!1 &1599097652
 GameObject:
   m_ObjectHideFlags: 0

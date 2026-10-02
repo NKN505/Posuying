@@ -29,6 +29,10 @@ public static class GameSettings
     private const string KeyNpcCount = "opt_npc_count";
     private const string KeyMinimap = "opt_minimap";
     private const string KeyMinimapRange = "opt_minimap_range";
+    private const string KeyChatKey = "opt_key_chat";
+    private const string KeyVoiceKey = "opt_key_voice";
+    private const string KeyVoiceOn = "opt_voice_on";
+    private const string KeyVoiceVol = "opt_vol_voice";
 
     // ---------- Valores disponibles ----------
     // Un unico control para los fotogramas: VSync y limite manual se excluyen
@@ -62,6 +66,14 @@ public static class GameSettings
     // por su cuenta, a diferencia de los NPC, que dependen del anfitrion.
     public static bool MinimapEnabled = true;
     public static float MinimapRange = 40f;
+
+    // Teclas configurables (Opciones > Controles)
+    public static KeyCode ChatKey = KeyCode.T;
+    public static KeyCode VoiceKey = KeyCode.V;   // pulsar para hablar
+
+    // Chat de voz: cada jugador decide si lo usa y a que volumen oye a los demas
+    public static bool VoiceEnabled = true;
+    public static float VoiceVolume = 1f;
 
     // Avisa a quien dependa de un ajuste (camara del jugador, contador de FPS...)
     public static event System.Action Changed;
@@ -102,6 +114,11 @@ public static class GameSettings
         MinimapEnabled = PlayerPrefs.GetInt(KeyMinimap, 1) == 1;
         MinimapRange = PlayerPrefs.GetFloat(KeyMinimapRange, 40f);
 
+        ChatKey = (KeyCode)PlayerPrefs.GetInt(KeyChatKey, (int)KeyCode.T);
+        VoiceKey = (KeyCode)PlayerPrefs.GetInt(KeyVoiceKey, (int)KeyCode.V);
+        VoiceEnabled = PlayerPrefs.GetInt(KeyVoiceOn, 1) == 1;
+        VoiceVolume = PlayerPrefs.GetFloat(KeyVoiceVol, 1f);
+
         _loaded = true;
     }
 
@@ -127,6 +144,11 @@ public static class GameSettings
         PlayerPrefs.SetInt(KeyMinimap, MinimapEnabled ? 1 : 0);
         PlayerPrefs.SetFloat(KeyMinimapRange, MinimapRange);
 
+        PlayerPrefs.SetInt(KeyChatKey, (int)ChatKey);
+        PlayerPrefs.SetInt(KeyVoiceKey, (int)VoiceKey);
+        PlayerPrefs.SetInt(KeyVoiceOn, VoiceEnabled ? 1 : 0);
+        PlayerPrefs.SetFloat(KeyVoiceVol, VoiceVolume);
+
         PlayerPrefs.Save();
     }
 
@@ -141,6 +163,8 @@ public static class GameSettings
         PlayerPrefs.SetFloat(KeyMaster, MasterVolume);
         PlayerPrefs.SetFloat(KeyMusic, MusicVolume);
         PlayerPrefs.SetFloat(KeySfx, SfxVolume);
+        PlayerPrefs.SetFloat(KeyVoiceVol, VoiceVolume);
+        PlayerPrefs.SetInt(KeyVoiceOn, VoiceEnabled ? 1 : 0);
 
         // La musica y los efectos leen su variable cada frame; el general va por
         // el AudioListener
@@ -153,6 +177,25 @@ public static class GameSettings
     {
         MouseSensitivity = Mathf.Clamp(MouseSensitivity, MinSensitivity, MaxSensitivity);
         PlayerPrefs.SetFloat(KeySensitivity, MouseSensitivity);
+    }
+
+    // Las teclas se guardan en cuanto se eligen, sin pasar por APLICAR
+    public static void SaveKeys()
+    {
+        PlayerPrefs.SetInt(KeyChatKey, (int)ChatKey);
+        PlayerPrefs.SetInt(KeyVoiceKey, (int)VoiceKey);
+        PlayerPrefs.Save();
+    }
+
+    // Nombre legible de una tecla para la interfaz
+    public static string KeyLabel(KeyCode key)
+    {
+        string s = key.ToString();
+        if (s.StartsWith("Alpha")) return s.Substring(5);
+        if (s.StartsWith("Keypad")) return "Num " + s.Substring(6);
+        if (s == "Mouse2") return "Raton central";
+        if (s.StartsWith("Mouse")) return "Raton " + (int.Parse(s.Substring(5)) + 1);
+        return s;
     }
 
     // Guarda y aplica de golpe (lo llama el boton APLICAR del menu)

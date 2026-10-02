@@ -96,7 +96,7 @@ public class MainMenuUI : MonoBehaviour
     private string _selectedSessionId = "";
 
     // Opciones
-    private enum OptionsTab { General, Graficos, Audio }
+    private enum OptionsTab { General, Graficos, Audio, Controles }
     private OptionsTab _optionsTab = OptionsTab.General;
 
     private int _resIndex = -1;
@@ -105,6 +105,7 @@ public class MainMenuUI : MonoBehaviour
     void Update()
     {
         UpdateVolumes();
+        UpdateKeyCapture();
 
         if (!_built)
         {
@@ -562,13 +563,13 @@ public class MainMenuUI : MonoBehaviour
         float top = _content.sizeDelta.y / 2f;
 
         // Sub-pestanas de categoria
-        string[] names = { "GENERAL", "GRAFICOS", "AUDIO" };
-        float tabW = 130f;
+        string[] names = { "GENERAL", "GRAFICOS", "AUDIO", "CONTROLES" };
+        float tabW = 122f;
 
         for (int i = 0; i < names.Length; i++)
         {
             OptionsTab tab = (OptionsTab)i;
-            float x = -tabW * 1.05f + i * tabW * 1.05f;
+            float x = (i - (names.Length - 1) * 0.5f) * tabW * 1.05f;
             Color color = _optionsTab == tab ? accentColor : buttonColor;
 
             Button(names[i], _content, new Vector2(x, top - 16f), new Vector2(tabW, 28f),
@@ -580,11 +581,12 @@ public class MainMenuUI : MonoBehaviour
             case OptionsTab.General: BuildGeneralOptions(); break;
             case OptionsTab.Graficos: BuildGraphicsOptions(); break;
             case OptionsTab.Audio: BuildAudioOptions(); break;
+            case OptionsTab.Controles: BuildControlsOptions(); break;
         }
 
         // El audio se aplica solo al mover los sliders: en esa pestana APLICAR
         // sobra y solo haria pensar que hay que pulsarlo
-        bool needsApply = _optionsTab != OptionsTab.Audio;
+        bool needsApply = _optionsTab != OptionsTab.Audio && _optionsTab != OptionsTab.Controles;
 
         // En partida el boton comparte fila con el de volver
         float applyX = OptionsOverlayOpen ? -110f : 0f;
@@ -705,9 +707,94 @@ public class MainMenuUI : MonoBehaviour
             v => { GameSettings.SfxVolume = v; GameSettings.ApplyVolumes(); },
             () => GameSettings.Percent(GameSettings.SfxVolume));
 
+        SliderRow(3, "Voces (chat de voz)", GameSettings.VoiceVolume,
+            v => { GameSettings.VoiceVolume = v; GameSettings.ApplyVolumes(); },
+            () => GameSettings.Percent(GameSettings.VoiceVolume));
+
+        ToggleRow(4, "Chat de voz", () => GameSettings.OnOff(GameSettings.VoiceEnabled),
+            () => { GameSettings.VoiceEnabled = !GameSettings.VoiceEnabled; GameSettings.ApplyVolumes(); PlayerPrefs.Save(); });
+
         Label("aviso", "Los cambios se aplican al momento.\nLos efectos aun no tienen sonidos: su volumen queda guardado.",
-            _content, new Vector2(0f, RowY(4)), new Vector2(_content.sizeDelta.x, 40f),
+            _content, new Vector2(0f, RowY(6)),new Vector2(_content.sizeDelta.x, 40f),
             12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
+    }
+
+    // Las teclas se guardan nada mas elegirlas: aqui tampoco hace falta APLICAR
+    private void BuildControlsOptions()
+    {
+        KeyRow(0, "Chat de texto", () => GameSettings.ChatKey, k => GameSettings.ChatKey = k);
+        KeyRow(1, "Chat de voz (mantener)", () => GameSettings.VoiceKey, k => GameSettings.VoiceKey = k);
+
+        Label("aviso_teclas", "Pulsa el boton y despues la tecla nueva. Escape cancela.",
+            _content, new Vector2(0f, RowY(3)), new Vector2(_content.sizeDelta.x, 40f),
+            12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
+    }
+
+    // ---------- Eleccion de teclas ----------
+
+    /// <summary>True mientras se espera la tecla nueva: Escape cancela en vez de cerrar el menu.</summary>
+    public static bool CapturingKey { get; private set; }
+
+    private System.Action<KeyCode> _alCapturar;
+    private Text _textoCaptura;
+    private System.Func<KeyCode> _leerCaptura;
+    private int _frameCaptura;
+
+    // Fila con un boton que muestra la tecla y, al pulsarlo, espera la nueva
+    private void KeyRow(int index, string label, System.Func<KeyCode> read, System.Action<KeyCode> write)
+    {
+        float w = _content.sizeDelta.x;
+        float y = RowY(index);
+
+        Label("l_" + label, label, _content, new Vector2(-w / 2f + 110f, y),
+            new Vector2(220f, 22f), 14, TextAnchor.MiddleLeft, Color.white);
+
+        Button button = null;
+        button = Button(GameSettings.KeyLabel(read()), _content, new Vector2(w / 2f - 105f, y),
+            new Vector2(170f, 26f), () =>
+            {
+                CancelKeyCapture();
+                _textoCaptura = button.GetComponentInChildren<Text>();
+                _textoCaptura.text = "Pulsa una tecla...";
+                _leerCaptura = read;
+                _alCapturar = write;
+                _frameCaptura = Time.frameCount;
+                CapturingKey = true;
+            });
+    }
+
+    private void CancelKeyCapture()
+    {
+        if (_textoCaptura != null && _leerCaptura != null)
+            _textoCaptura.text = GameSettings.KeyLabel(_leerCaptura());
+        _alCapturar = null;
+        _textoCaptura = null;
+        _leerCaptura = null;
+        CapturingKey = false;
+    }
+
+    private void UpdateKeyCapture()
+    {
+        if (!CapturingKey) return;
+
+        // Si la fila ya no existe (se cambio de pestana o se cerro el menu), se cancela
+        if (_textoCaptura == null || !_textoCaptura.gameObject.activeInHierarchy) { CancelKeyCapture(); return; }
+        if (Time.frameCount == _frameCaptura || !UnityEngine.Input.anyKeyDown) return;
+
+        if (UnityEngine.Input.GetKeyDown(KeyCode.Escape)) { CancelKeyCapture(); return; }
+
+        foreach (KeyCode key in System.Enum.GetValues(typeof(KeyCode)))
+        {
+            // El clic izquierdo y el derecho son disparar y apuntar; los mandos, otro dia
+            if (key == KeyCode.None || key == KeyCode.Mouse0 || key == KeyCode.Mouse1) continue;
+            if (key >= KeyCode.JoystickButton0) continue;
+            if (!UnityEngine.Input.GetKeyDown(key)) continue;
+
+            _alCapturar(key);
+            GameSettings.SaveKeys();
+            CancelKeyCapture();
+            return;
+        }
     }
 
     // ---------- Filas reutilizables ----------
