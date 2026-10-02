@@ -79,6 +79,11 @@ public class ObjetoSoltado : NetworkBehaviour
 
         foreach (var r in visual.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
 
+        // La luz que lo senala, del color del objeto (cada llave tiene el suyo)
+        if (item.colorLuzSuelo.a > 0f)
+            foreach (var luz in GetComponentsInChildren<Light>(true))
+                luz.color = new Color(item.colorLuzSuelo.r, item.colorLuzSuelo.g, item.colorLuzSuelo.b, 1f);
+
         var modelo = Instantiate(item.modeloSuelo, visual);
         modelo.name = "Modelo_" + item.itemName;
         modelo.transform.localPosition = Vector3.zero;

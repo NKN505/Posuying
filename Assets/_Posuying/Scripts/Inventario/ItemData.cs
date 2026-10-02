@@ -23,6 +23,8 @@ public class ItemData : ScriptableObject
     public Vector3 rotacionSuelo = Vector3.zero;
     [Tooltip("Opcional: material con el que se pinta en el suelo, si los del modelo no se ven bien")]
     public Material materialSuelo;
+    [Tooltip("Color de la luz que lo senala en el suelo. Transparente (alfa 0) = la luz de siempre")]
+    public Color colorLuzSuelo = new Color(0f, 0f, 0f, 0f);
 
     [Header("Consumible (solo si type = Consumable)")]
     public float healAmount = 0f;
