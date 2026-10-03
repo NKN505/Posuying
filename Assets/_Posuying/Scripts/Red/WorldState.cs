@@ -12,7 +12,21 @@ using UnityEngine;
 //   recogibles: identificador del objeto de escena, recogido si/no
 public class WorldState
 {
-    public const int Version = 1;
+    public const int Version = 2;
+
+    // Lo que no pertenece a nadie en concreto: vidas, avance y mision
+    public class MatchState
+    {
+        public bool valid;
+        public int lives;
+        public int tercio = 1;
+        public int faseBomba;            // FaseBomba como entero
+        public bool bombaEnSuelo;        // se le cayo a alguien (o la llevaba al migrar)
+        public Vector3 bombaPosicion;
+        public float segundosParaExplotar;
+    }
+
+    public MatchState match = new MatchState();
 
     public class PlayerState
     {
@@ -77,6 +91,14 @@ public class WorldState
                 w.Write(k.taken);
             }
 
+            w.Write(match.valid);
+            w.Write(match.lives);
+            w.Write(match.tercio);
+            w.Write(match.faseBomba);
+            w.Write(match.bombaEnSuelo);
+            w.Write(match.bombaPosicion.x); w.Write(match.bombaPosicion.y); w.Write(match.bombaPosicion.z);
+            w.Write(match.segundosParaExplotar);
+
             w.Flush();
             return stream.ToArray();
         }
@@ -138,6 +160,14 @@ public class WorldState
                         taken = r.ReadBoolean()
                     });
                 }
+
+                state.match.valid = r.ReadBoolean();
+                state.match.lives = r.ReadInt32();
+                state.match.tercio = r.ReadInt32();
+                state.match.faseBomba = r.ReadInt32();
+                state.match.bombaEnSuelo = r.ReadBoolean();
+                state.match.bombaPosicion = new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
+                state.match.segundosParaExplotar = r.ReadSingle();
             }
         }
         catch (System.Exception e)

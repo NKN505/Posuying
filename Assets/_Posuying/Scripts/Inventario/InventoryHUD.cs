@@ -22,7 +22,20 @@ public class InventoryHUD : MonoBehaviour
 
     void Update()
     {
-        if (_built) return;
+        if (_built)
+        {
+            // Mismo motivo que en InventoryPanel: tras un cambio de anfitrion el
+            // personaje es otro objeto y hay que engancharse al nuevo.
+            Inventory actual = NetworkPlayer.LocalInventory;
+            if (actual != null && actual != inventory)
+            {
+                if (inventory != null) inventory.OnInventoryChanged -= Refresh;
+                inventory = actual;
+                inventory.OnInventoryChanged += Refresh;
+                Refresh();
+            }
+            return;
+        }
 
         // En red el inventario llega con el jugador local, que aparece al conectar
         if (inventory == null)

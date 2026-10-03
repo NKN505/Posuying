@@ -45,6 +45,7 @@ public class PlayerAnimation : MonoBehaviour
     private bool disparoAnterior;
     private bool recargaAnterior;
     private NetworkObject netObject;
+    private Unity.Netcode.Components.NetworkAnimator netAnimator;
 
     private void Awake()
     {
@@ -52,6 +53,7 @@ public class PlayerAnimation : MonoBehaviour
             animator = GetComponent<Animator>();
 
         netObject = GetComponentInParent<NetworkObject>();
+        netAnimator = GetComponentInParent<Unity.Netcode.Components.NetworkAnimator>();
 
         if (weaponHolder == null)
         {
@@ -90,11 +92,19 @@ public class PlayerAnimation : MonoBehaviour
 
         // Flanco de subida: el trigger solo debe dispararse al empezar la accion,
         // no en todos los frames que dure.
-        if (disparando && !disparoAnterior) animator.SetTrigger(HashShoot);
-        if (recargando && !recargaAnterior) animator.SetTrigger(HashReload);
+        if (disparando && !disparoAnterior) LanzarTrigger(HashShoot);
+        if (recargando && !recargaAnterior) LanzarTrigger(HashReload);
 
         disparoAnterior = disparando;
         recargaAnterior = recargando;
+    }
+
+    // Un trigger puesto directamente en el Animator solo se ve en esta maquina.
+    // Por el NetworkAnimator llega tambien a las copias de los demas jugadores.
+    private void LanzarTrigger(int hash)
+    {
+        if (netAnimator != null && netObject != null && netObject.IsSpawned) netAnimator.SetTrigger(hash);
+        else animator.SetTrigger(hash);
     }
 
     private Weapon BuscarArmaActiva()

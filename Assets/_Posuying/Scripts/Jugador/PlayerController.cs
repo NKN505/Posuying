@@ -198,7 +198,7 @@ public class PlayerController : Character, IPassiveRegenerator
                 // El estado Jump del Animator se entra por este trigger. Sin esta
                 // linea el estado existe pero nunca se alcanza.
                 if (animator != null && animator.isActiveAndEnabled)
-                    animator.SetTrigger(HashJump);
+                    LanzarTrigger(HashJump);
             }
         }
 
@@ -268,7 +268,9 @@ public class PlayerController : Character, IPassiveRegenerator
         // X = desplazamiento lateral, Z = adelante/atras. Se usan los mismos valores
         // que mueven al CharacterController, asi que los umbrales del blend tree
         // coinciden exactamente con la velocidad del personaje y los pies no patinan.
-        float currentSpeed = GetSpeed();
+        // Con la bomba se anda mas despacio: la animacion tiene que saberlo o los
+        // pies irian mas rapido que el cuerpo.
+        float currentSpeed = GetSpeed() * (llevaBomba ? MisionBomba.VelocidadConBomba : 1f);
         UpdateAnimator(movex * currentSpeed, movez * currentSpeed);
 
         // Condicion de regeneracion pasiva (leida por Character via IPassiveRegenerator)
@@ -343,7 +345,19 @@ public class PlayerController : Character, IPassiveRegenerator
         if (animator == null || !animator.isActiveAndEnabled) return;
 
         UpdateAnimator(0f, 0f);
-        animator.SetTrigger(HashDie);
+        LanzarTrigger(HashDie);
+    }
+
+    // Los triggers tienen que ir por el NetworkAnimator para que los vean los demas
+    // (los parametros normales ya se sincronizan solos).
+    private Unity.Netcode.Components.NetworkAnimator _netAnimator;
+
+    private void LanzarTrigger(int hash)
+    {
+        if (_netAnimator == null) _netAnimator = GetComponent<Unity.Netcode.Components.NetworkAnimator>();
+
+        if (_netAnimator != null && IsSpawned) _netAnimator.SetTrigger(hash);
+        else animator.SetTrigger(hash);
     }
 
     private void TrackFall()

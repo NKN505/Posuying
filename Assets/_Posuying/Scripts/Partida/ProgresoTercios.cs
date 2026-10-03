@@ -69,6 +69,12 @@ public class ProgresoTercios : NetworkBehaviour
                            " tercio: el equipo reaparecera aqui");
     }
 
+    // Tras un cambio de anfitrion: se conserva el tercio al que habia llegado el equipo
+    public void Restaurar(int tercio)
+    {
+        if (IsServer) netTercio.Value = Mathf.Clamp(tercio, 1, 3);
+    }
+
     // Al reiniciar la partida se vuelve a empezar desde el principio
     public void Reiniciar()
     {

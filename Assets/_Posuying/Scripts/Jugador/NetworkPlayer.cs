@@ -57,6 +57,10 @@ public class NetworkPlayer : NetworkBehaviour
             // mostrar la luz que enciende su dueno (lo lee de una variable de red).
             if (controller != null) controller.enabled = false;
             if (combat != null) combat.enabled = false;
+
+            // Sus pasos: en su maquina los lanza su PlayerController, que aqui esta
+            // apagado. Se deducen de como se mueve su copia.
+            if (GetComponent<PasosRemotos>() == null) gameObject.AddComponent<PasosRemotos>();
             if (inventory != null) inventory.enabled = false;
 
             if (cam != null)
@@ -91,6 +95,32 @@ public class NetworkPlayer : NetworkBehaviour
         transform.position = pos;
         transform.rotation = Quaternion.Euler(0f, sp.eulerAngles.y, 0f);
         if (cc != null) cc.enabled = true;
+    }
+
+    // ---------- Sonido de los disparos ----------
+    // El arma solo existe "de verdad" en la maquina de su dueno. Cada disparo se
+    // avisa al servidor, que lo reparte, y cada maquina lo hace sonar en la copia
+    // de ese jugador.
+
+    public void AvisarDisparo()
+    {
+        if (IsSpawned && IsOwner) DisparoServerRpc();
+    }
+
+    [ServerRpc(Delivery = RpcDelivery.Unreliable)]
+    private void DisparoServerRpc()
+    {
+        DisparoClientRpc();
+    }
+
+    [ClientRpc(Delivery = RpcDelivery.Unreliable)]
+    private void DisparoClientRpc()
+    {
+        if (IsOwner) return;   // el mio ya ha sonado al disparar
+
+        var arma = GetComponentInChildren<Handgun>(true);
+        if (arma != null) arma.PlayRemoteShot(gameObject);
+        SondaPruebas.DisparosOidos++;
     }
 
     public override void OnNetworkDespawn()
