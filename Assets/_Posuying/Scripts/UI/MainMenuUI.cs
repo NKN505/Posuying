@@ -625,10 +625,7 @@ public class MainMenuUI : MonoBehaviour
 
         // Deslizante y en vivo: con los pasos de 0,25 de antes no se podia afinar,
         // y asi se nota al momento si la ajustas con la partida en marcha
-        SliderRow(1, "Sensibilidad raton", GameSettings.MouseSensitivity,
-            v => { GameSettings.MouseSensitivity = Mathf.Round(v * 20f) / 20f; GameSettings.ApplySensitivity(); },
-            () => GameSettings.MouseSensitivity.ToString("0.00"),
-            GameSettings.MinSensitivity, GameSettings.MaxSensitivity);
+        SensitivityRow(1);
 
         ToggleRow(2, "Invertir eje Y", () => GameSettings.OnOff(GameSettings.InvertY),
             () => GameSettings.InvertY = !GameSettings.InvertY);
@@ -707,9 +704,10 @@ public class MainMenuUI : MonoBehaviour
             v => { GameSettings.SfxVolume = v; GameSettings.ApplyVolumes(); },
             () => GameSettings.Percent(GameSettings.SfxVolume));
 
-        SliderRow(3, "Voces (chat de voz)", GameSettings.VoiceVolume,
+        // Hasta el 200 %: hay microfonos que llegan muy bajos y hace falta margen
+        SliderRow(3, "Voz de otros jugadores", GameSettings.VoiceVolume,
             v => { GameSettings.VoiceVolume = v; GameSettings.ApplyVolumes(); },
-            () => GameSettings.Percent(GameSettings.VoiceVolume));
+            () => GameSettings.Percent(GameSettings.VoiceVolume), 0f, 2f);
 
         ToggleRow(4, "Chat de voz", () => GameSettings.OnOff(GameSettings.VoiceEnabled),
             () => { GameSettings.VoiceEnabled = !GameSettings.VoiceEnabled; GameSettings.ApplyVolumes(); PlayerPrefs.Save(); });
@@ -719,6 +717,57 @@ public class MainMenuUI : MonoBehaviour
         Label("aviso", "Los cambios se aplican al momento.\nLos efectos aun no tienen sonidos: su volumen queda guardado.",
             _content, new Vector2(0f, RowY(7)), new Vector2(_content.sizeDelta.x, 40f),
             12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
+    }
+
+    // Sensibilidad: barra para el ajuste gordo y botones < > para afinar de
+    // centesima en centesima (la barra sola no da para tanto: 1 pixel = 0,03).
+    private void SensitivityRow(int index)
+    {
+        float w = _content.sizeDelta.x;
+        float y = RowY(index);
+        float right = w / 2f - 105f;
+
+        Label("l_sens", "Sensibilidad raton", _content, new Vector2(-w / 2f + 85f, y),
+            new Vector2(170f, 22f), 14, TextAnchor.MiddleLeft, Color.white);
+
+        Text value = Label("v_sens", GameSettings.MouseSensitivity.ToString("0.00"), _content,
+            new Vector2(right + 84f, y), new Vector2(46f, 24f), 14, TextAnchor.MiddleRight, Color.white);
+
+        Slider slider = NewSlider("s_sens", _content, new Vector2(right - 40f, y), new Vector2(150f, 24f));
+        slider.minValue = GameSettings.MinSensitivity;
+        slider.maxValue = GameSettings.MaxSensitivity;
+        slider.SetValueWithoutNotify(GameSettings.MouseSensitivity);
+
+        System.Action<float> poner = v =>
+        {
+            GameSettings.MouseSensitivity = Mathf.Round(v * 100f) / 100f;
+            GameSettings.ApplySensitivity();
+            value.text = GameSettings.MouseSensitivity.ToString("0.00");
+        };
+
+        slider.onValueChanged.AddListener(v => poner(v));
+
+        var trigger = slider.gameObject.AddComponent<UnityEngine.EventSystems.EventTrigger>();
+        var alSoltar = new UnityEngine.EventSystems.EventTrigger.Entry
+        {
+            eventID = UnityEngine.EventSystems.EventTriggerType.PointerUp
+        };
+        alSoltar.callback.AddListener(_ => PlayerPrefs.Save());
+        trigger.triggers.Add(alSoltar);
+
+        Button("<", _content, new Vector2(right - 130f, y), new Vector2(24f, 24f), () =>
+        {
+            poner(GameSettings.MouseSensitivity - 0.01f);
+            slider.SetValueWithoutNotify(GameSettings.MouseSensitivity);
+            PlayerPrefs.Save();
+        });
+
+        Button(">", _content, new Vector2(right + 50f, y), new Vector2(24f, 24f), () =>
+        {
+            poner(GameSettings.MouseSensitivity + 0.01f);
+            slider.SetValueWithoutNotify(GameSettings.MouseSensitivity);
+            PlayerPrefs.Save();
+        });
     }
 
     // Fila para elegir microfono: < nombre >. Mas ancha que StepRow porque los

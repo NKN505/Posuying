@@ -17,6 +17,11 @@ public class VozDeJugador : MonoBehaviour
     [Tooltip("A partir de esta distancia ya no se oye")]
     public float distanciaMaxima = 28f;
 
+    [Header("Volumen")]
+    [Tooltip("Amplificacion de la voz con el ajuste de Opciones al 100 %. El microfono llega " +
+             "bajo comparado con el resto del juego; con 1 se oia poco.")]
+    public float gananciaBase = 2.2f;
+
     [Header("Paredes")]
     [Tooltip("Frecuencia de corte con una pared en medio (mas baja = mas apagada)")]
     public float corteTrasPared = 1400f;
@@ -47,6 +52,8 @@ public class VozDeJugador : MonoBehaviour
 
     private float _siguienteMedida;
     private float _corteActual = 22000f, _volumenActual = 1f;
+    // La lee el hilo de audio: ganancia base por el ajuste de "Voz de otros jugadores"
+    private volatile float _ganancia = 2.2f;
 
     void Awake()
     {
@@ -108,7 +115,10 @@ public class VozDeJugador : MonoBehaviour
                     if (_pendientes == 0) _llenando = true;
                     continue;
                 }
-                salida[i] = _cola[_lectura];
+                // Se amplifica la muestra (el volumen del AudioSource no pasa de 1) y se
+                // redondea el pico en vez de cortarlo, para que al subirla no chasquee
+                float m = _cola[_lectura] * _ganancia;
+                salida[i] = m / (1f + Mathf.Abs(m) * 0.35f) * 1.35f;
                 _lectura = (_lectura + 1) % _cola.Length;
                 _pendientes--;
             }
@@ -129,7 +139,8 @@ public class VozDeJugador : MonoBehaviour
 
         // La pared entra y sale suave, no de golpe
         float corte = TrasPared ? corteTrasPared : 22000f;
-        float volumen = (TrasPared ? volumenTrasPared : 1f) * GameSettings.VoiceVolume;
+        float volumen = TrasPared ? volumenTrasPared : 1f;
+        _ganancia = gananciaBase * GameSettings.VoiceVolume;
         _corteActual = Mathf.Lerp(_corteActual, corte, 6f * Time.unscaledDeltaTime);
         _volumenActual = Mathf.Lerp(_volumenActual, volumen, 6f * Time.unscaledDeltaTime);
         _filtro.cutoffFrequency = _corteActual;

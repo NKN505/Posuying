@@ -73,6 +73,15 @@ public class MatchManager : NetworkBehaviour
                            " vidas de equipo (ahora " + total + ")");
     }
 
+    // Tras un cambio de anfitrion: las vidas que quedaban, no las del principio
+    public void RestaurarVidas(int vidas)
+    {
+        if (!IsServer) return;
+        netLives.Value = Mathf.Max(0, vidas);
+        _startedAsCoop = NetworkManager.ConnectedClientsIds.Count > 1;
+        _livesReady = true;   // que Update no las vuelva a poner al valor inicial
+    }
+
     // Gasta una vida. Devuelve false si ya no quedaba ninguna.
     public bool TryConsumeLife()
     {

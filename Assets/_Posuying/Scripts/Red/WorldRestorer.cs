@@ -46,6 +46,28 @@ public class WorldRestorer : MonoBehaviour
             });
         }
 
+        // Vidas, tercio alcanzado y mision de la bomba
+        if (MatchManager.Instance != null && MatchManager.Instance.IsSpawned)
+        {
+            state.match.valid = true;
+            state.match.lives = MatchManager.Instance.Lives;
+            if (ProgresoTercios.Instance != null) state.match.tercio = ProgresoTercios.Instance.TercioAlcanzado;
+            if (MisionBomba.Instance != null) MisionBomba.Instance.Guardar(state.match);
+        }
+
+        // La bomba no se guarda dentro de ningun inventario: si alguien la llevaba,
+        // tras la migracion aparece en el suelo donde estaba (lo anota Guardar).
+        if (MisionBomba.Instance != null && MisionBomba.Instance.itemBomba != null)
+        {
+            var catalogo = FindFirstObjectByType<CatalogoObjetosSoltados>();
+            int idBomba = catalogo != null && catalogo.database != null
+                        ? catalogo.database.GetId(MisionBomba.Instance.itemBomba) : -1;
+            if (idBomba >= 0)
+                foreach (var p in state.players)
+                    for (int i = 0; i < p.slots.Count; i++)
+                        if (p.slots[i].x == idBomba) p.slots[i] = new Vector2Int(ItemDatabase.EmptyId, 0);
+        }
+
         // Enemigos vivos
         var director = FindFirstObjectByType<HordeDirector>();
         if (director != null)
@@ -116,12 +138,22 @@ public class WorldRestorer : MonoBehaviour
 
         yield return new WaitForSeconds(restoreDelay);
 
+        RestoreMatch();
         RestoreEnemies();
         RestorePickups();
         RestorePlayersAlreadyHere();
 
         Debug.Log("Mundo reconstruido tras la migracion de host.");
         _pending = null;
+    }
+
+    private void RestoreMatch()
+    {
+        if (_pending == null || !_pending.match.valid) return;
+
+        if (MatchManager.Instance != null) MatchManager.Instance.RestaurarVidas(_pending.match.lives);
+        if (ProgresoTercios.Instance != null) ProgresoTercios.Instance.Restaurar(_pending.match.tercio);
+        if (MisionBomba.Instance != null) MisionBomba.Instance.Restaurar(_pending.match);
     }
 
     private void RestoreEnemies()

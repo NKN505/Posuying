@@ -52,7 +52,7 @@ public static class GameSettings
     public static bool ShowFps = false;
 
     public static float MouseSensitivity = 1f;
-    public const float MinSensitivity = 0.1f;
+    public const float MinSensitivity = 0.05f;
     public const float MaxSensitivity = 5f;
     public static bool InvertY = false;
     public static float FieldOfView = 60f;

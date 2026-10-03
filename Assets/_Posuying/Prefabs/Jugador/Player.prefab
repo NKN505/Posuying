@@ -679,6 +679,11 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 8cc33d0e5060a4546bdf837b2e1076b2, type: 3}
   m_PrefabInstance: {fileID: 2570636526724006706}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &3417622562430680675 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 8cc33d0e5060a4546bdf837b2e1076b2, type: 3}
+  m_PrefabInstance: {fileID: 2570636526724006706}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &4702514666950149378 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -2094723163032680912, guid: 8cc33d0e5060a4546bdf837b2e1076b2, type: 3}
@@ -1317,7 +1322,6 @@ MonoBehaviour:
   database: {fileID: 11400000, guid: 162debf0a9b023d489be4888842e61bc, type: 2}
   hotbarSize: 4
   backpackSize: 24
-  useKey: 104
 --- !u!114 &2537126146830909993
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1438,7 +1442,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  fpArms: {fileID: 0}
+  fpArms: {fileID: 3417622562430680675}
   fpExtras:
   - {fileID: 6105391438753564156}
   bodyTP: {fileID: 8706869791174135810}
@@ -1536,7 +1540,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   NetworkAnimatorExpanded: 0
-  AuthorityMode: 0
+  AuthorityMode: 1
   m_Animator: {fileID: 8706869791166751682}
   TransitionStateInfoList: []
   AnimatorParameterEntries:
