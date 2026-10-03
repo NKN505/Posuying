@@ -378,6 +378,13 @@ public void Move(Vector3 direction){
 
 }
 
+// Pone a cero la velocidad (tras un teletransporte, para no llegar cayendo)
+public void ResetVelocity(){
+
+    velocity = Vector3.zero;
+
+}
+
 public void ApplyGravity(){
 
     if (controller.isGrounded && velocity.y < 0)
