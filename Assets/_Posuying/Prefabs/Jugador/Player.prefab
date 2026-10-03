@@ -666,6 +666,10 @@ PrefabInstance:
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: a2b2b5752d42f9ca3f4a2c74b5aac27c, type: 2}
+    - target: {fileID: 9017482652941624018, guid: 8cc33d0e5060a4546bdf837b2e1076b2, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 503cbd9990ac16943876d63f5dd67e29, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -977,7 +981,15 @@ PrefabInstance:
     - target: {fileID: 13700000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: f21f789fe9e99ad45bff213152f3a8f3, type: 2}
+      objectReference: {fileID: 2100000, guid: d8edebe3398152f49bbf365af9034452, type: 2}
+    - target: {fileID: 13700002, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: d8edebe3398152f49bbf365af9034452, type: 2}
+    - target: {fileID: 13700004, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: d8edebe3398152f49bbf365af9034452, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -1245,6 +1257,7 @@ MonoBehaviour:
   fallSafeHeight: 5
   fallLethalHeight: 12
   fallDamagePerMeter: 10
+  fallSupportMaxSlope: 75
   animator: {fileID: 0}
   animatorDampTime: 0.1
   jogEvent:
