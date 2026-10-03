@@ -46,6 +46,24 @@ public class InventoryPanel : MonoBehaviour
             return;
         }
 
+        // Al cambiar de anfitrion (o salir y volver a entrar) tu personaje es OTRO
+        // objeto. Si el panel siguiera enganchado al antiguo, ya destruido, el
+        // inventario se veria vacio y no responderia.
+        Inventory actual = NetworkPlayer.LocalInventory;
+        if (actual != null && actual != inventory)
+        {
+            if (inventory != null) inventory.OnInventoryChanged -= Refresh;
+            inventory = actual;
+            inventory.OnInventoryChanged += Refresh;
+            SetOpen(false);
+            Refresh();
+        }
+        if (inventory == null)
+        {
+            if (_open) SetOpen(false);   // sin personaje no hay inventario que mostrar
+            return;
+        }
+
         // Tecla (Tab) o el eje "Inventory" del Input Manager, que ademas trae el
         // boton del mando. Con un OR, pulsar Tab no cuenta dos veces.
         bool pulsado = Input.GetKeyDown(toggleKey) || Input.GetButtonDown("Inventory");

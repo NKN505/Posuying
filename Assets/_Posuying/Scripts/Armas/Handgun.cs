@@ -385,6 +385,21 @@ public class Handgun : Weapon
         }
 
         PostWithEnvironment(evt, gameObject, GetRoom(transform.position));
+
+        // Que lo oigan tambien los demas jugadores, desde donde estoy
+        var red = GetComponentInParent<NetworkPlayer>();
+        if (red != null) red.AvisarDisparo();
+    }
+
+    /// <summary>
+    /// El disparo de OTRO jugador, tal como se oye en esta maquina. En las copias
+    /// remotas esta arma esta apagada (va con las manos de primera persona), asi
+    /// que suena sobre el cuerpo del jugador, que es lo que si existe aqui.
+    /// </summary>
+    public void PlayRemoteShot(GameObject emitter)
+    {
+        if (emitter == null || !IsAssigned(shotEvent)) return;
+        PostWithEnvironment(shotEvent, emitter, GetRoom(emitter.transform.position));
     }
 
     private void PlayHitSounds(RaycastHit hit, EnemyBehaviour enemy, bool enemyWasAlive)

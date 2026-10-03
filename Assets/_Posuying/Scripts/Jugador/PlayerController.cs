@@ -44,6 +44,9 @@ public class PlayerController : Character, IPassiveRegenerator
     public float fallLethalHeight = 15f;
     [Tooltip("Dano por cada metro caido por encima del umbral seguro")]
     public float fallDamagePerMeter = 40f;
+    [Tooltip("Inclinación máxima (grados) de una superficie que cuenta como apoyo al bajar. " +
+             "Por encima (paredes, cortados) deslizarse por ella sí cuenta como caída.")]
+    [Range(45f, 89f)] public float fallSupportMaxSlope = 75f;
 
     [Header("Animacion")]
     [Tooltip("Animator del cuerpo en tercera persona. Si se deja vacio se busca en este GameObject y sus hijos.")]
@@ -80,6 +83,9 @@ public class PlayerController : Character, IPassiveRegenerator
 
     private bool _wasGrounded = true;
     private float _fallPeakY;
+    // ¿Ha tocado este frame alguna superficie que hace de suelo (aunque sea más
+    // empinada que el slopeLimit)? Lo rellena OnControllerColliderHit durante los Move.
+    private bool _touchedSupportThisFrame;
     private PlayerDownedState _downedState;
 
     float IPassiveRegenerator.RegenDelay => regenDelay;
@@ -132,6 +138,8 @@ public class PlayerController : Character, IPassiveRegenerator
     }
 
     protected override void Update(){
+
+        _touchedSupportThisFrame = false;   // se rellena en los Move de este frame
 
         base.Update();
 
@@ -198,7 +206,7 @@ public class PlayerController : Character, IPassiveRegenerator
                 // El estado Jump del Animator se entra por este trigger. Sin esta
                 // linea el estado existe pero nunca se alcanza.
                 if (animator != null && animator.isActiveAndEnabled)
-                    animator.SetTrigger(HashJump);
+                    LanzarTrigger(HashJump);
             }
         }
 
@@ -268,7 +276,9 @@ public class PlayerController : Character, IPassiveRegenerator
         // X = desplazamiento lateral, Z = adelante/atras. Se usan los mismos valores
         // que mueven al CharacterController, asi que los umbrales del blend tree
         // coinciden exactamente con la velocidad del personaje y los pies no patinan.
-        float currentSpeed = GetSpeed();
+        // Con la bomba se anda mas despacio: la animacion tiene que saberlo o los
+        // pies irian mas rapido que el cuerpo.
+        float currentSpeed = GetSpeed() * (llevaBomba ? MisionBomba.VelocidadConBomba : 1f);
         UpdateAnimator(movex * currentSpeed, movez * currentSpeed);
 
         // Condicion de regeneracion pasiva (leida por Character via IPassiveRegenerator)
@@ -343,12 +353,41 @@ public class PlayerController : Character, IPassiveRegenerator
         if (animator == null || !animator.isActiveAndEnabled) return;
 
         UpdateAnimator(0f, 0f);
-        animator.SetTrigger(HashDie);
+        LanzarTrigger(HashDie);
+    }
+
+    // Los triggers tienen que ir por el NetworkAnimator para que los vean los demas
+    // (los parametros normales ya se sincronizan solos).
+    private Unity.Netcode.Components.NetworkAnimator _netAnimator;
+
+    private void LanzarTrigger(int hash)
+    {
+        if (_netAnimator == null) _netAnimator = GetComponent<Unity.Netcode.Components.NetworkAnimator>();
+
+        if (_netAnimator != null && IsSpawned) _netAnimator.SetTrigger(hash);
+        else animator.SetTrigger(hash);
+    }
+
+    // Unity llama a esto en cada contacto durante controller.Move().
+    // Una pendiente de más de slopeLimit (45°) NO pone isGrounded a true: el
+    // controlador la toma como "lado". Bajando por ella el jugador no está cayendo,
+    // va pegado al terreno, así que la contamos como apoyo para el daño por caída.
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if (hit.normal.y < Mathf.Cos(fallSupportMaxSlope * Mathf.Deg2Rad)) return;   // pared o cortado
+        // Solo contactos por debajo de la cintura (no techos ni salientes a la altura de la cabeza)
+        if (hit.point.y > transform.TransformPoint(controller.center).y) return;
+        _touchedSupportThisFrame = true;
     }
 
     private void TrackFall()
     {
-        bool grounded = controller.isGrounded;
+        // Antes solo se miraba controller.isGrounded, que tras el Move horizontal
+        // puede quedarse en false durante toda una bajada (pendientes de más de 45°,
+        // o el controlador "despegándose" del suelo al bajar). El punto más alto se
+        // quedaba arriba de la cuesta y al llegar abajo se cobraba la altura entera
+        // como una caída: con más de fallLethalHeight, muerte.
+        bool grounded = controller.isGrounded || _touchedSupportThisFrame;
 
         if (grounded)
         {
@@ -577,5 +616,20 @@ public class PlayerController : Character, IPassiveRegenerator
         FullRestore();        // restaura la estamina local
         pitch = 0f;
         ResetFallTracking();  // no contar el teletransporte como una caida
+    }
+
+    // Teletransporte a un punto concreto (lo usa Teletransportador). Solo el dueno:
+    // la posicion la manda el por NetworkTransform, igual que al reaparecer.
+    public void TeleportarA(Vector3 posicion, float rumboY)
+    {
+        if (!IsOwner) return;
+
+        controller.enabled = false;
+        transform.position = posicion;
+        transform.rotation = Quaternion.Euler(0f, rumboY, 0f);
+        controller.enabled = true;
+
+        ResetVelocity();      // no arrastrar la velocidad de antes
+        ResetFallTracking();  // ni contar el salto de altura como una caida
     }
 }

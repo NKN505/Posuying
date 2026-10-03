@@ -30,6 +30,15 @@ public class MisionBomba : NetworkBehaviour
     public ItemData itemBomba;
 
     // Solo servidor: quien acaba de soltarla no la recoge al instante (la tiene a los pies)
+    [Header("La bomba en el cuerpo de quien la lleva")]
+    [Tooltip("Modelo de la bomba que se le ve al portador a la altura de la cintura")]
+    public GameObject modeloBomba;
+    [Tooltip("Donde va respecto al jugador: derecha, arriba, delante (metros)")]
+    public Vector3 posicionEnCintura = new Vector3(0f, 1.02f, 0.21f);
+    [Tooltip("Giro respecto al jugador (grados)")]
+    public Vector3 rotacionEnCintura = new Vector3(-12f, 0f, 0f);
+    public float escalaEnCintura = 0.85f;
+
     [Tooltip("Quien suelta la bomba tiene que alejarse esto de ella antes de poder recogerla otra vez")]
     public float distanciaParaRecogerOtraVez = 3f;
 
@@ -95,6 +104,7 @@ public class MisionBomba : NetworkBehaviour
             Explotar();
 
         if (IsServer && Fase == FaseBomba.LlevarBomba) VigilarPortador();
+        if (IsSpawned) ActualizarBombaEnCintura();
         if (IsServer && _soltadaPor != ulong.MaxValue) VigilarQuienLaSolto();
 
         ComprobarTeclaColocar();
@@ -186,6 +196,71 @@ public class MisionBomba : NetworkBehaviour
         if (d.magnitude >= distanciaParaRecogerOtraVez) _soltadaPor = ulong.MaxValue;
     }
 
+    // ---------- La bomba a la vista en quien la lleva ----------
+    // En TODAS las maquinas: quien la lleva viaja por red, asi que cada una le
+    // cuelga la bomba a la copia de ese jugador. Va sujeta al hueso de la
+    // columna para que acompane al cuerpo al andar y al agacharse.
+
+    private GameObject _bombaVisible;
+    private PlayerController _bombaEn;
+
+    private void ActualizarBombaEnCintura()
+    {
+        PlayerController portador = Fase == FaseBomba.LlevarBomba ? JugadorDe(netPortador.Value) : null;
+        if (portador == _bombaEn && (portador == null || _bombaVisible != null)) return;
+
+        if (_bombaVisible != null) Destroy(_bombaVisible);
+        _bombaVisible = null;
+        _bombaEn = portador;
+        if (portador == null || modeloBomba == null) return;
+
+        // Hueso al que se sujeta: la columna si el esqueleto es humanoide; si no, la raiz
+        Transform hueso = portador.transform;
+        var animador = portador.GetComponent<Animator>();
+        if (animador != null && animador.isHuman)
+        {
+            Transform columna = animador.GetBoneTransform(HumanBodyBones.Spine);
+            if (columna == null) columna = animador.GetBoneTransform(HumanBodyBones.Hips);
+            if (columna != null) hueso = columna;
+        }
+
+        _bombaVisible = Instantiate(modeloBomba);
+        _bombaVisible.name = "Bomba_En_Cintura";
+        foreach (var c in _bombaVisible.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+        foreach (var l in _bombaVisible.GetComponentsInChildren<Light>(true)) l.enabled = false;
+
+        // Se coloca respecto al jugador (que es lo facil de ajustar) y luego se
+        // cuelga del hueso conservando esa postura
+        Transform raiz = portador.transform;
+        _bombaVisible.transform.SetPositionAndRotation(
+            raiz.TransformPoint(posicionEnCintura), raiz.rotation * Quaternion.Euler(rotacionEnCintura));
+        _bombaVisible.transform.localScale = Vector3.one * escalaEnCintura;
+        _bombaVisible.transform.SetParent(hueso, true);
+
+        // El que la lleva no debe verla flotando delante de su camara: va en la
+        // misma capa que su cuerpo, que su camara no dibuja (los demas si la ven)
+        int capa = CapaPorNombre(portador.IsOwner ? PlayerVisual.LocalBodyLayerName : PlayerVisual.RemoteBodyLayerName);
+        if (capa >= 0)
+            foreach (var t in _bombaVisible.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = capa;
+    }
+
+    // Algunas capas del proyecto estan guardadas con un espacio al final
+    private static int CapaPorNombre(string nombre)
+    {
+        int capa = LayerMask.NameToLayer(nombre);
+        if (capa >= 0) return capa;
+        for (int i = 0; i < 32; i++)
+            if (string.Equals(LayerMask.LayerToName(i).Trim(), nombre, System.StringComparison.OrdinalIgnoreCase)) return i;
+        return -1;
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        if (_bombaVisible != null) Destroy(_bombaVisible);
+        _bombaVisible = null;
+        _bombaEn = null;
+    }
+
     // ---------- Soltarla a proposito ----------
 
     /// <summary>El jugador local pide soltar la bomba (tecla o clic derecho en el inventario).</summary>
@@ -264,6 +339,43 @@ public class MisionBomba : NetworkBehaviour
 
         // Que no quede ninguna bomba en un inventario de la partida anterior
         foreach (var player in NetworkPlayer.AllPlayers) QuitarDelInventario(player);
+    }
+
+    // ---------- Cambio de anfitrion ----------
+
+    // Lo llama el anfitrion actual al fotografiar la partida
+    public void Guardar(WorldState.MatchState estado)
+    {
+        estado.faseBomba = netFase.Value;
+        estado.bombaEnSuelo = netCaida.Value;
+        estado.bombaPosicion = netDondeCayo.Value;
+        estado.segundosParaExplotar = SegundosRestantes;
+
+        // Si alguien la lleva, para el anfitrion nuevo estara en el suelo donde iba
+        if (Fase == FaseBomba.LlevarBomba)
+        {
+            var portador = JugadorDe(netPortador.Value);
+            estado.faseBomba = (int)FaseBomba.BuscarBomba;
+            estado.bombaEnSuelo = portador != null;
+            if (portador != null) estado.bombaPosicion = portador.transform.position;
+        }
+    }
+
+    // Lo llama el anfitrion nuevo al reconstruir la partida
+    public void Restaurar(WorldState.MatchState estado)
+    {
+        if (!IsServer) return;
+
+        netPortador.Value = SinPortador;
+        netCaida.Value = estado.bombaEnSuelo;
+        netDondeCayo.Value = estado.bombaPosicion;
+
+        var fase = (FaseBomba)Mathf.Clamp(estado.faseBomba, 0, 3);
+        if (fase == FaseBomba.Escapar)
+            netExplota.Value = NetworkManager.ServerTime.Time + Mathf.Max(5f, estado.segundosParaExplotar);
+        if (fase == FaseBomba.Explotada || fase == FaseBomba.LlevarBomba) fase = FaseBomba.BuscarBomba;
+
+        netFase.Value = (int)fase;
     }
 
     private string NombrePortador()
