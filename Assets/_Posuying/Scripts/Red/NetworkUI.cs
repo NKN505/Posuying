@@ -121,6 +121,8 @@ public class NetworkUI : MonoBehaviour
 
         if (!_menuOpen)
         {
+            if (UIState.SalaAbierta) return;   // en la sala de espera, pantalla limpia
+
             string hint = menuKey + " = menu";
             if (onlineSession != null && !string.IsNullOrEmpty(onlineSession.JoinCode))
                 hint += "   |   CODIGO: " + onlineSession.JoinCode;

@@ -24,6 +24,10 @@ public class InventoryHUD : MonoBehaviour
     {
         if (_built)
         {
+            // El cinturon no pinta nada en la sala de espera (taparia los botones)
+            bool ver = SalaEspera.EnJuego;
+            if (container.gameObject.activeSelf != ver) container.gameObject.SetActive(ver);
+
             // Mismo motivo que en InventoryPanel: tras un cambio de anfitrion el
             // personaje es otro objeto y hay que engancharse al nuevo.
             Inventory actual = NetworkPlayer.LocalInventory;

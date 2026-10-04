@@ -49,7 +49,8 @@ public class TeamHUD : MonoBehaviour
         var npcs = NpcSurvivor.All;
 
         // Fuera de partida no hay nada que mostrar
-        _container.gameObject.SetActive(players.Count > 0);
+        // En la sala de espera ya se ve a cada jugador con su nombre: la lista sobra
+        _container.gameObject.SetActive(players.Count > 0 && SalaEspera.EnJuego);
         if (players.Count == 0) return;
 
         EnsureRows(players.Count + npcs.Count);

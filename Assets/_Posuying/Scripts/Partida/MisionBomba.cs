@@ -459,6 +459,7 @@ public class MisionBomba : NetworkBehaviour
     {
         if (!IsSpawned || Event.current.type != EventType.Repaint) return;
         if (MatchManager.Instance != null && MatchManager.Instance.MatchOver) return;
+        if (!SalaEspera.EnJuego) return;   // el objetivo se ensena cuando empieza la partida
 
         Matrix4x4 previous = GUI.matrix;
         float scale = Screen.height / ReferenceHeight;

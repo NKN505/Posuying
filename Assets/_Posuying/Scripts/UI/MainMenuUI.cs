@@ -15,7 +15,7 @@ public class MainMenuUI : MonoBehaviour
     private enum Tab { Crear, Buscar, Codigo, Opciones, Pausa }
 
     // Lo que se esta mostrando: decide que pestanas y que fondo se ven
-    private enum Vista { Inicio, Pausa, OpcionesEnPartida, Oculto }
+    private enum Vista { Inicio, Pausa, OpcionesEnPartida, Sala, Oculto }
 
     [Header("Referencias")]
     public OnlineSession onlineSession;
@@ -129,6 +129,7 @@ public class MainMenuUI : MonoBehaviour
                     : migrating ? Vista.Oculto
                     : OptionsOverlayOpen ? Vista.OpcionesEnPartida
                     : NetworkUI.MenuOpen ? Vista.Pausa
+                    : (SalaEspera.Instance != null && SalaEspera.Instance.Visible) ? Vista.Sala
                     : Vista.Oculto;
 
         UpdateMenuAudio(inGame);
@@ -140,9 +141,13 @@ public class MainMenuUI : MonoBehaviour
 
             // En partida no se pone el arte del menu: se deja ver el juego, oscurecido
             if (_fondo != null) _fondo.SetActive(vista == Vista.Inicio);
+            // En la sala no hay velo: se ve a los jugadores tal cual
             if (_velo != null)
-                _velo.color = vista != Vista.Inicio ? pauseTint
+                _velo.color = vista == Vista.Sala ? Color.clear
+                            : vista != Vista.Inicio ? pauseTint
                             : (background != null ? backgroundTint : Color.clear);
+            if (_panel != null) _panel.gameObject.SetActive(vista != Vista.Sala);
+            if (_sala != null) _sala.gameObject.SetActive(vista == Vista.Sala);
             // SALIR cierra el juego entero: en partida se sale desde la pausa
             if (_quitButton != null) _quitButton.SetActive(vista == Vista.Inicio);
             if (_status != null && vista != Vista.Inicio) _status.text = "";
@@ -153,6 +158,7 @@ public class MainMenuUI : MonoBehaviour
         }
 
         if (vista == Vista.Pausa) UpdatePauseTexts();
+        if (vista == Vista.Sala) UpdateSala();
 
         if (!inGame && _status != null && onlineSession != null)
             _status.text = onlineSession.Busy ? onlineSession.Status + " ..." : onlineSession.Status;
@@ -207,6 +213,8 @@ public class MainMenuUI : MonoBehaviour
         RectTransform panel = NewRect("Panel", _root, panelSize);
         panel.anchoredPosition = panelOffset;
         AddImage(panel, panelColor);
+        _panel = panel;
+        BuildSala();
 
         float w = panelSize.x;
         float top = panelSize.y / 2f;
@@ -305,6 +313,126 @@ public class MainMenuUI : MonoBehaviour
             case Tab.Codigo: BuildCodeTab(); break;
             case Tab.Opciones: BuildOptionsTab(); break;
             case Tab.Pausa: BuildPauseTab(); break;
+        }
+    }
+
+    // ---------- SALA DE ESPERA ----------
+    // Solo los botones y los textos: a los jugadores se les ve en 3D detras
+    // (los coloca y los enfoca SalaEspera). Por eso aqui no hay panel central,
+    // solo un titulo arriba y una barra abajo.
+
+    private RectTransform _panel;
+    private RectTransform _sala;
+    private Text _salaTitulo, _salaSubtitulo, _salaCodigo, _salaAviso, _salaBotonTexto;
+    private GameObject _salaBoton, _salaCopiar;
+    private Image _salaBotonFondo;
+
+    private void BuildSala()
+    {
+        _sala = NewRect("Sala", _root, Vector2.zero);
+        _sala.anchorMin = Vector2.zero;
+        _sala.anchorMax = Vector2.one;
+        _sala.offsetMin = Vector2.zero;
+        _sala.offsetMax = Vector2.zero;
+        _sala.gameObject.SetActive(false);
+
+        // Arriba: titulo y cuantos sois
+        RectTransform arriba = NewRect("Arriba", _sala, new Vector2(900f, 110f));
+        arriba.anchorMin = arriba.anchorMax = new Vector2(0.5f, 1f);
+        arriba.anchoredPosition = new Vector2(0f, -110f);
+        _salaTitulo = Label("Titulo", "SALA DE ESPERA", arriba, new Vector2(0f, 22f), new Vector2(900f, 56f),
+            40, TextAnchor.MiddleCenter, Color.white);
+        _salaSubtitulo = Label("Subtitulo", "", arriba, new Vector2(0f, -26f), new Vector2(900f, 30f),
+            18, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.8f));
+
+        // Abajo: codigo, boton principal y salir
+        RectTransform barra = NewRect("Barra", _sala, new Vector2(820f, 132f));
+        barra.anchorMin = barra.anchorMax = new Vector2(0.5f, 0f);
+        barra.anchoredPosition = new Vector2(0f, 120f);
+        AddImage(barra, panelColor);
+
+        _salaCodigo = Label("Codigo", "", barra, new Vector2(-270f, 30f), new Vector2(240f, 30f),
+            18, TextAnchor.MiddleCenter, Color.white);
+        _salaCopiar = Button("Copiar codigo", barra, new Vector2(-270f, -6f), new Vector2(170f, 28f), () =>
+        {
+            if (onlineSession != null) GUIUtility.systemCopyBuffer = onlineSession.JoinCode;
+        }).gameObject;
+
+        Button principal = Button("LISTO", barra, new Vector2(0f, 14f), new Vector2(280f, 60f), PulsarBotonSala, accentColor);
+        _salaBoton = principal.gameObject;
+        _salaBotonFondo = principal.GetComponent<Image>();
+        _salaBotonTexto = principal.GetComponentInChildren<Text>();
+        _salaBotonTexto.resizeTextMaxSize = 24;
+        _salaBotonTexto.fontSize = 24;
+
+        Button("SALIR DE LA SALA", barra, new Vector2(270f, 14f), new Vector2(190f, 36f),
+            NetworkUI.LeaveGame, new Color(0.35f, 0.1f, 0.1f, 1f));
+
+        _salaAviso = Label("Aviso", "", barra, new Vector2(0f, -44f), new Vector2(780f, 26f),
+            14, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.75f));
+    }
+
+    private void PulsarBotonSala()
+    {
+        var sala = SalaEspera.Instance;
+        if (sala == null || !sala.IsSpawned) return;
+
+        if (sala.IsServer) { PostUI(uiStart); sala.Empezar(); }
+        else sala.CambiarListo();
+    }
+
+    private void UpdateSala()
+    {
+        var sala = SalaEspera.Instance;
+        if (sala == null || !sala.IsSpawned) return;
+
+        string codigo = onlineSession != null ? onlineSession.JoinCode : "";
+        _salaCodigo.text = string.IsNullOrEmpty(codigo) ? "Partida local" : "CODIGO:  " + codigo;
+        _salaCopiar.SetActive(!string.IsNullOrEmpty(codigo));
+
+        // Llegue con la partida empezada: solo queda esperar
+        if (sala.EsperandoPermiso || (sala.FaseActual == SalaEspera.Fase.EnJuego))
+        {
+            _salaTitulo.text = "PARTIDA EN CURSO";
+            _salaSubtitulo.text = "Esperando a que el anfitrion te deje entrar...";
+            _salaBoton.SetActive(false);
+            _salaAviso.text = "Si no responde en unos segundos, la solicitud se rechaza sola";
+            return;
+        }
+
+        int jugadores = sala.JugadoresEnSala();
+        int faltan = sala.FaltanPorEstarListos();
+        _salaBoton.SetActive(true);
+
+        if (sala.FaseActual == SalaEspera.Fase.CuentaAtras)
+        {
+            _salaTitulo.text = "LA PARTIDA EMPIEZA EN  " + Mathf.CeilToInt(sala.SegundosParaEmpezar);
+            _salaSubtitulo.text = "";
+        }
+        else
+        {
+            _salaTitulo.text = "SALA DE ESPERA";
+            _salaSubtitulo.text = jugadores + (jugadores == 1 ? " jugador" : " jugadores") +
+                                  (faltan > 0 ? "   |   faltan " + faltan + " por estar listos" : "   |   todos listos");
+        }
+
+        string tecla = GameSettings.KeyLabel(GameSettings.ChatKey);
+        if (sala.IsServer)
+        {
+            bool puede = faltan == 0 && sala.FaseActual == SalaEspera.Fase.Sala;
+            _salaBotonTexto.text = sala.FaseActual == SalaEspera.Fase.CuentaAtras ? "EMPEZANDO..." : "EMPEZAR PARTIDA";
+            _salaBotonFondo.color = puede ? accentColor : buttonColor;
+            _salaAviso.text = faltan > 0
+                ? "Eres el anfitrion: podras empezar cuando todos esten listos.   " + tecla + ": chat"
+                : "Eres el anfitrion: empieza cuando quieras.   " + tecla + ": chat";
+        }
+        else
+        {
+            bool listo = sala.LocalListo;
+            _salaBotonTexto.text = listo ? "LISTO  (pulsa para cancelar)" : "ESTOY LISTO";
+            _salaBotonFondo.color = listo ? new Color(0.15f, 0.45f, 0.2f, 1f) : accentColor;
+            _salaAviso.text = (listo ? "Esperando a que el anfitrion empiece la partida." : "Marca LISTO cuando lo estes.") +
+                              "   " + tecla + ": chat";
         }
     }
 

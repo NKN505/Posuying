@@ -111,6 +111,9 @@ public class HordeDirector : MonoBehaviour
         // Sin jugadores en partida no hay alrededor de quien spawnear
         if (NetworkPlayer.AllPlayers.Count == 0) return;
 
+        // En la sala de espera todavia no hay partida
+        if (!SalaEspera.EnJuego) return;
+
         PruneDead();
         UpdatePanic();
         RevisarRezagados();

@@ -17,6 +17,7 @@ public class MatchHUD : MonoBehaviour
         var nm = NetworkManager.Singleton;
         if (nm == null || !(nm.IsClient || nm.IsServer)) return;
         if (MatchManager.Instance == null) return;
+        if (!SalaEspera.EnJuego) return;   // en la sala de espera aun no hay vidas ni avisos
 
         Matrix4x4 previous = GUI.matrix;
         float scale = Screen.height / ReferenceHeight;

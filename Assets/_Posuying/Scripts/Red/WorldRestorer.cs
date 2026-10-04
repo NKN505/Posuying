@@ -151,6 +151,9 @@ public class WorldRestorer : MonoBehaviour
     {
         if (_pending == null || !_pending.match.valid) return;
 
+        // La partida ya estaba empezada: nada de volver a la sala de espera
+        if (SalaEspera.Instance != null) SalaEspera.Instance.EmpezarAhora();
+
         if (MatchManager.Instance != null) MatchManager.Instance.RestaurarVidas(_pending.match.lives);
         if (ProgresoTercios.Instance != null) ProgresoTercios.Instance.Restaurar(_pending.match.tercio);
         if (MisionBomba.Instance != null) MisionBomba.Instance.Restaurar(_pending.match);

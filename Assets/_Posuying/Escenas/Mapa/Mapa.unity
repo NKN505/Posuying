@@ -14154,6 +14154,7 @@ GameObject:
   - component: {fileID: 1310377251}
   - component: {fileID: 1310377252}
   - component: {fileID: 1310377253}
+  - component: {fileID: 1310377254}
   m_Layer: 0
   m_Name: MatchManager
   m_TagString: Untagged
@@ -14340,6 +14341,31 @@ MonoBehaviour:
   alcance: 200
   duracion: 8
   maxCada5s: 4
+--- !u!114 &1310377254
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1310377243}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f5942390eccb1a4ca5bb79d62b1ba33, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  punto: {fileID: 0}
+  separacion: 1.15
+  distanciaCamara: 5.4
+  alturaCamara: 1.35
+  campoDeVision: 38
+  alturaMirada: 1.45
+  intensidadLuz: 9
+  colorLuz: {r: 1, g: 0.93, b: 0.82, a: 1}
+  segundosCuentaAtras: 3
+  teclaAceptar: 286
+  teclaRechazar: 287
+  segundosSolicitud: 45
 --- !u!1 &1313386948 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7043799399174712402, guid: 265f89c52323dd0498f528842506ea8a, type: 3}

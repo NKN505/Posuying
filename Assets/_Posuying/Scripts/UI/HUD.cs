@@ -9,6 +9,7 @@ public class HUD : MonoBehaviour
 
     [Header("Estamina")]
     public Image staminaBar;
+    private Transform _fondoEstamina;
 
     [Header("Reticula")]
     [Tooltip("Circulo que marca hasta donde puede desviarse la bala al disparar sin apuntar. " +
@@ -31,7 +32,17 @@ public class HUD : MonoBehaviour
             healthText.text = "Vida: " + Mathf.Max(0, Mathf.RoundToInt(player.GetHealth()));
 
         if (staminaBar != null)
+        {
             staminaBar.fillAmount = player.GetStamina() / player.GetMaxStamina();
+
+            // La barra de estamina y su fondo tampoco se ven en la sala de espera
+            bool ver = SalaEspera.EnJuego;
+            if (staminaBar.gameObject.activeSelf != ver) staminaBar.gameObject.SetActive(ver);
+            if (_fondoEstamina == null && staminaBar.transform.parent != null)
+                _fondoEstamina = staminaBar.transform.parent.Find("FondoEstamina");
+            if (_fondoEstamina != null && _fondoEstamina.gameObject.activeSelf != ver)
+                _fondoEstamina.gameObject.SetActive(ver);
+        }
 
         // El arma cambia al cambiar de arma o reaparecer: se busca la activa
         if (_arma == null || !_arma.isActiveAndEnabled)

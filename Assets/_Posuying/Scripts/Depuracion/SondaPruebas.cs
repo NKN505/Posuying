@@ -9,6 +9,9 @@ using UnityEngine;
 //
 //   -autohost            crea una partida local (127.0.0.1) nada mas arrancar
 //   -autocliente         se une a esa partida local
+//   -sala                con -autohost: no saltarse la sala de espera
+//   -autolisto           con -autocliente: marcar LISTO al entrar en la sala
+//   -salira <segundos>   con -autocliente: salir de la partida (por las buenas) y cerrar el juego
 //   -sonda <fichero>     escribe dos veces por segundo lo que ESTA maquina ve de
 //                        los demas jugadores: animacion, manos, pasos y disparos
 //
@@ -23,6 +26,8 @@ public class SondaPruebas : MonoBehaviour
     private string _fichero;
     private bool _autoHost, _autoCliente, _arrancado;
     private float _siguiente;
+    private float _proximoListo;
+    private float _saleEn = -1f, _conectadoDesde = -1f;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void Arrancar()
@@ -42,7 +47,11 @@ public class SondaPruebas : MonoBehaviour
         sonda._autoCliente = cliente;
         sonda._fichero = fichero;
         Application.runInBackground = true;
+        int j = System.Array.IndexOf(args, "-salira");
+        if (j >= 0 && j + 1 < args.Length) float.TryParse(args[j + 1], out sonda._saleEn);
     }
+
+    private void Cerrar() { Application.Quit(); }
 
     void Update()
     {
@@ -57,6 +66,26 @@ public class SondaPruebas : MonoBehaviour
             if (_autoHost) nm.StartHost(); else nm.StartClient();
         }
 
+        // Las pruebas automaticas van directas a la partida, sin pasar por la sala
+        if (_autoHost && _arrancado && nm.IsServer && SalaEspera.Instance != null && !SalaEspera.EnJuego &&
+            System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-sala") < 0)
+            SalaEspera.Instance.EmpezarAhora();
+
+        // Salida limpia tras un rato conectado, para probar que luego puede entrar otro
+        if (_saleEn > 0f && nm.IsConnectedClient)
+        {
+            if (_conectadoDesde < 0f) _conectadoDesde = Time.unscaledTime;
+            if (Time.unscaledTime - _conectadoDesde > _saleEn) { _saleEn = -1f; nm.Shutdown(); Invoke(nameof(Cerrar), 1.5f); }
+        }
+
+        if (_autoCliente && SalaEspera.Instance != null && SalaEspera.Instance.IsSpawned && !SalaEspera.EnJuego &&
+            NetworkPlayer.LocalPlayer != null && !SalaEspera.Instance.LocalListo && Time.unscaledTime > _proximoListo &&
+            System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "-autolisto") >= 0)
+        {
+            _proximoListo = Time.unscaledTime + 2f;
+            SalaEspera.Instance.CambiarListo();
+        }
+
         if (_fichero == null || Time.unscaledTime < _siguiente) return;
         _siguiente = Time.unscaledTime + 0.5f;
 
@@ -64,7 +93,16 @@ public class SondaPruebas : MonoBehaviour
         sb.Append("t=").Append(Time.unscaledTime.ToString("0.0"))
           .Append(" servidor=").Append(nm.IsServer).Append(" conectado=").Append(nm.IsConnectedClient || nm.IsServer)
           .Append(" jugadores=").Append(NetworkPlayer.AllPlayers.Count)
-          .Append(" pasosOidos=").Append(PasosOidos).Append(" disparosOidos=").Append(DisparosOidos).Append('\n');
+          .Append(" pasosOidos=").Append(PasosOidos).Append(" disparosOidos=").Append(DisparosOidos);
+
+        var sala = SalaEspera.Instance;
+        var yo = NetworkPlayer.LocalPlayer;
+        if (sala != null && sala.IsSpawned)
+            sb.Append(" | sala fase=").Append(sala.FaseActual).Append(" visible=").Append(sala.Visible)
+              .Append(" esperandoPermiso=").Append(sala.EsperandoPermiso).Append(" listo=").Append(sala.LocalListo);
+        sb.Append(" tengoPersonaje=").Append(yo != null);
+        if (yo != null) sb.Append(" miPos=").Append(yo.transform.position.ToString("0.0"));
+        sb.Append('\n');
 
         foreach (var p in NetworkPlayer.AllPlayers)
         {
