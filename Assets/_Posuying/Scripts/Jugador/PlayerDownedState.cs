@@ -67,6 +67,7 @@ public class PlayerDownedState : NetworkBehaviour
         netBleed.Value = bleedOutTime;
         netReviveProgress.Value = 0f;
         _beingRevived = false;
+        EstadisticasPartida.SumarCaida(OwnerClientId);
 
         // Dejar la vida en 0 limpia: si no, sigue bajando a negativo con cada golpe
         var character = GetComponent<Character>();
@@ -123,6 +124,7 @@ public class PlayerDownedState : NetworkBehaviour
         netReviveProgress.Value = 0f;
         netBleed.Value = 0f;
         _beingRevived = false;
+        EstadisticasPartida.SumarReanimacion(_reviverClientId);
 
         // La vida vive en Character, no en este componente
         var character = GetComponent<Character>();
@@ -256,7 +258,7 @@ public class PlayerDownedState : NetworkBehaviour
         // Estando abatido: gastar una vida
         if (netDowned.Value)
         {
-            if (Input.GetKeyDown(giveUpKey))
+            if (Controles.Pulsado(Accion.Recargar))
                 GiveUpServerRpc();
             return;
         }
@@ -266,7 +268,7 @@ public class PlayerDownedState : NetworkBehaviour
         // En pie: levantar al companero mas cercano
         PlayerDownedState target = FindNearbyDowned();
 
-        if (target != null && Input.GetKey(reviveKey))
+        if (target != null && Controles.Mantenido(Accion.Interactuar))
         {
             if (_reviveTarget != target)
             {

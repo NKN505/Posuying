@@ -97,16 +97,25 @@ public void TakeDamage(float amount, Vector3 puntoImpacto, Vector3 direccionImpa
 // Un cliente no puede tocar la vida directamente: se la pide al servidor.
 // RequireOwnership = false porque disparamos a enemigos que no son nuestros.
 [ServerRpc(RequireOwnership = false)]
-public void TakeDamageServerRpc(float amount)
+public void TakeDamageServerRpc(float amount, ServerRpcParams rpc = default)
 {
+    UltimoAtacante = rpc.Receive.SenderClientId;
     TakeDamage(amount);
 }
+
+/// <summary>
+/// Cliente del jugador que dio el ultimo golpe (ulong.MaxValue si no fue un
+/// jugador). Solo servidor; sirve para apuntar las bajas en los resultados.
+/// </summary>
+public ulong UltimoAtacante { get; protected set; } = ulong.MaxValue;
 
 // Nombre distinto en vez de una sobrecarga: Netcode genera el codigo de los RPC
 // a partir del nombre del metodo, y dos RPC que se llamen igual no compilan.
 [ServerRpc(RequireOwnership = false)]
-public void TakeDamageWithHitServerRpc(float amount, Vector3 puntoImpacto, Vector3 direccionImpacto)
+public void TakeDamageWithHitServerRpc(float amount, Vector3 puntoImpacto, Vector3 direccionImpacto,
+                                       ServerRpcParams rpc = default)
 {
+    UltimoAtacante = rpc.Receive.SenderClientId;
     TakeDamage(amount, puntoImpacto, direccionImpacto);
 }
 
@@ -134,14 +143,14 @@ public void RequestHeal(float amount)
 // Si somos el servidor se aplica directo; si somos un cliente, se lo pedimos.
 public void RequestDamage(float amount)
 {
-    if (IsServer) TakeDamage(amount);
+    if (IsServer) { UltimoAtacante = NetworkManager.LocalClientId; TakeDamage(amount); }
     else TakeDamageServerRpc(amount);
 }
 
 // Igual, pero pasando de donde vino el golpe para que el ragdoll lo use.
 public void RequestDamage(float amount, Vector3 puntoImpacto, Vector3 direccionImpacto)
 {
-    if (IsServer) TakeDamage(amount, puntoImpacto, direccionImpacto);
+    if (IsServer) { UltimoAtacante = NetworkManager.LocalClientId; TakeDamage(amount, puntoImpacto, direccionImpacto); }
     else TakeDamageWithHitServerRpc(amount, puntoImpacto, direccionImpacto);
 }
 

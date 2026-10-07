@@ -132,12 +132,12 @@ public class Handgun : Weapon
             return;
         }
 
-        if (Input.GetButtonDown("Fire"))
+        if (Controles.Pulsado(Accion.Disparar))
         {
             Fire();
         }
 
-        if (Input.GetButtonDown("Reload-Interact"))
+        if (Controles.Pulsado(Accion.Recargar))
         {
             if (GetReserveAmmo() <= 0.0f)
             {

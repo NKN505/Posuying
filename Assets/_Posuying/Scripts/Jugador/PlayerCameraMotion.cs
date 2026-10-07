@@ -460,8 +460,8 @@ public sealed class PlayerCameraMotion : MonoBehaviour
         {
             float sens = GameSettings.MouseSensitivity;
             float invert = GameSettings.InvertY ? -1f : 1f;
-            look = new Vector2(Input.GetAxis("Mouse X") * sens,
-                               Input.GetAxis("Mouse Y") * sens * invert) / dt;
+            Vector2 mirar = Controles.Mirar();   // raton + stick derecho
+            look = new Vector2(mirar.x, mirar.y * invert) / dt;
         }
         _lookSway = Vector2.Lerp(_lookSway, look, 1f - Mathf.Exp(-12f * dt));
 

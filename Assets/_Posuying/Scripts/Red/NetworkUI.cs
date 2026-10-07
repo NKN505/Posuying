@@ -56,7 +56,9 @@ public class NetworkUI : MonoBehaviour
 
             // Con las opciones abiertas, Escape las cierra en vez de volver al juego
             // Escape cierra antes el chat o cancela la eleccion de una tecla: ahi no es "abrir el menu"
-            if (Input.GetKeyDown(menuKey) && !UIState.ChatOpen && !MainMenuUI.CapturingKey)
+            // (en el mando la pausa es el boton Start/Options, fijo)
+            bool pausa = Input.GetKeyDown(menuKey) || Controles.BotonPulsado(BotonMando.Start);
+            if (pausa && !UIState.ChatOpen && !MainMenuUI.CapturingKey)
             {
                 if (MainMenuUI.Instance != null && MainMenuUI.Instance.OptionsOverlayOpen)
                     MainMenuUI.Instance.CloseOptionsOverlay();

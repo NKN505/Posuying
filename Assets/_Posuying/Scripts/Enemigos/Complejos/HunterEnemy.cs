@@ -54,7 +54,7 @@ public class HunterEnemy : EnemyBehaviour
         alwaysAggro = true;
 
         _arma = GetComponent<EnemyRangedAttack>();
-        _anim = GetComponentInChildren<Animator>(true);
+        _anim = EnemyLocomotionAnimator.AnimatorConControlador(this);
         _posicionAnterior = transform.position;
     }
 

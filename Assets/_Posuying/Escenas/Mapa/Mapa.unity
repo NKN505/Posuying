@@ -14155,6 +14155,7 @@ GameObject:
   - component: {fileID: 1310377252}
   - component: {fileID: 1310377253}
   - component: {fileID: 1310377254}
+  - component: {fileID: 1310377255}
   m_Layer: 0
   m_Name: MatchManager
   m_TagString: Untagged
@@ -14366,6 +14367,19 @@ MonoBehaviour:
   teclaAceptar: 286
   teclaRechazar: 287
   segundosSolicitud: 45
+--- !u!114 &1310377255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1310377243}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5644d464a98e6704c941ac9ee0749cd0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &1313386948 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7043799399174712402, guid: 265f89c52323dd0498f528842506ea8a, type: 3}
@@ -24583,6 +24597,9 @@ MonoBehaviour:
   maxAlive: 30
   spawnInterval: 1
   spawnBatch: 2
+  dificultadAdaptativa: 1
+  extraPorJugador: 0.5
+  alivioSiVaisMal: 0.7
   panicEverySeconds: {x: 20, y: 40}
   panicExtraAlive: 18
   panicDuration: 12

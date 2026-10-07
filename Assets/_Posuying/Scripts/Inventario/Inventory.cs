@@ -100,14 +100,15 @@ public class Inventory : NetworkBehaviour
                 SelectSlot(i);
         }
 
+        // Rueda del raton, o los botones de hueco anterior/siguiente (la cruceta en el mando)
         float scroll = Input.mouseScrollDelta.y;
-        if (scroll > 0f) SelectSlot(SelectedIndex - 1);
-        else if (scroll < 0f) SelectSlot(SelectedIndex + 1);
+        if (scroll > 0f || Controles.Pulsado(Accion.HuecoAnterior)) SelectSlot(SelectedIndex - 1);
+        else if (scroll < 0f || Controles.Pulsado(Accion.HuecoSiguiente)) SelectSlot(SelectedIndex + 1);
 
-        if (Input.GetKeyDown(GameSettings.UseKey))
+        if (Controles.Pulsado(Accion.Usar))
             UseSelectedServerRpc();
 
-        if (Input.GetKeyDown(GameSettings.DropKey))
+        if (Controles.Pulsado(Accion.Soltar))
             SoltarElegido();
     }
 

@@ -42,8 +42,8 @@ public class ModoEspectador : MonoBehaviour
 
         if (!UIState.BlocksGameplay)
         {
-            if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.RightArrow)) _indice++;
-            if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.LeftArrow)) _indice--;
+            if (Input.GetMouseButtonDown(0) || Input.GetKeyDown(KeyCode.RightArrow) || Controles.BotonPulsado(BotonMando.R1)) _indice++;
+            if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.LeftArrow) || Controles.BotonPulsado(BotonMando.L1)) _indice--;
         }
         _indice = ((_indice % _objetivos.Count) + _objetivos.Count) % _objetivos.Count;
 

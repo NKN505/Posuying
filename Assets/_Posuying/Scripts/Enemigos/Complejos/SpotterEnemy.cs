@@ -64,7 +64,7 @@ public class SpotterEnemy : EnemyBehaviour
         // No hace daño: su amenaza es lo que provoca, no lo que pega
         damageAmount = 0f;
 
-        _anim = GetComponentInChildren<Animator>(true);
+        _anim = EnemyLocomotionAnimator.AnimatorConControlador(this);
         _posicionAnterior = transform.position;
     }
 

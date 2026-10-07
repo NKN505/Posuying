@@ -63,7 +63,7 @@ public class ChatJuego : NetworkBehaviour
         // Se abre solo jugando: con un menu o el inventario abiertos la T es una letra mas
         // (en la sala de espera si se puede: es donde mas falta hace hablar)
         bool ocupado = UIState.NetMenuOpen || UIState.InventoryOpen || MainMenuUI.CapturingKey;
-        if (!_abierto && !ocupado && Input.GetKeyDown(GameSettings.ChatKey))
+        if (!_abierto && !ocupado && Controles.Pulsado(Accion.Chat))
         {
             _abierto = true;
             _escribiendo = "";

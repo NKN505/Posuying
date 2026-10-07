@@ -424,7 +424,7 @@ public class MisionBomba : NetworkBehaviour
 
         // Soltar la bomba lo lleva el inventario (tecla de soltar o clic derecho en su hueco)
 
-        if (Input.GetKeyDown(teclaColocar) && SitioCercano() != null) PedirColocarServerRpc();
+        if (Controles.Pulsado(Accion.Interactuar) && SitioCercano() != null) PedirColocarServerRpc();
     }
 
     [ServerRpc(RequireOwnership = false)]
@@ -475,7 +475,7 @@ public class MisionBomba : NetworkBehaviour
                 break;
             case FaseBomba.LlevarBomba:
                 objetivo = LocalLlevaBomba
-                    ? "LLEVAS LA BOMBA (no puedes correr, " + GameSettings.KeyLabel(GameSettings.DropKey) +
+                    ? "LLEVAS LA BOMBA (no puedes correr, " + Controles.Nombre(Accion.Soltar) +
                       " la suelta): colocala en el edificio del 3er tercio"
                     : "OBJETIVO: protege a " + NombrePortador() + ", que lleva la bomba al edificio del 3er tercio";
                 break;
@@ -506,7 +506,7 @@ public class MisionBomba : NetworkBehaviour
         {
             estilo.fontSize = 26;
             Texto(new Rect(refWidth / 2f - 400f, ReferenceHeight * 0.62f, 800f, 40f),
-                  "Pulsa <b>" + teclaColocar + "</b> para colocar la bomba", estilo);
+                  "Pulsa <b>" + Controles.Nombre(Accion.Interactuar) + "</b> para colocar la bomba", estilo);
         }
 
         GUI.matrix = previous;

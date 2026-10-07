@@ -64,7 +64,7 @@ public class ChatVoz : NetworkBehaviour
         AsegurarOyente();
 
         bool quiereHablar = GameSettings.VoiceEnabled && !UIState.ChatOpen && !MainMenuUI.CapturingKey &&
-                            NetworkPlayer.LocalPlayer != null && Input.GetKey(GameSettings.VoiceKey);
+                            NetworkPlayer.LocalPlayer != null && Controles.Mantenido(Accion.Voz);
 
         // Si cambian de microfono en Opciones con el anterior abierto, se suelta
         // y el siguiente arranque coge el nuevo

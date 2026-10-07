@@ -948,7 +948,7 @@ public abstract class Weapon : MonoBehaviour{
             return;
         }
 
-        isAiming = Input.GetButton("Aim");
+        isAiming = Controles.Mantenido(Accion.Apuntar);
     }
 
     // Mueve el WeaponHolder entre cadera y apuntado.

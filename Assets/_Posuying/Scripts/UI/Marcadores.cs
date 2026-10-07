@@ -52,7 +52,7 @@ public class Marcadores : NetworkBehaviour
     void Update()
     {
         if (!IsSpawned || UIState.BlocksGameplay || MainMenuUI.CapturingKey) return;
-        if (Input.GetKeyDown(GameSettings.PingKey)) Marcar();
+        if (Controles.Pulsado(Accion.Marcar)) Marcar();
     }
 
     // ---------- Marcar (jugador local) ----------

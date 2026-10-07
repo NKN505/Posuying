@@ -162,8 +162,10 @@ public class PlayerController : Character, IPassiveRegenerator
         float sensitivity = GameSettings.MouseSensitivity;
         float invert = GameSettings.InvertY ? -1f : 1f;
 
-        float mouseX = Input.GetAxis("Mouse X") * sensitivity;
-        float mouseY = Input.GetAxis("Mouse Y") * sensitivity * invert;
+        // Raton y stick derecho del mando, ya con su sensibilidad cada uno
+        Vector2 mirar = Controles.Mirar();
+        float mouseX = mirar.x;
+        float mouseY = mirar.y * invert;
 
         transform.Rotate(0, mouseX, 0);
 
@@ -192,7 +194,7 @@ public class PlayerController : Character, IPassiveRegenerator
 
         ApplyGravity();
 
-        if (Input.GetButtonDown("Jump") && !TryClimb())
+        if (Controles.Pulsado(Accion.Saltar) && !TryClimb())
         {
             // El salto cuesta estamina; solo si estamos en el suelo y hay suficiente
             if (controller.isGrounded && ConsumeStamina(jumpStaminaCost))
@@ -219,7 +221,7 @@ public class PlayerController : Character, IPassiveRegenerator
         // AGACHARSE (conmutador). GetButtonDown, no GetButton: nos interesa el
         // instante de la pulsacion, no si sigue apretada. Con GetButton el
         // estado se invertiria en cada frame que el boton estuviese abajo.
-        if (Input.GetButtonDown("Crouch"))
+        if (Controles.Pulsado(Accion.Agacharse))
         {
             _crouchToggled = !_crouchToggled;
         }
@@ -227,15 +229,16 @@ public class PlayerController : Character, IPassiveRegenerator
         bool wantsToCrouch = _crouchToggled;
 
         // DESPLAZAMIENTO
-        float movex = Input.GetAxis("Horizontal");
-        float movez = Input.GetAxis("Vertical");
+        Vector2 mover = Controles.Mover();   // WASD o stick izquierdo
+        float movex = mover.x;
+        float movez = mover.y;
 
         bool isMoving = !(Mathf.Approximately(movex, 0f) && Mathf.Approximately(movez, 0f));
 
         // SPRINT: solo si nos movemos, no agachados, con boton pulsado y queda estamina
         // Quien carga con la bomba no puede correr y anda algo mas despacio
         bool llevaBomba = MisionBomba.LocalLlevaBomba;
-        bool wantsSprint = !wantsToCrouch && isMoving && !llevaBomba && Input.GetButton("Sprint");
+        bool wantsSprint = !wantsToCrouch && isMoving && !llevaBomba && Controles.Mantenido(Accion.Correr);
         bool sprinting = wantsSprint && GetStamina() > 0f;
         if (sprinting)
             DrainStamina(sprintStaminaPerSecond * Time.deltaTime);

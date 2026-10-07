@@ -45,7 +45,7 @@ public class TankEnemy : EnemyBehaviour
         base.Awake();
         alwaysAggro = true;   // no patrulla: va a por ti desde el principio
 
-        _anim = GetComponentInChildren<Animator>(true);
+        _anim = EnemyLocomotionAnimator.AnimatorConControlador(this);
         _posicionAnterior = transform.position;
     }
 
