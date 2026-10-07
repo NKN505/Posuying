@@ -71,7 +71,7 @@ public class NemesisEnemy : EnemyBehaviour
         // La detección la lleva él: no queremos el radio visual heredado
         alwaysAggro = true;
 
-        _anim = GetComponentInChildren<Animator>(true);
+        _anim = EnemyLocomotionAnimator.AnimatorConControlador(this);
         _posicionAnterior = transform.position;
     }
 

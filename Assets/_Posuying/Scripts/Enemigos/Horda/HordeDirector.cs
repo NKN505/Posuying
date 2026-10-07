@@ -31,6 +31,15 @@ public class HordeDirector : MonoBehaviour
     public float spawnInterval = 1f;  // cada cuanto intenta reponer
     public int spawnBatch = 2;        // cuantos por intento
 
+    [Header("Dificultad segun el equipo")]
+    [Tooltip("Ajusta la horda al numero de jugadores y a como van")]
+    public bool dificultadAdaptativa = true;
+    [Tooltip("Enemigos de mas por cada jugador adicional, en proporcion (0,5 = +50 % por jugador)")]
+    public float extraPorJugador = 0.5f;
+    [Range(0.4f, 1f)]
+    [Tooltip("Cuando el equipo va muy mal, la horda se queda en esta fraccion")]
+    public float alivioSiVaisMal = 0.7f;
+
     [Header("Pico de panico")]
     public Vector2 panicEverySeconds = new Vector2(20f, 40f);
     public int panicExtraAlive = 18;
@@ -111,7 +120,11 @@ public class HordeDirector : MonoBehaviour
         // Sin jugadores en partida no hay alrededor de quien spawnear
         if (NetworkPlayer.AllPlayers.Count == 0) return;
 
+        // En la sala de espera todavia no hay partida
+        if (!SalaEspera.EnJuego) return;
+
         PruneDead();
+        AjustarDificultad();
         UpdatePanic();
         RevisarRezagados();
         AlCambiarDeTercio();
@@ -127,7 +140,47 @@ public class HordeDirector : MonoBehaviour
 
     private bool IsPanicking => Time.time < _panicEndTime;
 
-    private int CurrentTarget => baseAlive + (IsPanicking ? panicExtraAlive : 0);
+    // Cuantos enemigos vivos se buscan ahora: la base, mas el pico de panico, y
+    // todo ello ajustado a como es y como va el equipo.
+    private int CurrentTarget =>
+        Mathf.RoundToInt((baseAlive + (IsPanicking ? panicExtraAlive : 0)) * FactorDificultad);
+
+    /// <summary>Multiplicador de la horda ahora mismo (1 = un jugador en buen estado).</summary>
+    public float FactorDificultad { get; private set; } = 1f;
+    private float _siguienteAjuste;
+
+    // Mas jugadores, mas enemigos; y si el equipo va muy mal (poca vida, casi sin
+    // vidas, gente en el suelo) se afloja un poco para que pueda rehacerse.
+    private void AjustarDificultad()
+    {
+        if (!dificultadAdaptativa) { FactorDificultad = 1f; return; }
+        if (Time.time < _siguienteAjuste) return;
+        _siguienteAjuste = Time.time + 2f;
+
+        int jugadores = 0, enPie = 0;
+        float vida = 0f;
+        foreach (var p in NetworkPlayer.AllPlayers)
+        {
+            if (p == null || p.GetComponent<NetworkPlayer>() == null) continue;
+            jugadores++;
+
+            var estado = p.GetComponent<PlayerDownedState>();
+            if (estado != null && !estado.CanAct) continue;
+            enPie++;
+            vida += Mathf.Clamp01(p.GetHealth() / Mathf.Max(1f, p.GetMaxHealth()));
+        }
+        if (jugadores == 0) { FactorDificultad = 1f; return; }
+
+        float porJugadores = 1f + extraPorJugador * (jugadores - 1);
+
+        float vidaMedia = enPie > 0 ? vida / enPie : 0f;
+        bool apurados = vidaMedia < 0.35f || enPie < jugadores ||
+                        (MatchManager.Instance != null && MatchManager.Instance.Lives <= 1);
+        float objetivo = porJugadores * (apurados ? alivioSiVaisMal : 1f);
+
+        // Cambia poco a poco: que no desaparezca media horda de golpe
+        FactorDificultad = Mathf.MoveTowards(FactorDificultad, objetivo, 0.15f);
+    }
 
     private void UpdatePanic()
     {
@@ -268,7 +321,8 @@ public class HordeDirector : MonoBehaviour
 
     private void TrySpawnBatch()
     {
-        int target = Mathf.Min(CurrentTarget, maxAlive);
+        // El tope tambien crece con el equipo: con cuatro jugadores, 30 se queda corto
+        int target = Mathf.Min(CurrentTarget, Mathf.RoundToInt(maxAlive * Mathf.Max(1f, FactorDificultad)));
         int toSpawn = Mathf.Min(spawnBatch, target - _alive.Count);
 
         for (int i = 0; i < toSpawn; i++)

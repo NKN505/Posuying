@@ -96,6 +96,23 @@ public class EnemyLocomotionAnimator : MonoBehaviour
     /// <summary>Velocidad medida, por si algún script la quiere.</summary>
     public float ObservedSpeed { get { return _velocidad; } }
 
+    /// <summary>
+    /// El Animator que de verdad anima a este enemigo: el que tiene controlador.
+    /// Con ragdoll montado hay DOS: RagdollDeath exige un Animator en la raiz y,
+    /// cuando el modelo va en un hijo, el de la raiz esta vacio; cogerlo dejaria
+    /// al enemigo sin animar.
+    /// </summary>
+    public static Animator AnimatorConControlador(Component quien)
+    {
+        Animator primero = null;
+        foreach (var candidato in quien.GetComponentsInChildren<Animator>(true))
+        {
+            if (primero == null) primero = candidato;
+            if (candidato.runtimeAnimatorController != null) return candidato;
+        }
+        return primero;
+    }
+
     private Animator _anim;
     private EnemyBehaviour _enemigo;
     private UnityEngine.AI.NavMeshAgent _agente;
@@ -109,14 +126,7 @@ public class EnemyLocomotionAnimator : MonoBehaviour
 
     void Awake()
     {
-        // El que tenga controlador. Con ragdoll montado hay DOS: RagdollDeath exige
-        // un Animator en la raiz y, cuando el modelo va en un hijo, el de la raiz
-        // esta vacio; cogerlo dejaria al enemigo sin animar.
-        foreach (var candidato in GetComponentsInChildren<Animator>(true))
-        {
-            if (_anim == null) _anim = candidato;
-            if (candidato.runtimeAnimatorController != null) { _anim = candidato; break; }
-        }
+        _anim = AnimatorConControlador(this);
         _enemigo = GetComponent<EnemyBehaviour>();
         _agente = GetComponent<UnityEngine.AI.NavMeshAgent>();
         _posicionAnterior = transform.position;

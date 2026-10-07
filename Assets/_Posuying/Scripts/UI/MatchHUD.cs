@@ -17,6 +17,7 @@ public class MatchHUD : MonoBehaviour
         var nm = NetworkManager.Singleton;
         if (nm == null || !(nm.IsClient || nm.IsServer)) return;
         if (MatchManager.Instance == null) return;
+        if (!SalaEspera.EnJuego) return;   // en la sala de espera aun no hay vidas ni avisos
 
         Matrix4x4 previous = GUI.matrix;
         float scale = Screen.height / ReferenceHeight;
@@ -121,7 +122,9 @@ public class MatchHUD : MonoBehaviour
 
     private void DrawDefeat(float refWidth)
     {
-        float w = 560f, h = 300f;
+        // Con resultados, el panel crece para que quepa la tabla entre el titulo y los botones
+        float tabla = ResumenPartida.Hay ? ResumenPartida.Alto + 16f : 0f;
+        float w = ResumenPartida.Hay ? 760f : 560f, h = 300f + tabla;
         Rect panel = new Rect((refWidth - w) / 2f, (ReferenceHeight - h) / 2f, w, h);
 
         Color previousColor = GUI.color;
@@ -139,15 +142,18 @@ public class MatchHUD : MonoBehaviour
         GUI.Label(new Rect(panel.x, panel.y + 95f, w, 40f),
             porBomba ? "No habeis llegado a la salida a tiempo" : "No quedan vidas de equipo", Centered(20));
 
+        if (ResumenPartida.Hay)
+            ResumenPartida.Dibujar(new Rect(panel.x + 40f, panel.y + 150f, w - 80f, ResumenPartida.Alto));
+
         GUIStyle button = new GUIStyle(GUI.skin.button) { fontSize = 18 };
 
-        if (GUI.Button(new Rect(panel.x + 60f, panel.y + 165f, w - 120f, 46f),
+        if (GUI.Button(new Rect(panel.x + 60f, panel.y + 165f + tabla, w - 120f, 46f),
                        "Reiniciar partida", button))
         {
             MatchManager.Instance.RestartMatchServerRpc();
         }
 
-        if (GUI.Button(new Rect(panel.x + 60f, panel.y + 222f, w - 120f, 46f),
+        if (GUI.Button(new Rect(panel.x + 60f, panel.y + 222f + tabla, w - 120f, 46f),
                        "Volver al menu", button))
         {
             var session = FindFirstObjectByType<OnlineSession>();

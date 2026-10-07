@@ -121,6 +121,7 @@ public class MatchManager : NetworkBehaviour
         }
 
         netMatchOver.Value = true;
+        if (EstadisticasPartida.Instance != null) EstadisticasPartida.Instance.Publicar(false, "Habeis caido todos");
 
         // Por RPC: antes el aviso solo salia en la pantalla del anfitrion
         AnnounceDefeatClientRpc();
@@ -131,6 +132,7 @@ public class MatchManager : NetworkBehaviour
     {
         if (!IsServer || netMatchOver.Value) return;
         netMatchOver.Value = true;
+        if (EstadisticasPartida.Instance != null) EstadisticasPartida.Instance.Publicar(false, "La bomba ha explotado");
     }
 
     [ClientRpc]
@@ -157,6 +159,7 @@ public class MatchManager : NetworkBehaviour
         // reapareceria en el tercio de la partida anterior.
         if (ProgresoTercios.Instance != null) ProgresoTercios.Instance.Reiniciar();
         if (MisionBomba.Instance != null) MisionBomba.Instance.Reiniciar();
+        if (EstadisticasPartida.Instance != null) EstadisticasPartida.Instance.Reiniciar();
 
         // Todos vuelven a estar en pie y en su punto de aparicion
         foreach (var player in NetworkPlayer.AllPlayers)

@@ -61,7 +61,7 @@ public class PsychoKillerEnemy : EnemyBehaviour
         alwaysAggro = true;
 
         _arma = GetComponent<EnemyRangedAttack>();
-        _anim = GetComponentInChildren<Animator>(true);
+        _anim = EnemyLocomotionAnimator.AnimatorConControlador(this);
         _posicionAnterior = transform.position;
         _relojReposicion = repositionInterval;
     }

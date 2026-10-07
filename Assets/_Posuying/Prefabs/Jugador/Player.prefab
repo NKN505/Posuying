@@ -1057,6 +1057,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 100000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5142234194845268146}
+    - targetCorrespondingSourceObject: {fileID: 100000, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8607432944042633747}
     - targetCorrespondingSourceObject: {fileID: 100008, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}
       insertIndex: -1
       addedObject: {fileID: 366014365146000162}
@@ -1315,6 +1318,8 @@ MonoBehaviour:
   meleeDamage: 50
   meleeRange: 2
   meleeCooldown: 0.5
+  meleeRadius: 0.45
+  meleeStamina: 12
   shootDamage: 30
   shootRange: 50
   shootCooldown: 0.3
@@ -1665,6 +1670,19 @@ MonoBehaviour:
   reviveRange: 2.5
   reviveKey: 101
   giveUpKey: 114
+--- !u!114 &8607432944042633747
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8706869791174135810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f596c40dd5a040d499c0071d24c93e1b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!1 &8706869791174135812 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 100006, guid: a980fb7137f2e194a8a2e064607659c8, type: 3}

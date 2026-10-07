@@ -78,7 +78,7 @@ public class Flashlight : NetworkBehaviour
     private void UpdateOwner()
     {
         // Con una ventana abierta no interpretamos teclas de juego
-        if (!UIState.BlocksGameplay && Input.GetButtonDown(toggleButton))
+        if (!UIState.BlocksGameplay && Controles.Pulsado(Accion.Linterna))
             Toggle();
 
         if (netIsOn.Value)

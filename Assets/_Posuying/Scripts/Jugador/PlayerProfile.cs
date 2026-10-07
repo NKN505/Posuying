@@ -7,6 +7,13 @@ public static class PlayerProfile
     private const string Key = "player_name";
     public const int MaxLength = 16;
 
+    // Color del uniforme elegido en la sala de espera (indice de AspectoJugador.Opciones)
+    public static int ColorIndex
+    {
+        get { return PlayerPrefs.GetInt("player_color", 0); }
+        set { PlayerPrefs.SetInt("player_color", value); PlayerPrefs.Save(); }
+    }
+
     public static string Name
     {
         get

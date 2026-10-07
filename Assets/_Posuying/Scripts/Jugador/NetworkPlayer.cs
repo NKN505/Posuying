@@ -123,6 +123,26 @@ public class NetworkPlayer : NetworkBehaviour
         SondaPruebas.DisparosOidos++;
     }
 
+    // ---------- Sonido del golpe cuerpo a cuerpo ----------
+
+    public void AvisarGolpe(bool acierta)
+    {
+        if (IsSpawned && IsOwner) GolpeServerRpc(acierta);
+    }
+
+    [ServerRpc(Delivery = RpcDelivery.Unreliable)]
+    private void GolpeServerRpc(bool acierta)
+    {
+        GolpeClientRpc(acierta);
+    }
+
+    [ClientRpc(Delivery = RpcDelivery.Unreliable)]
+    private void GolpeClientRpc(bool acierta)
+    {
+        if (IsOwner) return;   // el mio ya ha sonado al darlo
+        SonidoGolpe.Sonar(transform.position + Vector3.up * 1.4f, acierta, false);
+    }
+
     public override void OnNetworkDespawn()
     {
         var controller = GetComponent<PlayerController>();

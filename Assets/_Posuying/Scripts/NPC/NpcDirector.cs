@@ -50,6 +50,7 @@ public class NpcDirector : MonoBehaviour
 
         // Sin jugadores no hay partida todavia
         if (NetworkPlayer.AllPlayers.Count == 0) return;
+        if (!SalaEspera.EnJuego) return;   // ni en la sala de espera
 
         if (!GameSettings.NpcsEnabled)
         {

@@ -54,7 +54,8 @@ public class Minimap : MonoBehaviour
         }
 
         var local = NetworkPlayer.LocalPlayer;
-        bool visible = GameSettings.MinimapEnabled && local != null;
+        // En la sala de espera no hay mapa que mirar
+        bool visible = GameSettings.MinimapEnabled && local != null && SalaEspera.EnJuego;
 
         _container.gameObject.SetActive(visible);
         if (!visible) return;

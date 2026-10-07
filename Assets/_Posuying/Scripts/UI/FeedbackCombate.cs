@@ -105,6 +105,7 @@ public class FeedbackCombate : MonoBehaviour
     {
         if (_jugador == null || Event.current.type != EventType.Repaint) return;
         if (MatchManager.Instance != null && MatchManager.Instance.MatchOver) return;
+        if (UIState.NetMenuOpen) return;   // con el menu abierto se pintaba encima de el
 
         Camera camara = _jugador.GetComponentInChildren<Camera>();
         if (camara == null || !camara.enabled) camara = Camera.main;

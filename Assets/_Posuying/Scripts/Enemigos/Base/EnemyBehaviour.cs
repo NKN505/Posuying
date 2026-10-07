@@ -334,6 +334,8 @@ public abstract class EnemyBehaviour : Character
     {
         if (!IsServer) return;
 
+        EstadisticasPartida.SumarBaja(UltimoAtacante);   // para la pantalla de resultados
+
         if (MorirConRagdoll())
         {
             Destroy(gameObject, segundosDeCadaver);

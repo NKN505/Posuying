@@ -63,7 +63,7 @@ public class SoundHunterEnemy : EnemyBehaviour
         // elija la clase padre.
         alwaysAggro = true;
 
-        _anim = GetComponentInChildren<Animator>(true);
+        _anim = EnemyLocomotionAnimator.AnimatorConControlador(this);
         _posicionAnterior = transform.position;
     }
 

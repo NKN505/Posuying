@@ -15,7 +15,7 @@ public class MainMenuUI : MonoBehaviour
     private enum Tab { Crear, Buscar, Codigo, Opciones, Pausa }
 
     // Lo que se esta mostrando: decide que pestanas y que fondo se ven
-    private enum Vista { Inicio, Pausa, OpcionesEnPartida, Oculto }
+    private enum Vista { Inicio, Pausa, OpcionesEnPartida, Sala, Oculto }
 
     [Header("Referencias")]
     public OnlineSession onlineSession;
@@ -106,6 +106,7 @@ public class MainMenuUI : MonoBehaviour
     {
         UpdateVolumes();
         UpdateKeyCapture();
+        UpdateMenuConMando();
 
         if (!_built)
         {
@@ -129,6 +130,7 @@ public class MainMenuUI : MonoBehaviour
                     : migrating ? Vista.Oculto
                     : OptionsOverlayOpen ? Vista.OpcionesEnPartida
                     : NetworkUI.MenuOpen ? Vista.Pausa
+                    : (SalaEspera.Instance != null && SalaEspera.Instance.Visible) ? Vista.Sala
                     : Vista.Oculto;
 
         UpdateMenuAudio(inGame);
@@ -140,9 +142,13 @@ public class MainMenuUI : MonoBehaviour
 
             // En partida no se pone el arte del menu: se deja ver el juego, oscurecido
             if (_fondo != null) _fondo.SetActive(vista == Vista.Inicio);
+            // En la sala no hay velo: se ve a los jugadores tal cual
             if (_velo != null)
-                _velo.color = vista != Vista.Inicio ? pauseTint
+                _velo.color = vista == Vista.Sala ? Color.clear
+                            : vista != Vista.Inicio ? pauseTint
                             : (background != null ? backgroundTint : Color.clear);
+            if (_panel != null) _panel.gameObject.SetActive(vista != Vista.Sala);
+            if (_sala != null) _sala.gameObject.SetActive(vista == Vista.Sala);
             // SALIR cierra el juego entero: en partida se sale desde la pausa
             if (_quitButton != null) _quitButton.SetActive(vista == Vista.Inicio);
             if (_status != null && vista != Vista.Inicio) _status.text = "";
@@ -153,6 +159,7 @@ public class MainMenuUI : MonoBehaviour
         }
 
         if (vista == Vista.Pausa) UpdatePauseTexts();
+        if (vista == Vista.Sala) UpdateSala();
 
         if (!inGame && _status != null && onlineSession != null)
             _status.text = onlineSession.Busy ? onlineSession.Status + " ..." : onlineSession.Status;
@@ -207,6 +214,8 @@ public class MainMenuUI : MonoBehaviour
         RectTransform panel = NewRect("Panel", _root, panelSize);
         panel.anchoredPosition = panelOffset;
         AddImage(panel, panelColor);
+        _panel = panel;
+        BuildSala();
 
         float w = panelSize.x;
         float top = panelSize.y / 2f;
@@ -305,6 +314,175 @@ public class MainMenuUI : MonoBehaviour
             case Tab.Codigo: BuildCodeTab(); break;
             case Tab.Opciones: BuildOptionsTab(); break;
             case Tab.Pausa: BuildPauseTab(); break;
+        }
+    }
+
+    // ---------- SALA DE ESPERA ----------
+    // Solo los botones y los textos: a los jugadores se les ve en 3D detras
+    // (los coloca y los enfoca SalaEspera). Por eso aqui no hay panel central,
+    // solo un titulo arriba y una barra abajo.
+
+    private RectTransform _panel;
+    private RectTransform _sala;
+    private Text _salaTitulo, _salaSubtitulo, _salaCodigo, _salaAviso, _salaBotonTexto;
+    private GameObject _salaBoton, _salaCopiar;
+    private Image _salaBotonFondo;
+
+    private void BuildSala()
+    {
+        _sala = NewRect("Sala", _root, Vector2.zero);
+        _sala.anchorMin = Vector2.zero;
+        _sala.anchorMax = Vector2.one;
+        _sala.offsetMin = Vector2.zero;
+        _sala.offsetMax = Vector2.zero;
+        _sala.gameObject.SetActive(false);
+
+        // Arriba: titulo y cuantos sois
+        RectTransform arriba = NewRect("Arriba", _sala, new Vector2(900f, 110f));
+        arriba.anchorMin = arriba.anchorMax = new Vector2(0.5f, 1f);
+        arriba.anchoredPosition = new Vector2(0f, -110f);
+        _salaTitulo = Label("Titulo", "SALA DE ESPERA", arriba, new Vector2(0f, 22f), new Vector2(900f, 56f),
+            40, TextAnchor.MiddleCenter, Color.white);
+        _salaSubtitulo = Label("Subtitulo", "", arriba, new Vector2(0f, -26f), new Vector2(900f, 30f),
+            18, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.8f));
+
+        // Abajo: codigo, boton principal y salir
+        RectTransform barra = NewRect("Barra", _sala, new Vector2(820f, 132f));
+        barra.anchorMin = barra.anchorMax = new Vector2(0.5f, 0f);
+        barra.anchoredPosition = new Vector2(0f, 120f);
+        AddImage(barra, panelColor);
+
+        _salaCodigo = Label("Codigo", "", barra, new Vector2(-270f, 30f), new Vector2(240f, 30f),
+            18, TextAnchor.MiddleCenter, Color.white);
+        _salaCopiar = Button("Copiar codigo", barra, new Vector2(-270f, -6f), new Vector2(170f, 28f), () =>
+        {
+            if (onlineSession != null) GUIUtility.systemCopyBuffer = onlineSession.JoinCode;
+        }).gameObject;
+
+        Button principal = Button("LISTO", barra, new Vector2(0f, 14f), new Vector2(280f, 60f), PulsarBotonSala, accentColor);
+        _salaBoton = principal.gameObject;
+        _salaBotonFondo = principal.GetComponent<Image>();
+        _salaBotonTexto = principal.GetComponentInChildren<Text>();
+        _salaBotonTexto.resizeTextMaxSize = 24;
+        _salaBotonTexto.fontSize = 24;
+
+        Button("SALIR DE LA SALA", barra, new Vector2(270f, 14f), new Vector2(190f, 36f),
+            NetworkUI.LeaveGame, new Color(0.35f, 0.1f, 0.1f, 1f));
+
+        _salaAviso = Label("Aviso", "", barra, new Vector2(0f, -44f), new Vector2(780f, 26f),
+            14, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.75f));
+
+        // Encima de la barra: el color del uniforme, un cuadrado por opcion
+        int n = AspectoJugador.Opciones.Length;
+        _salaColores = NewRect("Colores", _sala, new Vector2(120f + n * 40f, 44f));
+        _salaColores.anchorMin = _salaColores.anchorMax = new Vector2(0.5f, 0f);
+        _salaColores.anchoredPosition = new Vector2(0f, 214f);
+        AddImage(_salaColores, panelColor);
+        Label("Rotulo", "UNIFORME", _salaColores, new Vector2(-n * 20f, 0f), new Vector2(110f, 30f),
+            14, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.8f));
+
+        _salaMarcos = new Image[n];
+        for (int i = 0; i < n; i++)
+        {
+            int indice = i;
+            float x = 60f - n * 20f + i * 40f + 20f;
+
+            // Marco (se ilumina en el elegido) con el color dentro
+            RectTransform marco = NewRect("Marco" + i, _salaColores, new Vector2(34f, 34f));
+            marco.anchoredPosition = new Vector2(x, 0f);
+            _salaMarcos[i] = AddImage(marco, buttonColor);
+            _salaMarcos[i].raycastTarget = false;
+
+            Button muestra = Button("", _salaColores, new Vector2(x, 0f), new Vector2(26f, 26f), () =>
+            {
+                var yo = NetworkPlayer.LocalPlayer;
+                var aspecto = yo != null ? yo.GetComponent<AspectoJugador>() : null;
+                if (aspecto != null) aspecto.Elegir(indice);
+                else PlayerProfile.ColorIndex = indice;
+            }, AspectoJugador.Opciones[i].color);
+            // Los botones del menu tintan al pasar el raton: aqui el color es el dato
+            var colores = muestra.colors;
+            colores.highlightedColor = Color.white;
+            colores.pressedColor = new Color(0.85f, 0.85f, 0.85f, 1f);
+            muestra.colors = colores;
+        }
+    }
+
+    private RectTransform _salaColores;
+    private Image[] _salaMarcos;
+
+    private void PulsarBotonSala()
+    {
+        var sala = SalaEspera.Instance;
+        if (sala == null || !sala.IsSpawned) return;
+
+        if (sala.IsServer) { PostUI(uiStart); sala.Empezar(); }
+        else sala.CambiarListo();
+    }
+
+    private void UpdateSala()
+    {
+        var sala = SalaEspera.Instance;
+        if (sala == null || !sala.IsSpawned) return;
+
+        string codigo = onlineSession != null ? onlineSession.JoinCode : "";
+        _salaCodigo.text = string.IsNullOrEmpty(codigo) ? "Partida local" : "CODIGO:  " + codigo;
+        _salaCopiar.SetActive(!string.IsNullOrEmpty(codigo));
+
+        // El color elegido, marcado; sin personaje todavia no hay nada que vestir
+        bool esperando = sala.EsperandoPermiso || sala.FaseActual == SalaEspera.Fase.EnJuego;
+        if (_salaColores != null)
+        {
+            _salaColores.gameObject.SetActive(!esperando);
+            var yoAspecto = NetworkPlayer.LocalPlayer != null ? NetworkPlayer.LocalPlayer.GetComponent<AspectoJugador>() : null;
+            int elegido = yoAspecto != null && yoAspecto.IsSpawned ? yoAspecto.Indice : PlayerProfile.ColorIndex;
+            for (int i = 0; i < _salaMarcos.Length; i++)
+                _salaMarcos[i].color = i == elegido ? Color.white : buttonColor;
+        }
+
+        // Llegue con la partida empezada: solo queda esperar
+        if (sala.EsperandoPermiso || (sala.FaseActual == SalaEspera.Fase.EnJuego))
+        {
+            _salaTitulo.text = "PARTIDA EN CURSO";
+            _salaSubtitulo.text = "Esperando a que el anfitrion te deje entrar...";
+            _salaBoton.SetActive(false);
+            _salaAviso.text = "Si no responde en unos segundos, la solicitud se rechaza sola";
+            return;
+        }
+
+        int jugadores = sala.JugadoresEnSala();
+        int faltan = sala.FaltanPorEstarListos();
+        _salaBoton.SetActive(true);
+
+        if (sala.FaseActual == SalaEspera.Fase.CuentaAtras)
+        {
+            _salaTitulo.text = "LA PARTIDA EMPIEZA EN  " + Mathf.CeilToInt(sala.SegundosParaEmpezar);
+            _salaSubtitulo.text = "";
+        }
+        else
+        {
+            _salaTitulo.text = "SALA DE ESPERA";
+            _salaSubtitulo.text = jugadores + (jugadores == 1 ? " jugador" : " jugadores") +
+                                  (faltan > 0 ? "   |   faltan " + faltan + " por estar listos" : "   |   todos listos");
+        }
+
+        string tecla = Controles.NombreTecla(Controles.Tecla(Accion.Chat));
+        if (sala.IsServer)
+        {
+            bool puede = faltan == 0 && sala.FaseActual == SalaEspera.Fase.Sala;
+            _salaBotonTexto.text = sala.FaseActual == SalaEspera.Fase.CuentaAtras ? "EMPEZANDO..." : "EMPEZAR PARTIDA";
+            _salaBotonFondo.color = puede ? accentColor : buttonColor;
+            _salaAviso.text = faltan > 0
+                ? "Eres el anfitrion: podras empezar cuando todos esten listos.   " + tecla + ": chat"
+                : "Eres el anfitrion: empieza cuando quieras.   " + tecla + ": chat";
+        }
+        else
+        {
+            bool listo = sala.LocalListo;
+            _salaBotonTexto.text = listo ? "LISTO  (pulsa para cancelar)" : "ESTOY LISTO";
+            _salaBotonFondo.color = listo ? new Color(0.15f, 0.45f, 0.2f, 1f) : accentColor;
+            _salaAviso.text = (listo ? "Esperando a que el anfitrion empiece la partida." : "Marca LISTO cuando lo estes.") +
+                              "   " + tecla + ": chat";
         }
     }
 
@@ -794,60 +972,115 @@ public class MainMenuUI : MonoBehaviour
             () => { GameSettings.StepMic(1); value.text = GameSettings.MicLabel(); });
     }
 
-    // Las teclas se guardan nada mas elegirlas: aqui tampoco hace falta APLICAR
+    // ---------- CONTROLES: teclado y raton, o mando ----------
+    // Cada accion tiene una tecla Y un boton de mando. Arriba se elige cual de las
+    // dos columnas se esta viendo; como no caben todas, van por paginas. Todo se
+    // guarda nada mas elegirlo: aqui tampoco hace falta APLICAR.
+
+    private bool _controlesMando;
+    private int _controlesPagina;
+    private const int AccionesPorPagina = 6;
+
     private void BuildControlsOptions()
     {
-        KeyRow(0, "Chat de texto", () => GameSettings.ChatKey, k => GameSettings.ChatKey = k);
-        KeyRow(1, "Chat de voz (mantener)", () => GameSettings.VoiceKey, k => GameSettings.VoiceKey = k);
-        KeyRow(2, "Marcar para el equipo", () => GameSettings.PingKey, k => GameSettings.PingKey = k);
-        KeyRow(3, "Usar objeto elegido", () => GameSettings.UseKey, k => GameSettings.UseKey = k);
-        KeyRow(4, "Soltar objeto elegido", () => GameSettings.DropKey, k => GameSettings.DropKey = k);
+        float w = _content.sizeDelta.x;
 
-        Label("aviso_teclas", "Pulsa el boton y despues la tecla nueva. Escape cancela.",
-            _content, new Vector2(0f, RowY(6)), new Vector2(_content.sizeDelta.x, 40f),
-            12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
+        // Fila 0: que dispositivo se configura
+        Button("TECLADO Y RATON", _content, new Vector2(-105f, RowY(0)), new Vector2(200f, 26f),
+            () => { _controlesMando = false; _controlesPagina = 0; ShowTab(Tab.Opciones); },
+            _controlesMando ? buttonColor : accentColor);
+        Button(Controles.EsPlayStation ? "MANDO (PlayStation)" : "MANDO", _content, new Vector2(105f, RowY(0)), new Vector2(200f, 26f),
+            () => { _controlesMando = true; _controlesPagina = 0; ShowTab(Tab.Opciones); },
+            _controlesMando ? accentColor : buttonColor);
+
+        int paginasDeAcciones = Mathf.CeilToInt(Controles.Cuantas / (float)AccionesPorPagina);
+        int paginas = paginasDeAcciones + 1;   // la ultima son los ajustes generales
+        _controlesPagina = Mathf.Clamp(_controlesPagina, 0, paginas - 1);
+
+        if (_controlesPagina < paginasDeAcciones)
+        {
+            int primera = _controlesPagina * AccionesPorPagina;
+            for (int i = 0; i < AccionesPorPagina && primera + i < Controles.Cuantas; i++)
+                ControlRow(1 + i, (Accion)(primera + i));
+        }
+        else
+        {
+            if (_controlesMando)
+            {
+                SliderRow(1, "Sensibilidad del stick", Controles.SensibilidadMando,
+                    v => { Controles.SensibilidadMando = Mathf.Round(v * 20f) / 20f; PlayerPrefs.SetFloat("ctl_sens_mando", Controles.SensibilidadMando); },
+                    () => Controles.SensibilidadMando.ToString("0.00"),
+                    Controles.MinSensibilidadMando, Controles.MaxSensibilidadMando);
+
+                Label("fijos", "Fijos: moverse con el stick izquierdo, mirar con el derecho, pausa con " +
+                      Controles.NombreBoton(BotonMando.Start) + ".\n" +
+                      (Controles.MandoConectado ? "Mando detectado." : "No hay ningun mando conectado ahora mismo."),
+                    _content, new Vector2(0f, RowY(3)), new Vector2(w, 44f), 12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.6f));
+            }
+            else
+            {
+                Label("fijos", "Fijos: moverse con W A S D, mirar con el raton, huecos del cinturon con 1-4 o la rueda,\npausa con Escape. La sensibilidad del raton esta en la pestana General.",
+                    _content, new Vector2(0f, RowY(2)), new Vector2(w, 44f), 12, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.6f));
+            }
+
+            ToggleRow(4, "Consejos al empezar", () => GameSettings.OnOff(GameSettings.ShowTips),
+                () => { GameSettings.ShowTips = !GameSettings.ShowTips; GameSettings.SaveKeys(); });
+
+            Button(_controlesMando ? "Restablecer el mando" : "Restablecer el teclado", _content,
+                new Vector2(0f, RowY(6)), new Vector2(260f, 28f),
+                () => { Controles.Restablecer(_controlesMando); ShowTab(Tab.Opciones); });
+        }
+
+        // Fila 7: paginas
+        Button("<", _content, new Vector2(-120f, RowY(7)), new Vector2(30f, 24f),
+            () => { _controlesPagina = (_controlesPagina - 1 + paginas) % paginas; ShowTab(Tab.Opciones); });
+        Label("pagina", "Pagina " + (_controlesPagina + 1) + " de " + paginas, _content, new Vector2(0f, RowY(7)),
+            new Vector2(180f, 24f), 13, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.8f));
+        Button(">", _content, new Vector2(120f, RowY(7)), new Vector2(30f, 24f),
+            () => { _controlesPagina = (_controlesPagina + 1) % paginas; ShowTab(Tab.Opciones); });
     }
 
-    // ---------- Eleccion de teclas ----------
+    // ---------- Eleccion de un control ----------
 
-    /// <summary>True mientras se espera la tecla nueva: Escape cancela en vez de cerrar el menu.</summary>
+    /// <summary>True mientras se espera la tecla o el boton nuevo: Escape cancela en vez de cerrar el menu.</summary>
     public static bool CapturingKey { get; private set; }
 
-    private System.Action<KeyCode> _alCapturar;
+    private Accion _capturando;
+    private bool _capturaDeMando;
     private Text _textoCaptura;
-    private System.Func<KeyCode> _leerCaptura;
     private int _frameCaptura;
+    private float _capturaDesde;
 
-    // Fila con un boton que muestra la tecla y, al pulsarlo, espera la nueva
-    private void KeyRow(int index, string label, System.Func<KeyCode> read, System.Action<KeyCode> write)
+    private string TextoControl(Accion a) =>
+        _controlesMando ? Controles.NombreBoton(Controles.Boton(a)) : Controles.NombreTecla(Controles.Tecla(a));
+
+    // Fila con el nombre de la accion y un boton que muestra su control; al pulsarlo, espera el nuevo
+    private void ControlRow(int index, Accion accion)
     {
         float w = _content.sizeDelta.x;
         float y = RowY(index);
 
-        Label("l_" + label, label, _content, new Vector2(-w / 2f + 110f, y),
-            new Vector2(220f, 22f), 14, TextAnchor.MiddleLeft, Color.white);
+        Label("l_" + accion, Controles.Etiqueta(accion), _content, new Vector2(-w / 2f + 120f, y),
+            new Vector2(240f, 22f), 14, TextAnchor.MiddleLeft, Color.white);
 
         Button button = null;
-        button = Button(GameSettings.KeyLabel(read()), _content, new Vector2(w / 2f - 105f, y),
-            new Vector2(170f, 26f), () =>
-            {
-                CancelKeyCapture();
-                _textoCaptura = button.GetComponentInChildren<Text>();
-                _textoCaptura.text = "Pulsa una tecla...";
-                _leerCaptura = read;
-                _alCapturar = write;
-                _frameCaptura = Time.frameCount;
-                CapturingKey = true;
-            });
+        button = Button(TextoControl(accion), _content, new Vector2(w / 2f - 110f, y), new Vector2(190f, 26f), () =>
+        {
+            CancelKeyCapture();
+            _textoCaptura = button.GetComponentInChildren<Text>();
+            _textoCaptura.text = _controlesMando ? "Pulsa un boton..." : "Pulsa una tecla...";
+            _capturando = accion;
+            _capturaDeMando = _controlesMando;
+            _frameCaptura = Time.frameCount;
+            _capturaDesde = Time.unscaledTime;
+            CapturingKey = true;
+        });
     }
 
     private void CancelKeyCapture()
     {
-        if (_textoCaptura != null && _leerCaptura != null)
-            _textoCaptura.text = GameSettings.KeyLabel(_leerCaptura());
-        _alCapturar = null;
+        if (_textoCaptura != null) _textoCaptura.text = TextoControl(_capturando);
         _textoCaptura = null;
-        _leerCaptura = null;
         CapturingKey = false;
     }
 
@@ -856,23 +1089,96 @@ public class MainMenuUI : MonoBehaviour
         if (!CapturingKey) return;
 
         // Si la fila ya no existe (se cambio de pestana o se cerro el menu), se cancela
-        if (_textoCaptura == null || !_textoCaptura.gameObject.activeInHierarchy) { CancelKeyCapture(); return; }
-        if (Time.frameCount == _frameCaptura || !UnityEngine.Input.anyKeyDown) return;
+        if (_textoCaptura == null || !_textoCaptura.gameObject.activeInHierarchy) { CapturingKey = false; _textoCaptura = null; return; }
+        if (Time.frameCount <= _frameCaptura + 1) return;   // el propio clic que abre la espera no cuenta
 
-        if (UnityEngine.Input.GetKeyDown(KeyCode.Escape)) { CancelKeyCapture(); return; }
+        if (UnityEngine.Input.GetKeyDown(KeyCode.Escape) || Time.unscaledTime - _capturaDesde > 8f) { CancelKeyCapture(); return; }
 
-        foreach (KeyCode key in System.Enum.GetValues(typeof(KeyCode)))
+        if (_capturaDeMando)
         {
-            // El clic izquierdo y el derecho son disparar y apuntar; los mandos, otro dia
-            if (key == KeyCode.None || key == KeyCode.Mouse0 || key == KeyCode.Mouse1) continue;
-            if (key >= KeyCode.JoystickButton0) continue;
-            if (!UnityEngine.Input.GetKeyDown(key)) continue;
+            if (!Controles.AlgunBotonPulsado(out BotonMando boton)) return;
+            if (boton == BotonMando.Start) { CancelKeyCapture(); return; }   // la pausa es fija
+            Controles.PonerBoton(_capturando, boton);
+        }
+        else
+        {
+            if (!UnityEngine.Input.anyKeyDown) return;
 
-            _alCapturar(key);
-            GameSettings.SaveKeys();
-            CancelKeyCapture();
+            // Suprimir deja la accion sin tecla
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Delete)) Controles.PonerTecla(_capturando, KeyCode.None);
+            else
+            {
+                KeyCode elegida = KeyCode.None;
+                foreach (KeyCode key in System.Enum.GetValues(typeof(KeyCode)))
+                {
+                    if (key == KeyCode.None || key >= KeyCode.JoystickButton0) continue;   // los mandos van en su columna
+                    if (UnityEngine.Input.GetKeyDown(key)) { elegida = key; break; }
+                }
+                if (elegida == KeyCode.None) return;
+                Controles.PonerTecla(_capturando, elegida);
+            }
+        }
+
+        // Se repinta la pagina entera: al asignar un control, otra accion puede haberlo perdido
+        CapturingKey = false;
+        _textoCaptura = null;
+        ShowTab(Tab.Opciones);
+    }
+
+    // ---------- Menus con el mando ----------
+    // La navegacion (cruceta o stick, aceptar y volver) la hace el propio sistema
+    // de interfaz de Unity; lo unico que hace falta es que haya un boton elegido
+    // por el que empezar, y que se vea cual es.
+
+    private RectTransform _marcaMando;
+    private GameObject _ultimoElegido;
+
+    private void UpdateMenuConMando()
+    {
+        var es = UnityEngine.EventSystems.EventSystem.current;
+        if (es == null || _root == null) return;
+
+        bool menuVisible = _root.gameObject.activeInHierarchy;
+        GameObject elegido = es.currentSelectedGameObject;
+
+        if (!menuVisible || !Controles.UsandoMando || CapturingKey)
+        {
+            // Con raton no hace falta marca; y con el menu cerrado no puede quedar nada elegido
+            if (!menuVisible && elegido != null) es.SetSelectedGameObject(null);
+            if (_marcaMando != null && _marcaMando.gameObject.activeSelf) _marcaMando.gameObject.SetActive(false);
             return;
         }
+
+        if (elegido == null || !elegido.activeInHierarchy || !elegido.transform.IsChildOf(_root))
+        {
+            // Se vuelve al ultimo si sigue ahi; si no, al primer boton visible
+            if (_ultimoElegido != null && _ultimoElegido.activeInHierarchy) elegido = _ultimoElegido;
+            else
+            {
+                elegido = null;
+                foreach (var b in _root.GetComponentsInChildren<Button>(false))
+                    if (b.IsInteractable()) { elegido = b.gameObject; break; }
+            }
+            es.SetSelectedGameObject(elegido);
+        }
+        _ultimoElegido = elegido;
+        if (elegido == null) return;
+
+        // Subrayado amarillo bajo el boton elegido
+        if (_marcaMando == null)
+        {
+            _marcaMando = NewRect("MarcaMando", _root, Vector2.zero);
+            AddImage(_marcaMando, new Color(1f, 0.85f, 0.2f, 1f)).raycastTarget = false;
+        }
+        var rt = elegido.GetComponent<RectTransform>();
+        if (rt == null) return;
+        _marcaMando.gameObject.SetActive(true);
+        _marcaMando.SetParent(rt, false);
+        _marcaMando.anchorMin = new Vector2(0f, 0f);
+        _marcaMando.anchorMax = new Vector2(1f, 0f);
+        _marcaMando.pivot = new Vector2(0.5f, 1f);
+        _marcaMando.anchoredPosition = Vector2.zero;
+        _marcaMando.sizeDelta = new Vector2(0f, 3f);
     }
 
     // ---------- Filas reutilizables ----------

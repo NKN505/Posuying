@@ -211,7 +211,7 @@ public class ObjetoSoltado : NetworkBehaviour
 
                     if (pertenencias != null)
                         pertenencias.AvisarClientRpc("Botiquin guardado (" +
-                            GameSettings.KeyLabel(GameSettings.UseKey) + " para usarlo)");
+                            "usalo desde el cinturon)");
                     unidades = sobran;
                     if (sobran <= 0) Retirar();
                     break;

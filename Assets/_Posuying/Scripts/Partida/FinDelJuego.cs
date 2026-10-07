@@ -44,6 +44,8 @@ public class FinDelJuego : NetworkBehaviour
     {
         if (!IsServer || _terminado) return;
         _terminado = true;
+        // Antes de sacar a nadie: el resumen tiene que llegar con la red aun viva
+        if (EstadisticasPartida.Instance != null) EstadisticasPartida.Instance.Publicar(true, "Habeis escapado");
         IrAlFinalClientRpc();
     }
 

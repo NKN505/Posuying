@@ -29,11 +29,7 @@ public static class GameSettings
     private const string KeyNpcCount = "opt_npc_count";
     private const string KeyMinimap = "opt_minimap";
     private const string KeyMinimapRange = "opt_minimap_range";
-    private const string KeyChatKey = "opt_key_chat";
-    private const string KeyVoiceKey = "opt_key_voice";
-    private const string KeyPingKey = "opt_key_ping";
-    private const string KeyDropKey = "opt_key_drop";
-    private const string KeyUseKey = "opt_key_use";
+    private const string KeyTips = "opt_tips";
     private const string KeyVoiceOn = "opt_voice_on";
     private const string KeyVoiceVol = "opt_vol_voice";
     private const string KeyMic = "opt_mic";
@@ -71,14 +67,18 @@ public static class GameSettings
     public static bool MinimapEnabled = true;
     public static float MinimapRange = 40f;
 
-    // Teclas configurables (Opciones > Controles)
-    public static KeyCode ChatKey = KeyCode.T;
-    public static KeyCode VoiceKey = KeyCode.V;   // pulsar para hablar
-    public static KeyCode PingKey = KeyCode.Q;    // marcar lo que miras para el equipo
-    public static KeyCode DropKey = KeyCode.G;    // soltar el objeto elegido (o la bomba)
+    // Las teclas y los botones del mando estan en Controles (Opciones > Controles).
+    // Estos atajos se conservan para el codigo que ya los usaba.
+    public static KeyCode ChatKey => Controles.Tecla(Accion.Chat);
+    public static KeyCode VoiceKey => Controles.Tecla(Accion.Voz);
+    public static KeyCode PingKey => Controles.Tecla(Accion.Marcar);
+    public static KeyCode DropKey => Controles.Tecla(Accion.Soltar);
+    public static KeyCode UseKey => Controles.Tecla(Accion.Usar);
+    public static KeyCode MeleeKey => Controles.Tecla(Accion.Golpe);
     // Usar el objeto elegido. Antes era la F, la misma tecla que la linterna:
     // curarse la encendia o la apagaba.
-    public static KeyCode UseKey = KeyCode.X;
+    // Consejos de controles al empezar cada partida
+    public static bool ShowTips = true;
 
     // Chat de voz: cada jugador decide si lo usa y a que volumen oye a los demas
     public static bool VoiceEnabled = true;
@@ -125,11 +125,7 @@ public static class GameSettings
         MinimapEnabled = PlayerPrefs.GetInt(KeyMinimap, 1) == 1;
         MinimapRange = PlayerPrefs.GetFloat(KeyMinimapRange, 40f);
 
-        ChatKey = (KeyCode)PlayerPrefs.GetInt(KeyChatKey, (int)KeyCode.T);
-        VoiceKey = (KeyCode)PlayerPrefs.GetInt(KeyVoiceKey, (int)KeyCode.V);
-        PingKey = (KeyCode)PlayerPrefs.GetInt(KeyPingKey, (int)KeyCode.Q);
-        DropKey = (KeyCode)PlayerPrefs.GetInt(KeyDropKey, (int)KeyCode.G);
-        UseKey = (KeyCode)PlayerPrefs.GetInt(KeyUseKey, (int)KeyCode.X);
+        ShowTips = PlayerPrefs.GetInt(KeyTips, 1) == 1;
         VoiceEnabled = PlayerPrefs.GetInt(KeyVoiceOn, 1) == 1;
         VoiceVolume = PlayerPrefs.GetFloat(KeyVoiceVol, 1f);
         MicDevice = PlayerPrefs.GetString(KeyMic, "");
@@ -159,11 +155,7 @@ public static class GameSettings
         PlayerPrefs.SetInt(KeyMinimap, MinimapEnabled ? 1 : 0);
         PlayerPrefs.SetFloat(KeyMinimapRange, MinimapRange);
 
-        PlayerPrefs.SetInt(KeyChatKey, (int)ChatKey);
-        PlayerPrefs.SetInt(KeyVoiceKey, (int)VoiceKey);
-        PlayerPrefs.SetInt(KeyPingKey, (int)PingKey);
-        PlayerPrefs.SetInt(KeyDropKey, (int)DropKey);
-        PlayerPrefs.SetInt(KeyUseKey, (int)UseKey);
+        PlayerPrefs.SetInt(KeyTips, ShowTips ? 1 : 0);
         PlayerPrefs.SetInt(KeyVoiceOn, VoiceEnabled ? 1 : 0);
         PlayerPrefs.SetFloat(KeyVoiceVol, VoiceVolume);
         PlayerPrefs.SetString(KeyMic, MicDevice);
@@ -225,24 +217,12 @@ public static class GameSettings
     // Las teclas se guardan en cuanto se eligen, sin pasar por APLICAR
     public static void SaveKeys()
     {
-        PlayerPrefs.SetInt(KeyChatKey, (int)ChatKey);
-        PlayerPrefs.SetInt(KeyVoiceKey, (int)VoiceKey);
-        PlayerPrefs.SetInt(KeyPingKey, (int)PingKey);
-        PlayerPrefs.SetInt(KeyDropKey, (int)DropKey);
-        PlayerPrefs.SetInt(KeyUseKey, (int)UseKey);
+        PlayerPrefs.SetInt(KeyTips, ShowTips ? 1 : 0);
         PlayerPrefs.Save();
     }
 
     // Nombre legible de una tecla para la interfaz
-    public static string KeyLabel(KeyCode key)
-    {
-        string s = key.ToString();
-        if (s.StartsWith("Alpha")) return s.Substring(5);
-        if (s.StartsWith("Keypad")) return "Num " + s.Substring(6);
-        if (s == "Mouse2") return "Raton central";
-        if (s.StartsWith("Mouse")) return "Raton " + (int.Parse(s.Substring(5)) + 1);
-        return s;
-    }
+    public static string KeyLabel(KeyCode key) => Controles.NombreTecla(key);
 
     // Guarda y aplica de golpe (lo llama el boton APLICAR del menu)
     public static void SaveAndApply()

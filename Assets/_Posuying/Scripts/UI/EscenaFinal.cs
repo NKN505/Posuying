@@ -58,7 +58,7 @@ public class EscenaFinal : MonoBehaviour
         _reproductor.controlledAudioTrackCount = 1;
         _reproductor.EnableAudioTrack(0, true);
         _reproductor.SetTargetAudioSource(0, fuente);
-        _reproductor.loopPointReached += _ => VolverAlMenu();
+        _reproductor.loopPointReached += _ => AlAcabarElVideo();
         _reproductor.Play();
     }
 
@@ -66,16 +66,73 @@ public class EscenaFinal : MonoBehaviour
     {
         if (_saliendo) return;
 
-        float t = Time.unscaledTime - _inicio;
-        if (video == null && t >= segundosSinVideo) { VolverAlMenu(); return; }
+        bool tecla = Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) ||
+                     Controles.BotonPulsado(BotonMando.Sur) || Controles.BotonPulsado(BotonMando.Start);
 
-        if (t >= segundosAntesDeSaltar &&
-            (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)))
-            VolverAlMenu();
+        // Segunda parte: la tabla de resultados, hasta que pulsen o pase un rato
+        if (_enResultados)
+        {
+            if ((Time.unscaledTime - _resultadosDesde > 1f && tecla) ||
+                Time.unscaledTime - _resultadosDesde > segundosDeResultados)
+                VolverAlMenu();
+            return;
+        }
+
+        float t = Time.unscaledTime - _inicio;
+        if (video == null && t >= segundosSinVideo) { AlAcabarElVideo(); return; }
+
+        if (t >= segundosAntesDeSaltar && tecla) AlAcabarElVideo();
+    }
+
+    [Tooltip("Segundos que se queda la tabla de resultados si nadie pulsa nada")]
+    public float segundosDeResultados = 25f;
+
+    private bool _enResultados;
+    private float _resultadosDesde;
+
+    // Del video se pasa a los resultados de la partida; si no hay, directo al menu
+    private void AlAcabarElVideo()
+    {
+        if (_saliendo || _enResultados) return;
+        if (!ResumenPartida.Hay) { VolverAlMenu(); return; }
+
+        _enResultados = true;
+        _resultadosDesde = Time.unscaledTime;
+        if (_reproductor != null) { _reproductor.Stop(); _reproductor.enabled = false; }
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+    }
+
+    private void DibujarResultados()
+    {
+        float escala = Screen.height / 1080f;
+        Matrix4x4 antes = GUI.matrix;
+        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(escala, escala, 1f));
+        float ancho = 1080f * ((float)Screen.width / Screen.height);
+
+        Color color = GUI.color;
+        GUI.color = Color.black;
+        GUI.DrawTexture(new Rect(0, 0, ancho, 1080f), Texture2D.whiteTexture);
+        GUI.color = color;
+
+        var titulo = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, richText = true, fontSize = 54 };
+        GUI.Label(new Rect(0, 150f, ancho, 80f),
+            ResumenPartida.Victoria ? "<color=#7CFF8A><b>HABEIS ESCAPADO</b></color>"
+                                    : "<color=#ff6666><b>FIN DE LA PARTIDA</b></color>", titulo);
+
+        float w = 820f;
+        ResumenPartida.Dibujar(new Rect((ancho - w) / 2f, 270f, w, ResumenPartida.Alto));
+
+        titulo.fontSize = 20;
+        GUI.Label(new Rect(0, 290f + ResumenPartida.Alto + 30f, ancho, 30f),
+            "<color=#9da3ad>Pulsa Espacio para volver al menu</color>", titulo);
+
+        GUI.matrix = antes;
     }
 
     void OnGUI()
     {
+        if (_enResultados) { DibujarResultados(); return; }
         if (video != null) return;
 
         var estilo = new GUIStyle(GUI.skin.label) { alignment = TextAnchor.MiddleCenter, richText = true,
@@ -101,6 +158,7 @@ public class EscenaFinal : MonoBehaviour
             Destroy(nm.gameObject);
         }
 
+        ResumenPartida.Borrar();   // ya se ha visto: que no salga en la siguiente partida
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
         SceneManager.LoadScene(escenaMenu);
