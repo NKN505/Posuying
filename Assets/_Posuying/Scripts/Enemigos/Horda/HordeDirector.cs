@@ -581,6 +581,9 @@ public class HordeDirector : MonoBehaviour
             toPoint.y = 0f;
             if (toPoint.sqrMagnitude < 0.01f) return true;
 
+            // Mas alla de la bruma no se le ve aparecer aunque este mirando hacia alli
+            if (Bruma.Tapa(worldPos, p.transform.position)) continue;
+
             float angle = Vector3.Angle(p.transform.forward, toPoint.normalized);
             if (angle > viewConeAngle * 0.5f) continue;   // fuera de su cono de vision
 

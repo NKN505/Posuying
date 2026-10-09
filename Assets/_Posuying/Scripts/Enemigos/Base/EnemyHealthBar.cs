@@ -41,6 +41,12 @@ public class EnemyHealthBar : MonoBehaviour
         Transform cam = ActiveCamera();
         if (cam == null) return;
 
+        // Perdido en la bruma: la barra no puede delatar a un enemigo que no se ve
+        bool tapada = Bruma.Tapa(transform.position, cam.position);
+        if (fillBar != null) fillBar.enabled = !tapada;
+        if (background != null) background.enabled = !tapada;
+        if (tapada) return;
+
         FaceCamera(cam);
 
         if (fillBar == null) return;
