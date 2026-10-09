@@ -739,6 +739,7 @@ public class MainMenuUI : MonoBehaviour
 
         float w = _content.sizeDelta.x;
         float top = _content.sizeDelta.y / 2f;
+        _rowStep = _optionsTab == OptionsTab.Graficos ? 27f : 32f;
 
         // Sub-pestanas de categoria
         string[] names = { "GENERAL", "GRAFICOS", "AUDIO", "CONTROLES" };
@@ -862,8 +863,17 @@ public class MainMenuUI : MonoBehaviour
         ToggleRow(6, "Contador de FPS", () => GameSettings.OnOff(GameSettings.ShowFps),
             () => GameSettings.ShowFps = !GameSettings.ShowFps);
 
-        Label("nota_fps", "\"VSync\" sincroniza con tu monitor; para bajar consumo,\nelige un limite concreto (60, 75...).",
-            _content, new Vector2(0f, RowY(7) - 6f), new Vector2(_content.sizeDelta.x, 40f),
+        // La bruma se nota al momento, sin pulsar APLICAR (APLICAR la deja guardada)
+        StepRow(7, "Bruma volumetrica", () => GameSettings.FogQualityNames[Mathf.Clamp(GameSettings.FogQuality, 0, 3)],
+            () => GameSettings.FogQuality = Mathf.Max(0, GameSettings.FogQuality - 1),
+            () => GameSettings.FogQuality = Mathf.Min(3, GameSettings.FogQuality + 1));
+
+        StepRow(8, "Densidad de la bruma", () => GameSettings.FogDensityNames[Mathf.Clamp(GameSettings.FogDensity, 0, 2)],
+            () => GameSettings.FogDensity = Mathf.Max(0, GameSettings.FogDensity - 1),
+            () => GameSettings.FogDensity = Mathf.Min(2, GameSettings.FogDensity + 1));
+
+        Label("nota_fps", "\"VSync\" sincroniza con tu monitor; para bajar consumo, elige un limite concreto (60, 75...).",
+            _content, new Vector2(0f, RowY(9) + 2f), new Vector2(_content.sizeDelta.x, 20f),
             11, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.55f));
     }
 
@@ -1183,7 +1193,9 @@ public class MainMenuUI : MonoBehaviour
 
     // ---------- Filas reutilizables ----------
 
-    private float RowY(int index) => _content.sizeDelta.y / 2f - 58f - index * 32f;
+    // Graficos tiene mas filas que las demas pestanas: van algo mas juntas para que quepan
+    private float _rowStep = 32f;
+    private float RowY(int index) => _content.sizeDelta.y / 2f - 58f - index * _rowStep;
 
     // Fila con < valor >
     private void StepRow(int index, string label, System.Func<string> read,

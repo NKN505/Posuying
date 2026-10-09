@@ -19,6 +19,8 @@ public static class GameSettings
     private const string KeyShadowDistance = "opt_shadow_dist";
     private const string KeyRenderScale = "opt_render_scale";
     private const string KeyShowFps = "opt_show_fps";
+    private const string KeyFogQuality = "opt_fog_quality";
+    private const string KeyFogDensity = "opt_fog_density";
     private const string KeySensitivity = "opt_sensitivity";
     private const string KeyInvertY = "opt_invert_y";
     private const string KeyFov = "opt_fov";
@@ -46,6 +48,15 @@ public static class GameSettings
     public static float ShadowDistance = 50f;
     public static float RenderScale = 1f;
     public static bool ShowFps = false;
+
+    // Bruma (ver Bruma.cs). Calidad: 0 = sin volumen (solo la niebla de fondo),
+    // 1 = baja, 2 = media, 3 = alta. Densidad: 0 = ligera, 1 = normal, 2 = espesa.
+    public static int FogQuality = 2;
+    public static int FogDensity = 1;
+    public static readonly string[] FogQualityNames = { "Sin volumen", "Baja", "Media", "Alta" };
+    public static readonly string[] FogDensityNames = { "Ligera", "Normal", "Espesa" };
+    /// <summary>Por cuanto se multiplica la distancia a la que se ve, segun la densidad elegida.</summary>
+    public static float FogVisibilityFactor => FogDensity <= 0 ? 1.35f : FogDensity == 1 ? 1f : 0.75f;
 
     public static float MouseSensitivity = 1f;
     public const float MinSensitivity = 0.05f;
@@ -110,6 +121,8 @@ public static class GameSettings
         ShadowDistance = PlayerPrefs.GetFloat(KeyShadowDistance, 50f);
         RenderScale = PlayerPrefs.GetFloat(KeyRenderScale, 1f);
         ShowFps = PlayerPrefs.GetInt(KeyShowFps, 0) == 1;
+        FogQuality = Mathf.Clamp(PlayerPrefs.GetInt(KeyFogQuality, 2), 0, 3);
+        FogDensity = Mathf.Clamp(PlayerPrefs.GetInt(KeyFogDensity, 1), 0, 2);
 
         MouseSensitivity = PlayerPrefs.GetFloat(KeySensitivity, 1f);
         InvertY = PlayerPrefs.GetInt(KeyInvertY, 0) == 1;
@@ -140,6 +153,8 @@ public static class GameSettings
         PlayerPrefs.SetFloat(KeyShadowDistance, ShadowDistance);
         PlayerPrefs.SetFloat(KeyRenderScale, RenderScale);
         PlayerPrefs.SetInt(KeyShowFps, ShowFps ? 1 : 0);
+        PlayerPrefs.SetInt(KeyFogQuality, FogQuality);
+        PlayerPrefs.SetInt(KeyFogDensity, FogDensity);
 
         PlayerPrefs.SetFloat(KeySensitivity, MouseSensitivity);
         PlayerPrefs.SetInt(KeyInvertY, InvertY ? 1 : 0);

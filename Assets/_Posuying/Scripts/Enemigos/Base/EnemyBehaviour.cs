@@ -91,6 +91,13 @@ public abstract class EnemyBehaviour : Character
 
         agent = GetComponent<NavMeshAgent>();
         _locomocion = GetComponent<EnemyLocomotionAnimator>();
+
+        // El esqueleto se anima SIEMPRE, se vea o no. Los enemigos nacen fuera de
+        // la vista, y con el modo por defecto (animar solo lo visible) los huesos
+        // del ragdoll se quedaban clavados en el punto de aparicion mientras el
+        // enemigo se iba andando: llegaba la barra de vida, pero no el modelo.
+        foreach (var animator in GetComponentsInChildren<Animator>(true))
+            animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
     }
 
     // Todos los enemigos vivos, en todas las maquinas. Lo usa el minimapa para
