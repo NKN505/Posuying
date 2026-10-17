@@ -1,0 +1,6 @@
+{
+  "headers": [
+    { "source": "/(.*)", "headers": [ { "key": "Cache-Control", "value": "no-cache" } ] },
+    { "source": "/(.*).unityweb", "headers": [ { "key": "Content-Type", "value": "application/octet-stream" } ] }
+  ]
+}
