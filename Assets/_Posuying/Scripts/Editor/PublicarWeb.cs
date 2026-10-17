@@ -10,7 +10,9 @@ using Debug = UnityEngine.Debug;
 // Hace la build web y la sube directamente a Vercel con su herramienta de linea
 // de comandos (sin pasar por git). Al terminar, la web nueva ya esta en linea.
 //
-// Requisitos, una sola vez en el PC:
+// Sin esa herramienta deja la carpeta lista para subirla a mano desde vercel.com.
+//
+// Para que suba sola, una sola vez en el PC:
 //   1. Node.js        winget install OpenJS.NodeJS.LTS
 //   2. Vercel CLI     npm install -g vercel
 //   3. Iniciar sesion vercel login
@@ -44,11 +46,6 @@ public static class PublicarWeb
     /// <summary>Hace la build (si se pide), la sube a Vercel y devuelve como fue.</summary>
     public static string Publicar(bool compilar)
     {
-        if (Ejecutar("vercel --version", Proyecto, out _) != 0)
-            return "No encuentro la herramienta de Vercel. Una sola vez, en una terminal:\n" +
-                   "  winget install OpenJS.NodeJS.LTS\n  npm install -g vercel\n  vercel login\n" +
-                   "y despues reinicia Unity.";
-
         if (compilar)
         {
             string build = Multiplataforma.Compilar("Web");
@@ -62,6 +59,14 @@ public static class PublicarWeb
         {
             EditorUtility.DisplayProgressBar("Publicar web", "Preparando los archivos...", 0.1f);
             Preparar(origen);
+
+            // Sin la herramienta de Vercel se sube a mano desde la web de Vercel
+            if (Ejecutar("vercel --version", Proyecto, out _) != 0)
+                return "Carpeta lista para subir (version " + UnityEngine.Application.version + "):\n" + CarpetaSubida +
+                       "\n\nSubela a mano: vercel.com > tu proyecto posuying > arrastra esa carpeta, o\n" +
+                       "vercel.com/new > \"choose a folder\".\n\n" +
+                       "Para que se suba sola desde aqui, instala una vez (en una terminal):\n" +
+                       "  winget install OpenJS.NodeJS.LTS\n  npm install -g vercel\n  vercel login\ny reinicia Unity.";
 
             // La primera vez se enlaza la carpeta con el proyecto de Vercel (se crea si no existe)
             if (!Directory.Exists(Path.Combine(CarpetaSubida, ".vercel")))
