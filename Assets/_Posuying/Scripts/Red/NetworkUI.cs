@@ -57,7 +57,8 @@ public class NetworkUI : MonoBehaviour
             // Con las opciones abiertas, Escape las cierra en vez de volver al juego
             // Escape cierra antes el chat o cancela la eleccion de una tecla: ahi no es "abrir el menu"
             // (en el mando la pausa es el boton Start/Options, fijo)
-            bool pausa = Input.GetKeyDown(menuKey) || Controles.BotonPulsado(BotonMando.Start);
+            // En movil: el boton de pausa en pantalla o el boton "atras" del sistema (llega como Escape)
+            bool pausa = Input.GetKeyDown(menuKey) || Controles.BotonPulsado(BotonMando.Start) || ControlesTactiles.PausaPulsada;
             if (pausa && !UIState.ChatOpen && !MainMenuUI.CapturingKey)
             {
                 if (MainMenuUI.Instance != null && MainMenuUI.Instance.OptionsOverlayOpen)
@@ -71,7 +72,8 @@ public class NetworkUI : MonoBehaviour
         MenuOpen = _menuOpen;
         UIState.NetMenuOpen = _menuOpen;
 
-        bool freeCursor = UIState.BlocksGameplay;
+        // Con los dedos no hay cursor que encerrar (y en el navegador bloquearlo pide permiso al usuario)
+        bool freeCursor = UIState.BlocksGameplay || Plataforma.Tactil;
         Cursor.lockState = freeCursor ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = freeCursor;
     }
@@ -177,8 +179,10 @@ public class NetworkUI : MonoBehaviour
     private void ApplyConnectionData()
     {
         var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-        if (transport != null)
-            transport.SetConnectionData(joinIp, port);
+        if (transport == null) return;
+        transport.SetConnectionData(joinIp, port);
+        // La partida local (por IP) va directa, sin Relay: ahi no hacen falta WebSockets
+        transport.UseWebSockets = false;
     }
 
     private bool IsConnected()

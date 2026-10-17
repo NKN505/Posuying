@@ -150,7 +150,7 @@ public class MainMenuUI : MonoBehaviour
             if (_panel != null) _panel.gameObject.SetActive(vista != Vista.Sala);
             if (_sala != null) _sala.gameObject.SetActive(vista == Vista.Sala);
             // SALIR cierra el juego entero: en partida se sale desde la pausa
-            if (_quitButton != null) _quitButton.SetActive(vista == Vista.Inicio);
+            if (_quitButton != null) _quitButton.SetActive(vista == Vista.Inicio && Plataforma.PuedeSalir);
             if (_status != null && vista != Vista.Inicio) _status.text = "";
 
             if (vista == Vista.Inicio) ShowTab(Tab.Crear);
@@ -835,14 +835,24 @@ public class MainMenuUI : MonoBehaviour
     {
         var list = GameSettings.Resolutions;
 
-        StepRow(0, "Resolucion",
-            () => list[Mathf.Clamp(_resIndex, 0, list.Count - 1)].x + " x " +
-                  list[Mathf.Clamp(_resIndex, 0, list.Count - 1)].y,
-            () => _resIndex = (_resIndex - 1 + list.Count) % list.Count,
-            () => _resIndex = (_resIndex + 1) % list.Count);
+        // En movil y navegador la pantalla la decide el sistema: esas dos filas sobran
+        if (Plataforma.EligeResolucion)
+        {
+            StepRow(0, "Resolucion",
+                () => list[Mathf.Clamp(_resIndex, 0, list.Count - 1)].x + " x " +
+                      list[Mathf.Clamp(_resIndex, 0, list.Count - 1)].y,
+                () => _resIndex = (_resIndex - 1 + list.Count) % list.Count,
+                () => _resIndex = (_resIndex + 1) % list.Count);
 
-        ToggleRow(1, "Pantalla", () => _fullscreen ? "Completa" : "En ventana",
-            () => _fullscreen = !_fullscreen);
+            ToggleRow(1, "Pantalla", () => _fullscreen ? "Completa" : "En ventana",
+                () => _fullscreen = !_fullscreen);
+        }
+        else
+        {
+            Label("plataforma", "Jugando en " + Plataforma.Nombre + " · version " + Plataforma.Version,
+                _content, new Vector2(0f, RowY(0) - _rowStep * 0.5f), new Vector2(_content.sizeDelta.x, 24f),
+                13, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.6f));
+        }
 
         StepRow(2, "Calidad", () => QualitySettings.names[Mathf.Clamp(GameSettings.QualityLevel, 0, QualitySettings.names.Length - 1)],
             () => GameSettings.QualityLevel = Mathf.Max(0, GameSettings.QualityLevel - 1),
@@ -864,9 +874,12 @@ public class MainMenuUI : MonoBehaviour
             () => GameSettings.ShowFps = !GameSettings.ShowFps);
 
         // La bruma se nota al momento, sin pulsar APLICAR (APLICAR la deja guardada)
-        StepRow(7, "Bruma volumetrica", () => GameSettings.FogQualityNames[Mathf.Clamp(GameSettings.FogQuality, 0, 3)],
-            () => GameSettings.FogQuality = Mathf.Max(0, GameSettings.FogQuality - 1),
-            () => GameSettings.FogQuality = Mathf.Min(3, GameSettings.FogQuality + 1));
+        if (Plataforma.HayBrumaVolumetrica)
+            StepRow(7, "Bruma volumetrica", () => GameSettings.FogQualityNames[Mathf.Clamp(GameSettings.FogQuality, 0, 3)],
+                () => GameSettings.FogQuality = Mathf.Max(0, GameSettings.FogQuality - 1),
+                () => GameSettings.FogQuality = Mathf.Min(3, GameSettings.FogQuality + 1));
+        else
+            ToggleRow(7, "Bruma volumetrica", () => "No disponible en " + Plataforma.Nombre, () => { });
 
         StepRow(8, "Densidad de la bruma", () => GameSettings.FogDensityNames[Mathf.Clamp(GameSettings.FogDensity, 0, 2)],
             () => GameSettings.FogDensity = Mathf.Max(0, GameSettings.FogDensity - 1),

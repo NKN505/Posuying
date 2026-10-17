@@ -117,11 +117,12 @@ public static class GameSettings
         if (_loaded) return;
 
         TargetFps = PlayerPrefs.GetInt(KeyFps, -1);   // -1 = VSync
-        QualityLevel = PlayerPrefs.GetInt(KeyQuality, QualitySettings.GetQualityLevel());
+        // La primera vez, en movil y navegador se empieza con graficos bajos
+        QualityLevel = PlayerPrefs.GetInt(KeyQuality, Plataforma.CalidadPorDefecto());
         ShadowDistance = PlayerPrefs.GetFloat(KeyShadowDistance, 50f);
         RenderScale = PlayerPrefs.GetFloat(KeyRenderScale, 1f);
         ShowFps = PlayerPrefs.GetInt(KeyShowFps, 0) == 1;
-        FogQuality = Mathf.Clamp(PlayerPrefs.GetInt(KeyFogQuality, 2), 0, 3);
+        FogQuality = Mathf.Clamp(PlayerPrefs.GetInt(KeyFogQuality, Plataforma.BrumaPorDefecto), 0, 3);
         FogDensity = Mathf.Clamp(PlayerPrefs.GetInt(KeyFogDensity, 1), 0, 2);
 
         MouseSensitivity = PlayerPrefs.GetFloat(KeySensitivity, 1f);
@@ -209,7 +210,7 @@ public static class GameSettings
     // La lista da la vuelta y empieza por "predeterminado del sistema".
     public static void StepMic(int direction)
     {
-        string[] devices = Microphone.devices;
+        string[] devices = Microfonos;
         int index = System.Array.IndexOf(devices, MicDevice);   // -1 = predeterminado
         int count = devices.Length + 1;
         int next = ((index + 1 + direction) % count + count) % count - 1;
@@ -223,11 +224,20 @@ public static class GameSettings
     // mientras tanto se usa el predeterminado.
     public static string MicLabel()
     {
-        if (Microphone.devices.Length == 0) return "No hay microfonos";
+        if (!Plataforma.HayChatDeVoz) return "No disponible en " + Plataforma.Nombre;
+        if (Microfonos.Length == 0) return "No hay microfonos";
         if (string.IsNullOrEmpty(MicDevice)) return "Predeterminado del sistema";
-        if (System.Array.IndexOf(Microphone.devices, MicDevice) < 0) return MicDevice + " (desconectado)";
+        if (System.Array.IndexOf(Microfonos, MicDevice) < 0) return MicDevice + " (desconectado)";
         return MicDevice;
     }
+
+    // El navegador no tiene la clase Microphone de Unity
+    private static string[] Microfonos =>
+#if UNITY_WEBGL && !UNITY_EDITOR
+        new string[0];
+#else
+        Microphone.devices;
+#endif
 
     // Las teclas se guardan en cuanto se eligen, sin pasar por APLICAR
     public static void SaveKeys()
@@ -304,6 +314,7 @@ public static class GameSettings
 
     private static void ApplySavedResolution()
     {
+        if (!Plataforma.EligeResolucion) return;     // movil y navegador: la pantalla la decide el sistema
         if (!PlayerPrefs.HasKey(KeyWidth)) return;   // primera vez: se deja lo del build
 
         Screen.SetResolution(
@@ -314,6 +325,7 @@ public static class GameSettings
 
     public static void ApplyResolution(Vector2Int resolution, bool fullscreen)
     {
+        if (!Plataforma.EligeResolucion) return;
         PlayerPrefs.SetInt(KeyWidth, resolution.x);
         PlayerPrefs.SetInt(KeyHeight, resolution.y);
         PlayerPrefs.SetInt(KeyFullscreen, fullscreen ? 1 : 0);

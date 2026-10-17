@@ -103,3 +103,6 @@ InitTestScene*.unity*
 /[Aa]ssets/StreamingAssets/Audio/GeneratedSoundBanks/Windows/
 /[Aa]ssets/StreamingAssets/Audio/GeneratedSoundBanks/Windows.meta
 Posuying_WwiseProject.zip
+
+# Builds de Posuying > Multiplataforma > Compilar
+/[Bb]uilds/

@@ -182,7 +182,7 @@ public static class Controles
     {
         Cargar();
         KeyCode t = _teclas[(int)a];
-        return (t != KeyCode.None && Input.GetKeyDown(t)) || BotonPulsado(_botones[(int)a]);
+        return (Vale(t) && Input.GetKeyDown(t)) || BotonPulsado(_botones[(int)a]) || ControlesTactiles.Pulsado(a);
     }
 
     /// <summary>La accion se mantiene pulsada.</summary>
@@ -190,8 +190,13 @@ public static class Controles
     {
         Cargar();
         KeyCode t = _teclas[(int)a];
-        return (t != KeyCode.None && Input.GetKey(t)) || BotonMantenido(_botones[(int)a]);
+        return (Vale(t) && Input.GetKey(t)) || BotonMantenido(_botones[(int)a]) || ControlesTactiles.Mantenido(a);
     }
+
+    // En pantallas tactiles cada toque llega TAMBIEN como un clic del raton: sin
+    // esto, tocar cualquier boton en pantalla dispararia o apuntaria a la vez
+    private static bool Vale(KeyCode t) =>
+        t != KeyCode.None && !(ControlesTactiles.Activos && t >= KeyCode.Mouse0 && t <= KeyCode.Mouse6);
 
     private static Vector2 Stick(StickControl stick)
     {
@@ -210,6 +215,8 @@ public static class Controles
             Vector2 s = Stick(Gamepad.current.leftStick);
             if (s.sqrMagnitude > v.sqrMagnitude) v = s;
         }
+        Vector2 dedo = ControlesTactiles.Mover;
+        if (dedo.sqrMagnitude > v.sqrMagnitude) v = dedo;
         return Vector2.ClampMagnitude(v, 1f);
     }
 
@@ -220,7 +227,10 @@ public static class Controles
     public static Vector2 Mirar()
     {
         Cargar();
-        Vector2 v = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * GameSettings.MouseSensitivity;
+        // Con los dedos el "raton" es un toque cualquiera: se ignora y vale lo de ControlesTactiles
+        Vector2 v = ControlesTactiles.Activos
+            ? ControlesTactiles.Mirar
+            : new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y")) * GameSettings.MouseSensitivity;
         if (Gamepad.current != null)
         {
             Vector2 s = Stick(Gamepad.current.rightStick);
@@ -321,6 +331,7 @@ public static class Controles
     public static string Nombre(Accion a)
     {
         Cargar();
+        if (ControlesTactiles.Activos) return "el boton en pantalla";
         return UsandoMando ? NombreBoton(_botones[(int)a]) : NombreTecla(_teclas[(int)a]);
     }
 }

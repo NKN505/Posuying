@@ -58,6 +58,9 @@ public class PlayerCombat : MonoBehaviour
         // daba tambien un golpe de mele y apuntar lanzaba un disparo invisible.
         if (TieneArmaActiva()) return;
 
+        // En movil cada toque es tambien un clic: aqui no valen los botones del raton
+        if (ControlesTactiles.Activos) return;
+
         if (Input.GetMouseButtonDown(0) && _meleeTimer <= 0f)
             MeleeAttack();
 

@@ -17,7 +17,16 @@ public class OnlineSession : MonoBehaviour
     // Todas las partidas del juego comparten este tipo. Es lo que permite
     // encontrarlas al listar: por defecto el SDK pone un GUID aleatorio y
     // entonces ninguna partida veria a las demas.
-    public const string SessionType = "posuying";
+    //
+    // Lleva la version del juego: en la lista solo salen las partidas de jugadores
+    // con tu MISMA version (con versiones distintas la partida no funcionaria).
+    public static string SessionType => "posuying-" + Plataforma.Version;
+
+    // Todos, en cualquier plataforma, hablan con el Relay por WebSocket seguro.
+    // El navegador SOLO puede usar ese; si los de PC o movil usaran otro (DTLS,
+    // el de por defecto), mezclar los dos en una partida da problemas. Asi un
+    // jugador de navegador, uno de movil y uno de PC caben en la misma partida.
+    private static NetworkOptions RedParaTodos() => new NetworkOptions { RelayProtocol = RelayProtocol.WSS };
 
     [Tooltip("Jugadores maximos por defecto (se puede cambiar al crear la partida)")]
     public int maxPlayers = 4;
@@ -117,6 +126,7 @@ public class OnlineSession : MonoBehaviour
         if (transport == null) return;
 
         transport.SetConnectionData("0.0.0.0", 0);
+        transport.UseWebSockets = true;   // ver RedParaTodos
     }
 
     // Unity exige identificarse antes de usar Relay (basta con un login anonimo)
@@ -184,6 +194,7 @@ public class OnlineSession : MonoBehaviour
 
                 options = options
                     .WithRelayNetwork()
+                    .WithNetworkOptions(RedParaTodos())
                     .WithHostMigration(new WorldMigrationHandler());
 
                 _session = await MultiplayerService.Instance.CreateSessionAsync(options);
@@ -269,6 +280,7 @@ public class OnlineSession : MonoBehaviour
                 await SessionCleanup.PurgeGhostSessionsAsync();
 
                 var joinOptions = new JoinSessionOptions()
+                    .WithNetworkOptions(RedParaTodos())
                     .WithHostMigration(new WorldMigrationHandler());
 
                 if (!string.IsNullOrWhiteSpace(password))
@@ -333,6 +345,7 @@ public class OnlineSession : MonoBehaviour
 
                 // Tambien aqui: cualquiera de los dos puede acabar siendo el host
                 var joinOptions = new JoinSessionOptions()
+                    .WithNetworkOptions(RedParaTodos())
                     .WithHostMigration(new WorldMigrationHandler());
 
                 _session = await MultiplayerService.Instance
@@ -585,6 +598,16 @@ public class OnlineSession : MonoBehaviour
 
         // Si seguimos dentro es que se fue OTRO jugador: no es asunto nuestro
         if (nm.IsServer || nm.IsConnectedClient) return;
+
+        // Rechazados por el anfitrion (version distinta): no tiene sentido reintentar
+        string motivo = nm.DisconnectReason;
+        if (!string.IsNullOrEmpty(motivo) && motivo.Contains("version"))
+        {
+            Status = motivo;
+            Notifications.Show(motivo);
+            LeaveOnlineGame();
+            return;
+        }
 
         BeginReconnectWatch();
     }

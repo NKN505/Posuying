@@ -204,7 +204,8 @@ public class Bruma : MonoBehaviour
 
     private void PrepararVolumen()
     {
-        int calidad = Mathf.Clamp(GameSettings.FogQuality, 0, 3);
+        // En navegador la libreria no funciona: solo la niebla normal
+        int calidad = Plataforma.HayBrumaVolumetrica ? Mathf.Clamp(GameSettings.FogQuality, 0, 3) : 0;
 
         if (_niebla == null)
         {

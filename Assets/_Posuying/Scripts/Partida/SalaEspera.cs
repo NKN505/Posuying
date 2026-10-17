@@ -111,8 +111,10 @@ public class SalaEspera : NetworkBehaviour
 
         nm.NetworkConfig.ConnectionApproval = true;
         nm.ConnectionApprovalCallback = AprobarConexion;
-        // El nombre viaja con la peticion de conexion: asi el anfitrion sabe quien pide entrar
-        nm.NetworkConfig.ConnectionData = System.Text.Encoding.UTF8.GetBytes(PlayerProfile.Name ?? "");
+        // Con la peticion de conexion viajan la version del juego (para no dejar
+        // entrar a alguien con otra) y el nombre (para que el anfitrion sepa quien pide entrar)
+        nm.NetworkConfig.ConnectionData = System.Text.Encoding.UTF8.GetBytes(
+            Plataforma.Version + "\n" + (PlayerProfile.Name ?? ""));
     }
 
     private void AprobarConexion(NetworkManager.ConnectionApprovalRequest peticion,
@@ -123,6 +125,24 @@ public class SalaEspera : NetworkBehaviour
         respuesta.CreatePlayerObject = true;
 
         bool esElAnfitrion = peticion.ClientNetworkId == NetworkManager.ServerClientId;
+
+        string datos = "";
+        try { datos = System.Text.Encoding.UTF8.GetString(peticion.Payload ?? new byte[0]); }
+        catch (System.Exception) { }
+        int salto = datos.IndexOf('\n');
+        string version = salto >= 0 ? datos.Substring(0, salto) : "";
+        string nombre = salto >= 0 ? datos.Substring(salto + 1) : datos;
+
+        // Juego cruzado: PC, movil y navegador juegan juntos, pero con la misma version
+        if (!esElAnfitrion && version != Plataforma.Version)
+        {
+            respuesta.Approved = false;
+            respuesta.CreatePlayerObject = false;
+            respuesta.Reason = "El anfitrion tiene la version " + Plataforma.Version +
+                               " y tu la " + (version.Length > 0 ? version : "antigua") + ". Actualizad el juego.";
+            return;
+        }
+
         if (esElAnfitrion || !IsSpawned || FaseActual != Fase.EnJuego) return;
 
         // Tras un cambio de anfitrion todos vuelven a entrar: no son gente nueva
@@ -131,9 +151,6 @@ public class SalaEspera : NetworkBehaviour
         // Partida empezada: se conecta, pero SIN personaje hasta que el anfitrion decida
         respuesta.CreatePlayerObject = false;
 
-        string nombre = "";
-        try { nombre = System.Text.Encoding.UTF8.GetString(peticion.Payload ?? new byte[0]); }
-        catch (System.Exception) { }
         if (string.IsNullOrWhiteSpace(nombre)) nombre = "Un jugador";
         if (nombre.Length > 24) nombre = nombre.Substring(0, 24);
 
@@ -257,8 +274,36 @@ public class SalaEspera : NetworkBehaviour
 
         // Con el chat abierto o un menu, las teclas son letras
         bool teclas = !UIState.ChatOpen && !MainMenuUI.CapturingKey;
-        if (teclas && Input.GetKeyDown(teclaAceptar)) Resolver(primera, true);
-        else if (caducada || (teclas && Input.GetKeyDown(teclaRechazar))) Resolver(primera, false);
+        bool tocaAceptar = false, tocaRechazar = false;
+        if (Plataforma.Tactil) TocarSolicitud(out tocaAceptar, out tocaRechazar);
+
+        if ((teclas && Input.GetKeyDown(teclaAceptar)) || tocaAceptar) Resolver(primera, true);
+        else if (caducada || (teclas && Input.GetKeyDown(teclaRechazar)) || tocaRechazar) Resolver(primera, false);
+    }
+
+    // En movil no hay F5/F6: el aviso lleva dos botones que se tocan
+    private static void ZonasSolicitud(out Rect caja, out Rect aceptar, out Rect rechazar)
+    {
+        float escala = Screen.height / 1080f;
+        float w = 520f * escala, h = (Plataforma.Tactil ? 170f : 96f) * escala;
+        caja = new Rect(Screen.width - w - 24f * escala, 190f * escala, w, h);
+        float bw = (w - 54f * escala) / 2f, bh = 60f * escala, by = caja.yMax - bh - 14f * escala;
+        aceptar = new Rect(caja.x + 18f * escala, by, bw, bh);
+        rechazar = new Rect(aceptar.xMax + 18f * escala, by, bw, bh);
+    }
+
+    private static void TocarSolicitud(out bool aceptar, out bool rechazar)
+    {
+        aceptar = rechazar = false;
+        ZonasSolicitud(out _, out Rect si, out Rect no);
+        for (int i = 0; i < Input.touchCount; i++)
+        {
+            Touch t = Input.GetTouch(i);
+            if (t.phase != TouchPhase.Began) continue;
+            Vector2 p = new Vector2(t.position.x, Screen.height - t.position.y);
+            if (si.Contains(p)) aceptar = true;
+            else if (no.Contains(p)) rechazar = true;
+        }
     }
 
     private void Resolver(Solicitud s, bool aceptar)
@@ -525,8 +570,7 @@ public class SalaEspera : NetworkBehaviour
     {
         Solicitud s = _solicitudes[0];
         float escala = Screen.height / 1080f;
-        float w = 520f * escala, h = 96f * escala;
-        Rect caja = new Rect(Screen.width - w - 24f * escala, 190f * escala, w, h);
+        ZonasSolicitud(out Rect caja, out Rect zonaSi, out Rect zonaNo);
 
         Color antes = GUI.color;
         GUI.color = new Color(0.05f, 0.06f, 0.09f, 0.9f);
@@ -541,6 +585,21 @@ public class SalaEspera : NetworkBehaviour
         };
         int quedan = Mathf.CeilToInt(segundosSolicitud - (Time.unscaledTime - s.llego));
         string mas = _solicitudes.Count > 1 ? "  (+" + (_solicitudes.Count - 1) + " mas)" : "";
+        if (Plataforma.Tactil)
+        {
+            GUI.Label(new Rect(caja.x + 18f * escala, caja.y + 8f * escala, caja.width - 24f * escala, 80f * escala),
+                "<b>" + s.nombre + "</b> quiere entrar en la partida" + mas + "  <color=#9da3ad>(" + quedan + " s)</color>", estilo);
+            var boton = new GUIStyle(estilo) { alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
+            GUI.color = new Color(0.15f, 0.45f, 0.2f, 1f);
+            GUI.DrawTexture(zonaSi, Texture2D.whiteTexture);
+            GUI.color = new Color(0.5f, 0.14f, 0.12f, 1f);
+            GUI.DrawTexture(zonaNo, Texture2D.whiteTexture);
+            GUI.color = antes;
+            GUI.Label(zonaSi, "ACEPTAR", boton);
+            GUI.Label(zonaNo, "RECHAZAR", boton);
+            return;
+        }
+
         GUI.Label(new Rect(caja.x + 18f * escala, caja.y, caja.width - 24f * escala, caja.height),
             "<b>" + s.nombre + "</b> quiere entrar en la partida" + mas + "\n" +
             "<color=#7CFF8A><b>" + teclaAceptar + "</b> aceptar</color>     " +

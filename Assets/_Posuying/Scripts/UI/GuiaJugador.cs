@@ -31,6 +31,16 @@ public class GuiaJugador : MonoBehaviour
 
     private static string[] Consejos()
     {
+        // En movil los controles estan a la vista: se explica el gesto, no la tecla
+        if (ControlesTactiles.Activos)
+            return new[]
+            {
+                "Pon un dedo en la <b>mitad izquierda</b> para andar; empuja hasta el borde para <b>correr</b>",
+                "Arrastra en la <b>mitad derecha</b> para mirar. Si arrastras <b>FUEGO</b> disparas mientras giras",
+                "<b>GOLPE</b> no gasta balas.  <b>LUZ</b> enciende la linterna.  <b>USAR PUERTA</b> abre y levanta companeros",
+                "Arriba: inventario, marcar algo para el equipo, hablar (mantener) y chat.  Pausa: las tres rayas",
+            };
+
         bool mando = Controles.UsandoMando;
         return new[]
         {

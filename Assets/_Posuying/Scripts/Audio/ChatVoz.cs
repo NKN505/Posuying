@@ -63,6 +63,9 @@ public class ChatVoz : NetworkBehaviour
 
         AsegurarOyente();
 
+        // En el navegador no hay chat de voz (ver Plataforma.HayChatDeVoz)
+        if (!Plataforma.HayChatDeVoz) return;
+
         bool quiereHablar = GameSettings.VoiceEnabled && !UIState.ChatOpen && !MainMenuUI.CapturingKey &&
                             NetworkPlayer.LocalPlayer != null && Controles.Mantenido(Accion.Voz);
 
@@ -85,6 +88,17 @@ public class ChatVoz : NetworkBehaviour
 
     private void EmpezarMicro()
     {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        return;
+#else
+#if UNITY_ANDROID && !UNITY_EDITOR
+        // Android pide permiso la primera vez. Mientras no lo da, no se graba nada
+        if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Microphone))
+        {
+            UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Microphone);
+            return;
+        }
+#endif
         if (Microphone.devices.Length == 0)
         {
             if (!_avisadoSinMicro) Notifications.Show("Chat de voz: no se encuentra ningun microfono");
@@ -99,12 +113,15 @@ public class ChatVoz : NetworkBehaviour
                      ? _elegido : null;
         _micro = Microphone.Start(_dispositivo, true, 1, Frecuencia);
         _leido = 0;
+#endif
     }
 
     private void PararMicro()
     {
         if (_micro == null) return;
+#if !UNITY_WEBGL || UNITY_EDITOR
         Microphone.End(_dispositivo);
+#endif
         _micro = null;
         _transmitiendo = false;
     }
@@ -113,7 +130,11 @@ public class ChatVoz : NetworkBehaviour
     // descartan (hay que seguir leyendo para no enviar despues audio viejo).
     private void BombearMicro(bool enviar)
     {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        int posicion = 0;
+#else
         int posicion = Microphone.GetPosition(_dispositivo);
+#endif
         int total = _micro.samples;
         int disponibles = (posicion - _leido + total) % total;
 
@@ -146,7 +167,7 @@ public class ChatVoz : NetworkBehaviour
     private void RecibirVozClientRpc(ulong quien, byte[] datos)
     {
         if (quien == NetworkManager.LocalClientId) return;   // la mia no me la devuelvo
-        if (!GameSettings.VoiceEnabled) return;
+        if (!GameSettings.VoiceEnabled || !Plataforma.HayChatDeVoz) return;
         Reproducir(quien, datos);
     }
 

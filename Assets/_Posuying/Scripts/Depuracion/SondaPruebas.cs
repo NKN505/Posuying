@@ -12,6 +12,7 @@ using UnityEngine;
 //   -sala                con -autohost: no saltarse la sala de espera
 //   -autolisto           con -autocliente: marcar LISTO al entrar en la sala
 //   -salira <segundos>   con -autocliente: salir de la partida (por las buenas) y cerrar el juego
+//   -codigo <CODIGO>     se une a una partida ONLINE por su codigo (por Relay, como un jugador normal)
 //   -sonda <fichero>     escribe dos veces por segundo lo que ESTA maquina ve de
 //                        los demas jugadores: animacion, manos, pasos y disparos
 //
@@ -25,6 +26,7 @@ public class SondaPruebas : MonoBehaviour
 
     private string _fichero;
     private bool _autoHost, _autoCliente, _arrancado;
+    private string _codigo;
     private float _siguiente;
     private float _proximoListo;
     private float _saleEn = -1f, _conectadoDesde = -1f;
@@ -38,7 +40,10 @@ public class SondaPruebas : MonoBehaviour
         int i = System.Array.IndexOf(args, "-sonda");
         string fichero = i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
 
-        if (!host && !cliente && fichero == null) return;   // partida normal: nada
+        int k = System.Array.IndexOf(args, "-codigo");
+        string codigo = k >= 0 && k + 1 < args.Length ? args[k + 1] : null;
+
+        if (!host && !cliente && fichero == null && codigo == null) return;   // partida normal: nada
 
         var go = new GameObject("SondaPruebas");
         DontDestroyOnLoad(go);
@@ -46,6 +51,7 @@ public class SondaPruebas : MonoBehaviour
         sonda._autoHost = host;
         sonda._autoCliente = cliente;
         sonda._fichero = fichero;
+        sonda._codigo = codigo;
         Application.runInBackground = true;
         int j = System.Array.IndexOf(args, "-salira");
         if (j >= 0 && j + 1 < args.Length) float.TryParse(args[j + 1], out sonda._saleEn);
@@ -57,6 +63,13 @@ public class SondaPruebas : MonoBehaviour
     {
         var nm = NetworkManager.Singleton;
         if (nm == null) return;
+
+        if (!_arrancado && Time.unscaledTime > 3f && _codigo != null)
+        {
+            _arrancado = true;
+            var sesion = FindFirstObjectByType<OnlineSession>();
+            if (sesion != null) sesion.JoinOnlineGame(_codigo);
+        }
 
         if (!_arrancado && Time.unscaledTime > 3f && (_autoHost || _autoCliente))
         {
