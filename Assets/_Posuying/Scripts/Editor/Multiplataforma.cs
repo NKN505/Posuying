@@ -117,7 +117,9 @@ public static class Multiplataforma
 
         // Navegador: comprimido, y que se descomprima solo aunque el servidor web
         // no este configurado para ello (asi vale cualquier hosting, itch.io incluido)
-        PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
+        // Brotli comprime bastante mas que gzip: la web tiene que caber en archivos de
+        // menos de 100 MB para poder subirla a GitHub (rama web, Vercel)
+        PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Brotli;
         PlayerSettings.WebGL.decompressionFallback = true;
         // Instalable como app (PWA) en el iPhone y en Android: Assets/WebGLTemplates/PosuyingPWA
         PlayerSettings.WebGL.template = "PROJECT:PosuyingPWA";
@@ -139,6 +141,12 @@ public static class Multiplataforma
 
     /// <summary>Tamano maximo de textura en las builds de movil y navegador.</summary>
     public const int TexturaMaximaMovil = 1024;
+
+    /// <summary>
+    /// En la web, aun menos: el archivo de datos tiene que quedar por debajo de
+    /// 100 MB (limite de GitHub por archivo) y en una pantalla de movil apenas se nota.
+    /// </summary>
+    public const int TexturaMaximaWeb = 512;
 
     private static void PonerSimbolo(UnityEditor.Build.NamedBuildTarget objetivo, string simbolo, bool poner)
     {
@@ -193,7 +201,8 @@ public static class Multiplataforma
         int tamanoAntes = EditorUserBuildSettings.overrideMaxTextureSize;
         if (ligera)
         {
-            EditorUserBuildSettings.overrideMaxTextureSize = TexturaMaximaMovil;
+            EditorUserBuildSettings.overrideMaxTextureSize =
+                d.objetivo == BuildTarget.WebGL ? TexturaMaximaWeb : TexturaMaximaMovil;
             if (d.objetivo == BuildTarget.WebGL) EditorUserBuildSettings.webGLBuildSubtarget = WebGLTextureSubtarget.ASTC;
             else EditorUserBuildSettings.androidBuildSubtarget = MobileTextureSubtarget.ASTC;
         }
