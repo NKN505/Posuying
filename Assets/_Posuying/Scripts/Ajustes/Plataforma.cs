@@ -20,8 +20,17 @@ public static class Plataforma
         false;
 #endif
 
-    /// <summary>Movil o tableta (incluido un navegador de movil).</summary>
-    public static bool EsMovil => Application.isMobilePlatform || ForzarTactil;
+    /// <summary>
+    /// Movil o tableta (incluido un navegador de movil y la app web instalada
+    /// en el iPhone). El iPad se hace pasar por un Mac en el navegador: alli se
+    /// reconoce en cuanto se toca la pantalla.
+    /// </summary>
+    public static bool EsMovil => Application.isMobilePlatform || ForzarTactil || (EsWeb && _tocado);
+
+    private static bool _tocado;
+
+    /// <summary>Lo llama ControlesTactiles cuando ve un dedo en la pantalla.</summary>
+    public static void HanTocado() => _tocado = true;
 
     /// <summary>Windows, Mac o Linux.</summary>
     public static bool EsEscritorio => !EsWeb && !EsMovil;

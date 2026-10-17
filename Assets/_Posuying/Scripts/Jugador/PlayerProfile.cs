@@ -31,8 +31,16 @@ public static class PlayerProfile
     // Si nunca ha puesto nombre, proponemos el del equipo
     private static string DefaultName()
     {
+        // En el navegador el equipo no tiene nombre ("n/a"), y en movil es el
+        // modelo (todos los iPhone se llamarian igual): ahi, "Jugador" y un numero
         string device = SystemInfo.deviceName;
-        return string.IsNullOrWhiteSpace(device) ? "Jugador" : Sanitize(device);
+        bool sinNombre = string.IsNullOrWhiteSpace(device) || device == "n/a" ||
+                         device == SystemInfo.unsupportedIdentifier || Plataforma.EsWeb || Plataforma.EsMovil;
+        if (!sinNombre) return Sanitize(device);
+
+        string inventado = "Jugador" + Random.Range(100, 1000);
+        Name = inventado;   // se guarda: que no cambie en cada partida
+        return inventado;
     }
 
     public static string Sanitize(string raw)

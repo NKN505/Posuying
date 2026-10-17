@@ -119,12 +119,33 @@ public static class Multiplataforma
         // no este configurado para ello (asi vale cualquier hosting, itch.io incluido)
         PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
         PlayerSettings.WebGL.decompressionFallback = true;
+        // Instalable como app (PWA) en el iPhone y en Android: Assets/WebGLTemplates/PosuyingPWA
+        PlayerSettings.WebGL.template = "PROJECT:PosuyingPWA";
+        PlayerSettings.WebGL.dataCaching = false;   // ya lo guarda el ServiceWorker de la plantilla
+
+        // Wwise todavia no esta instalado para Android ni navegador: alli se compila
+        // con el Wwise "mudo" de Scripts/Audio/SinWwise.cs (ver ese archivo)
+        PonerSimbolo(UnityEditor.Build.NamedBuildTarget.Android, SinWwise, true);
+        PonerSimbolo(UnityEditor.Build.NamedBuildTarget.WebGL, SinWwise, true);
 
         // Que el juego siga corriendo (y la red viva) aunque la ventana o pestana pierda el foco
         PlayerSettings.runInBackground = true;
 
         AssetDatabase.SaveAssets();
         Debug.Log("[Multiplataforma] Ajustes de Android, navegador y escritorio preparados.");
+    }
+
+    public const string SinWwise = "POSUYING_SIN_WWISE";
+
+    /// <summary>Tamano maximo de textura en las builds de movil y navegador.</summary>
+    public const int TexturaMaximaMovil = 1024;
+
+    private static void PonerSimbolo(UnityEditor.Build.NamedBuildTarget objetivo, string simbolo, bool poner)
+    {
+        var lista = PlayerSettings.GetScriptingDefineSymbols(objetivo)
+            .Split(';').Where(s => s.Length > 0 && s != simbolo).ToList();
+        if (poner) lista.Add(simbolo);
+        PlayerSettings.SetScriptingDefineSymbols(objetivo, string.Join(";", lista));
     }
 
     // ---------- Compilar ----------
@@ -164,12 +185,36 @@ public static class Multiplataforma
             options = desarrollo ? BuildOptions.Development : BuildOptions.None,
         };
 
-        var informe = BuildPipeline.BuildPlayer(opciones);
+        // Movil y navegador: texturas como mucho de 1024 px y en ASTC (lo que usan
+        // iPhone y Android). Muchas texturas de los modelos comprados son de 4096 px
+        // (21 MB cada una): con ellas la web pesaba 423 MB y un iPhone no la abre.
+        // Solo afecta a esta build: los archivos de las texturas y las builds de PC no cambian.
+        bool ligera = d.objetivo == BuildTarget.WebGL || d.objetivo == BuildTarget.Android;
+        int tamanoAntes = EditorUserBuildSettings.overrideMaxTextureSize;
+        if (ligera)
+        {
+            EditorUserBuildSettings.overrideMaxTextureSize = TexturaMaximaMovil;
+            if (d.objetivo == BuildTarget.WebGL) EditorUserBuildSettings.webGLBuildSubtarget = WebGLTextureSubtarget.ASTC;
+            else EditorUserBuildSettings.androidBuildSubtarget = MobileTextureSubtarget.ASTC;
+        }
+
+        UnityEditor.Build.Reporting.BuildReport informe;
+        try { informe = BuildPipeline.BuildPlayer(opciones); }
+        finally { if (ligera) EditorUserBuildSettings.overrideMaxTextureSize = tamanoAntes; }
         var r = informe.summary;
         if (r.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
             return nombre + ": la build ha FALLADO (" + r.totalErrors + " errores). Mira la consola.";
 
-        return nombre + ": build lista en " + Path.GetFullPath(ruta) + " (" + (r.totalSize / (1024 * 1024)) +
+        return nombre + ": build lista en " + Path.GetFullPath(ruta) + " (" + (TamanoEnDisco(ruta) / (1024 * 1024)) +
                " MB, " + Mathf.RoundToInt((float)r.totalTime.TotalSeconds) + " s)";
+    }
+
+    // Lo que ocupa de verdad (ya comprimido), sea un archivo (.apk) o una carpeta (web, .app)
+    private static long TamanoEnDisco(string ruta)
+    {
+        if (File.Exists(ruta)) return new FileInfo(ruta).Length;
+        if (!Directory.Exists(ruta)) return 0;
+        return Directory.GetFiles(ruta, "*", SearchOption.AllDirectories)
+            .Where(f => !f.Contains("DoNotShip")).Sum(f => new FileInfo(f).Length);
     }
 }

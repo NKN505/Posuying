@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "posuying-web",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "8765", "--bind", "127.0.0.1", "--directory", "D:/Windows/ProyectosUnity/Posuying/Builds/Web"],
+      "port": 8765
+    }
+  ]
+}

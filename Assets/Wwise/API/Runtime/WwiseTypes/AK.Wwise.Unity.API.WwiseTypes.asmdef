@@ -12,7 +12,10 @@
     "includePlatforms": [],
     "excludePlatforms": [
         "Lumin",
-        "Stadia"
+        "Stadia",
+        "Android",
+        "WebGL",
+        "LinuxStandalone64"
     ],
     "allowUnsafeCode": false,
     "overrideReferences": false,

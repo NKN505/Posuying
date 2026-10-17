@@ -1,0 +1,32 @@
+/* Pagina del juego: todo el espacio para el juego, sin seleccionar texto,
+   sin rebotes ni zoom al tocar (para jugar con los dedos) */
+html, body {
+  padding: 0; margin: 0; width: 100%; height: 100%; overflow: hidden;
+  background: #0E1114; color: #E9E6DF;
+  font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  overscroll-behavior: none;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+#unity-container { position: fixed; inset: 0; }
+#unity-canvas { width: 100%; height: 100%; display: block; background: #0E1114; touch-action: none; }
+
+#unity-loading-bar { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: none; text-align: center }
+#titulo { font-size: 44px; font-weight: 700; letter-spacing: 8px; margin-bottom: 18px; color: #E9E6DF }
+#unity-progress-bar-empty { margin-left: auto; margin-right: auto; width: 141px; height: 18px; background: url('progress-bar-empty-dark.png') no-repeat center }
+#unity-progress-bar-full { width: 0%; height: 18px; background: url('progress-bar-full-dark.png') no-repeat center }
+#cargando { margin-top: 12px; font-size: 14px; color: #8FA0B3 }
+
+#unity-warning { position: absolute; left: 50%; top: 5%; transform: translate(-50%); padding: 0; display: none }
+
+/* En vertical: aviso de girar el movil por encima del juego */
+#gira {
+  display: none; position: absolute; inset: 0; z-index: 10;
+  background: #0E1114; color: #E9E6DF;
+  align-items: center; justify-content: center; text-align: center;
+  font-size: 22px; padding: 24px;
+}
+@media (orientation: portrait) and (max-width: 900px) {
+  #gira { display: flex; }
+}

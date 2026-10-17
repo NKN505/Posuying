@@ -253,6 +253,8 @@ public class MainMenuUI : MonoBehaviour
 
         _quitButton = Button("SALIR", panel, new Vector2(w / 2f - 60f, -panelSize.y / 2f + 24f),
             new Vector2(96f, 30f), QuitGame, new Color(0.35f, 0.1f, 0.1f, 1f)).gameObject;
+        // El menu arranca ya en la vista de inicio (sin "cambio de vista"): se decide aqui
+        _quitButton.SetActive(Plataforma.PuedeSalir);
     }
 
     private void QuitGame()

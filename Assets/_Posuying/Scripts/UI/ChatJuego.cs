@@ -34,6 +34,9 @@ public class ChatJuego : NetworkBehaviour
     private readonly List<Linea> _lineas = new List<Linea>();
     private bool _abierto;
     private string _escribiendo = "";
+
+    // En movil (y en el navegador del movil) se escribe con el teclado del sistema
+    private TouchScreenKeyboard _teclado;
     private int _frameApertura;
 
     // Solo servidor: momentos de los ultimos mensajes de cada cliente
@@ -60,6 +63,14 @@ public class ChatJuego : NetworkBehaviour
     {
         if (!IsSpawned) { if (_abierto) Cerrar(); return; }
 
+        if (_abierto && _teclado != null)
+        {
+            _escribiendo = _teclado.text ?? "";
+            if (_teclado.status == TouchScreenKeyboard.Status.Done) { Enviar(); return; }
+            if (_teclado.status == TouchScreenKeyboard.Status.Canceled ||
+                _teclado.status == TouchScreenKeyboard.Status.LostFocus) { Cerrar(); return; }
+        }
+
         // Se abre solo jugando: con un menu o el inventario abiertos la T es una letra mas
         // (en la sala de espera si se puede: es donde mas falta hace hablar)
         bool ocupado = UIState.NetMenuOpen || UIState.InventoryOpen || MainMenuUI.CapturingKey;
@@ -69,6 +80,9 @@ public class ChatJuego : NetworkBehaviour
             _escribiendo = "";
             _frameApertura = Time.frameCount;
             UIState.ChatOpen = true;
+            if (Plataforma.Tactil && TouchScreenKeyboard.isSupported)
+                _teclado = TouchScreenKeyboard.Open("", TouchScreenKeyboardType.Default, false, false, false, false,
+                                                    "Mensaje para el equipo", maxCaracteres);
         }
     }
 
@@ -77,6 +91,7 @@ public class ChatJuego : NetworkBehaviour
         _abierto = false;
         _escribiendo = "";
         UIState.ChatOpen = false;
+        if (_teclado != null) { if (_teclado.active) _teclado.active = false; _teclado = null; }
     }
 
     private void Enviar()
@@ -179,9 +194,17 @@ public class ChatJuego : NetworkBehaviour
             GUI.color = antes;
 
             var campo = new GUIStyle(GUI.skin.textField) { fontSize = 18, alignment = TextAnchor.MiddleLeft };
-            GUI.SetNextControlName("chat");
-            _escribiendo = GUI.TextField(new Rect(x, yCampo + 2f, ancho, 30f), _escribiendo, maxCaracteres, campo);
-            GUI.FocusControl("chat");
+            if (_teclado != null)
+            {
+                // Se escribe en el teclado del movil: aqui solo se ensena lo que lleva
+                GUI.Label(new Rect(x, yCampo + 2f, ancho, 30f), _escribiendo + "|", campo);
+            }
+            else
+            {
+                GUI.SetNextControlName("chat");
+                _escribiendo = GUI.TextField(new Rect(x, yCampo + 2f, ancho, 30f), _escribiendo, maxCaracteres, campo);
+                GUI.FocusControl("chat");
+            }
 
             estilo.fontSize = 14;
             estilo.alignment = TextAnchor.UpperLeft;

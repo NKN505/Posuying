@@ -15,10 +15,15 @@ using UnityEngine.InputSystem;
 public class MobileDisableAutoSwitchControls : MonoBehaviour
 {
     
-#if ENABLE_INPUT_SYSTEM && (UNITY_IOS || UNITY_ANDROID)
-
+#if ENABLE_INPUT_SYSTEM
+    // Posuying: el campo existe en todas las plataformas. Antes solo existia al
+    // compilar para movil, y Unity no deja hacer la build de Android si un script
+    // guarda campos distintos en el editor y en el movil.
     [Header("Target")]
     public PlayerInput playerInput;
+#endif
+
+#if ENABLE_INPUT_SYSTEM && (UNITY_IOS || UNITY_ANDROID)
 
     void Start()
     {

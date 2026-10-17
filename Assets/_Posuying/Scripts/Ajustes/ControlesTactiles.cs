@@ -115,6 +115,9 @@ public class ControlesTactiles : MonoBehaviour
         PausaPulsada = false;
         _mirar = Vector2.zero;
 
+        // En el navegador no siempre se sabe de antemano si es un movil o tableta (iPad)
+        if (Plataforma.EsWeb && Input.touchCount > 0) Plataforma.HanTocado();
+
         bool enPartida = Plataforma.Tactil && NetworkPlayer.LocalPlayer != null && SalaEspera.EnJuego &&
                          !(MatchManager.Instance != null && MatchManager.Instance.MatchOver);
         bool jugando = enPartida && !UIState.BlocksGameplay;
