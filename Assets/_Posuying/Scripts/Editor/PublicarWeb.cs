@@ -1,45 +1,54 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using UnityEditor;
 using Debug = UnityEngine.Debug;
 
-// Posuying > Multiplataforma > Publicar web (rama web para Vercel)
+// Posuying > Multiplataforma > Publicar web en Vercel
 //
-// La version web se publica en Vercel desde una rama aparte del repositorio,
-// "web", que SOLO tiene la build (index.html, Build/, TemplateData/...), nada
-// del proyecto de Unity. Vercel la sirve tal cual cada vez que se sube.
+// Hace la build web y la sube directamente a Vercel con su herramienta de linea
+// de comandos (sin pasar por git). Al terminar, la web nueva ya esta en linea.
 //
-// Esa rama vive en su propia carpeta, al lado del proyecto:
-//     D:\Windows\ProyectosUnity\Posuying-web
-// (un "git worktree": es el mismo repositorio, pero con la rama web abierta alli,
-// asi no hay que cambiar de rama en el proyecto para publicar).
+// Requisitos, una sola vez en el PC:
+//   1. Node.js        winget install OpenJS.NodeJS.LTS
+//   2. Vercel CLI     npm install -g vercel
+//   3. Iniciar sesion vercel login
 //
-// Este menu: hace la build web, la copia a esa carpeta y deja escritos los dos
-// comandos para subirla. El commit y el push los haces tu.
+// La build se copia a Builds/WebVercel, que es lo que se sube. Ahi se guarda
+// tambien la carpeta .vercel, que dice a que proyecto de Vercel va: no la borres
+// o la siguiente subida creara un proyecto nuevo.
 public static class PublicarWeb
 {
-    public const string Rama = "web";
+    /// <summary>Nombre del proyecto en Vercel (la web queda en https://posuying.vercel.app si esta libre).</summary>
+    public const string ProyectoVercel = "posuying";
 
     private static string Proyecto => Directory.GetParent(UnityEngine.Application.dataPath).FullName;
-    public static string CarpetaRama => Path.Combine(Directory.GetParent(Proyecto).FullName, "Posuying-web");
+    public static string CarpetaSubida => Path.Combine(Proyecto, "Builds", "WebVercel");
 
-    [MenuItem("Posuying/Multiplataforma/Publicar web (rama web para Vercel)")]
+    [MenuItem("Posuying/Multiplataforma/Publicar web en Vercel")]
     private static void Menu()
     {
-        if (!EditorUtility.DisplayDialog("Publicar web",
-                "Se hara la build web (unos minutos) y se copiara a la rama \"" + Rama + "\" en:\n" + CarpetaRama +
-                "\n\nDespues solo tendras que hacer commit y push de esa carpeta.", "Adelante", "Cancelar"))
+        if (!EditorUtility.DisplayDialog("Publicar web en Vercel",
+                "Se hara la build web (unos minutos) y se subira a Vercel, version " +
+                UnityEngine.Application.version + ".\n\nAntes de publicar una version nueva, sube la version en " +
+                "Project Settings > Player > Version: asi los moviles que la tienen instalada se actualizan.",
+                "Publicar", "Cancelar"))
             return;
 
         string resultado = Publicar(true);
         Debug.Log("[PublicarWeb] " + resultado);
-        EditorUtility.DisplayDialog("Publicar web", resultado, "Vale");
+        EditorUtility.DisplayDialog("Publicar web en Vercel", resultado, "Vale");
     }
 
-    /// <summary>Hace la build (si se pide), la copia a la rama web y devuelve que hacer despues.</summary>
+    /// <summary>Hace la build (si se pide), la sube a Vercel y devuelve como fue.</summary>
     public static string Publicar(bool compilar)
     {
+        if (Ejecutar("vercel --version", Proyecto, out _) != 0)
+            return "No encuentro la herramienta de Vercel. Una sola vez, en una terminal:\n" +
+                   "  winget install OpenJS.NodeJS.LTS\n  npm install -g vercel\n  vercel login\n" +
+                   "y despues reinicia Unity.";
+
         if (compilar)
         {
             string build = Multiplataforma.Compilar("Web");
@@ -49,115 +58,84 @@ public static class PublicarWeb
         string origen = Path.Combine(Proyecto, "Builds", "Web");
         if (!File.Exists(Path.Combine(origen, "index.html"))) return "No hay build web en " + origen + ". Compilala primero.";
 
-        // GitHub no admite archivos de mas de 100 MB (sin LFS, que no queremos para esto)
-        var grandes = Directory.GetFiles(origen, "*", SearchOption.AllDirectories)
-            .Where(f => new FileInfo(f).Length > 95L * 1024 * 1024).ToArray();
-        if (grandes.Length > 0)
-            return "No se puede subir: " + string.Join(", ", grandes.Select(Path.GetFileName)) +
-                   " pasa de 95 MB y GitHub no admite archivos de mas de 100 MB. Hay que aligerar la build.";
-
-        string error = PrepararCarpeta();
-        if (error != null) return error;
-
-        // Fuera lo de la publicacion anterior (menos .git y lo que es de la rama)
-        foreach (var f in Directory.GetFiles(CarpetaRama, "*", SearchOption.AllDirectories))
+        try
         {
-            string rel = f.Substring(CarpetaRama.Length + 1).Replace('\\', '/');
-            if (rel == ".git" || rel.StartsWith(".git/") || rel == "vercel.json" || rel == "README.md" || rel == ".gitattributes") continue;
-            File.Delete(f);
-        }
-        foreach (var dir in Directory.GetDirectories(CarpetaRama).Where(d => !Path.GetFileName(d).StartsWith(".git")))
-            Directory.Delete(dir, true);
+            EditorUtility.DisplayProgressBar("Publicar web", "Preparando los archivos...", 0.1f);
+            Preparar(origen);
 
-        // La build nueva
+            // La primera vez se enlaza la carpeta con el proyecto de Vercel (se crea si no existe)
+            if (!Directory.Exists(Path.Combine(CarpetaSubida, ".vercel")))
+            {
+                EditorUtility.DisplayProgressBar("Publicar web", "Creando el proyecto en Vercel...", 0.2f);
+                if (Ejecutar("vercel link --yes --project " + ProyectoVercel, CarpetaSubida, out string enlace) != 0)
+                    return "No se pudo enlazar con Vercel (¿has hecho \"vercel login\"?):\n" + Ultimas(enlace);
+            }
+
+            EditorUtility.DisplayProgressBar("Publicar web", "Subiendo a Vercel (~70 MB)...", 0.4f);
+            if (Ejecutar("vercel deploy --prod --yes", CarpetaSubida, out string salida) != 0)
+                return "La subida a Vercel ha fallado:\n" + Ultimas(salida);
+
+            var url = Regex.Matches(salida, @"https://[^\s]+\.vercel\.app").Cast<Match>().Select(m => m.Value).LastOrDefault();
+            return "Web publicada (version " + UnityEngine.Application.version + ")" +
+                   (url != null ? ":\n" + url : ".\n" + Ultimas(salida)) +
+                   "\n\nEn el iPhone: abrela en Safari > Compartir > \"Anadir a pantalla de inicio\".";
+        }
+        finally
+        {
+            EditorUtility.ClearProgressBar();
+        }
+    }
+
+    // Copia la build a la carpeta de subida (conservando el enlace .vercel) y anade la configuracion
+    private static void Preparar(string origen)
+    {
+        Directory.CreateDirectory(CarpetaSubida);
+        foreach (var f in Directory.GetFiles(CarpetaSubida, "*", SearchOption.AllDirectories))
+            if (!f.Substring(CarpetaSubida.Length + 1).Replace('\\', '/').StartsWith(".vercel")) File.Delete(f);
+        foreach (var d in Directory.GetDirectories(CarpetaSubida).Where(d => Path.GetFileName(d) != ".vercel"))
+            Directory.Delete(d, true);
+
         foreach (var f in Directory.GetFiles(origen, "*", SearchOption.AllDirectories))
         {
-            string rel = f.Substring(origen.Length + 1);
-            string destino = Path.Combine(CarpetaRama, rel);
+            string destino = Path.Combine(CarpetaSubida, f.Substring(origen.Length + 1));
             Directory.CreateDirectory(Path.GetDirectoryName(destino));
             File.Copy(f, destino, true);
         }
 
-        EscribirArchivosDeLaRama();
-
-        long mb = Directory.GetFiles(CarpetaRama, "*", SearchOption.AllDirectories)
-                           .Where(f => !f.Contains(Path.DirectorySeparatorChar + ".git"))
-                           .Sum(f => new FileInfo(f).Length) / (1024 * 1024);
-        return "Build web (" + mb + " MB, version " + UnityEngine.Application.version + ") copiada en:\n" + CarpetaRama +
-               "\n\nPara publicarla, en esa carpeta:\n" +
-               "  git add -A\n  git commit -m \"Web " + UnityEngine.Application.version + "\"\n  git push -u origin " + Rama +
-               "\n\nVercel la pone en linea sola al recibir el push.";
-    }
-
-    // Crea la carpeta de la rama la primera vez (o la recupera si ya existia en GitHub)
-    private static string PrepararCarpeta()
-    {
-        if (Directory.Exists(Path.Combine(CarpetaRama, ".git")) || File.Exists(Path.Combine(CarpetaRama, ".git")))
-            return null;
-
-        Git("fetch origin " + Rama, out _);   // por si un companero ya la creo
-        bool enGitHub = Git("rev-parse --verify --quiet refs/remotes/origin/" + Rama, out _) == 0;
-        bool enLocal = Git("rev-parse --verify --quiet refs/heads/" + Rama, out _) == 0;
-
-        string comando = enLocal ? "worktree add \"" + CarpetaRama + "\" " + Rama
-                       : enGitHub ? "worktree add -b " + Rama + " \"" + CarpetaRama + "\" origin/" + Rama
-                       // Rama huerfana: empieza vacia, sin nada del proyecto de Unity
-                       : "worktree add --orphan -b " + Rama + " \"" + CarpetaRama + "\"";
-
-        return Git(comando, out string salida) == 0 ? null : "No se pudo preparar la rama " + Rama + ":\n" + salida;
-    }
-
-    private static void EscribirArchivosDeLaRama()
-    {
-        // Sin LFS en esta rama: Vercel tendria que bajarse cada build por LFS y la
-        // cuota gratuita de GitHub se acabaria en unas pocas publicaciones
-        File.WriteAllText(Path.Combine(CarpetaRama, ".gitattributes"),
-            "# Rama web: archivos normales, sin Git LFS\n* -filter -diff -merge -text\n");
-
         // Que el navegador pregunte siempre si hay version nueva (el ServiceWorker
-        // ya guarda el juego en el dispositivo, por version)
-        File.WriteAllText(Path.Combine(CarpetaRama, "vercel.json"),
+        // ya guarda el juego en el dispositivo, por version). Sin nada que compilar.
+        File.WriteAllText(Path.Combine(CarpetaSubida, "vercel.json"),
 @"{
+  ""buildCommand"": """",
+  ""outputDirectory"": ""."",
   ""headers"": [
-    { ""source"": ""/(.*)"", ""headers"": [ { ""key"": ""Cache-Control"", ""value"": ""no-cache"" } ] },
-    { ""source"": ""/(.*).unityweb"", ""headers"": [ { ""key"": ""Content-Type"", ""value"": ""application/octet-stream"" } ] }
+    { ""source"": ""/(.*)"", ""headers"": [ { ""key"": ""Cache-Control"", ""value"": ""no-cache"" } ] }
   ]
 }
 ");
-
-        File.WriteAllText(Path.Combine(CarpetaRama, "README.md"),
-@"# Posuying - version web
-
-Esta rama solo tiene la build web del juego. **No se edita a mano**: la genera
-Unity con `Posuying > Multiplataforma > Publicar web (rama web para Vercel)`.
-
-Vercel la publica sola en cada push a esta rama.
-
-Configuracion del proyecto en Vercel (una sola vez):
-- Framework Preset: Other
-- Build Command: vacio (no hay que compilar nada)
-- Output Directory: `.`
-- Production Branch: `web`
-
-Antes de publicar una version nueva, sube la version del juego en Unity
-(Project Settings > Player > Version): asi los moviles que ya la instalaron
-como app se actualizan, y solo juegan juntos jugadores con la misma version.
-");
     }
 
-    private static int Git(string argumentos, out string salida)
+    // En Windows "vercel" es un .cmd: se lanza a traves de cmd
+    private static int Ejecutar(string comando, string carpeta, out string salida)
     {
         var p = new Process
         {
-            StartInfo = new ProcessStartInfo("git", argumentos)
+            StartInfo = new ProcessStartInfo("cmd.exe", "/c " + comando)
             {
-                WorkingDirectory = Proyecto, UseShellExecute = false, CreateNoWindow = true,
+                WorkingDirectory = carpeta, UseShellExecute = false, CreateNoWindow = true,
                 RedirectStandardOutput = true, RedirectStandardError = true
             }
         };
-        p.Start();
-        salida = p.StandardOutput.ReadToEnd() + p.StandardError.ReadToEnd();
+        try { p.Start(); }
+        catch (System.Exception e) { salida = e.Message; return -1; }
+
+        // Leer las dos salidas a la vez: si una se llena mientras se espera la otra, se cuelga
+        var error = p.StandardError.ReadToEndAsync();
+        salida = p.StandardOutput.ReadToEnd() + error.Result;
         p.WaitForExit();
         return p.ExitCode;
     }
+
+    private static string Ultimas(string texto) =>
+        string.Join("\n", texto.Split('\n').Select(l => l.TrimEnd()).Where(l => l.Length > 0).Reverse().Take(8).Reverse());
 }
