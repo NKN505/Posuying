@@ -125,10 +125,10 @@ public static class Multiplataforma
         PlayerSettings.WebGL.template = "PROJECT:PosuyingPWA";
         PlayerSettings.WebGL.dataCaching = false;   // ya lo guarda el ServiceWorker de la plantilla
 
-        // Wwise todavia no esta instalado para Android ni navegador: alli se compila
-        // con el Wwise "mudo" de Scripts/Audio/SinWwise.cs (ver ese archivo)
-        PonerSimbolo(UnityEditor.Build.NamedBuildTarget.Android, SinWwise, true);
-        PonerSimbolo(UnityEditor.Build.NamedBuildTarget.WebGL, SinWwise, true);
+        // Wwise ya esta integrado para Android, navegador y Linux: fuera el simbolo
+        // del antiguo modo "sin Wwise" (por si alguien lo tiene aun en sus ajustes)
+        PonerSimbolo(UnityEditor.Build.NamedBuildTarget.Android, SinWwise, false);
+        PonerSimbolo(UnityEditor.Build.NamedBuildTarget.WebGL, SinWwise, false);
 
         // Que el juego siga corriendo (y la red viva) aunque la ventana o pestana pierda el foco
         PlayerSettings.runInBackground = true;
@@ -184,6 +184,13 @@ public static class Multiplataforma
         string ruta = d.archivo == "" ? carpeta : Path.Combine(carpeta, d.archivo);
 
         var escenas = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
+        // En la web delante va la escena que descarga los bancos de sonido (ver BancosWeb)
+        if (d.objetivo == BuildTarget.WebGL)
+        {
+            string error = PrepararBancosWeb();
+            if (error != null) return nombre + ": " + error;
+            escenas = new[] { EscenaArranqueWeb }.Concat(escenas).ToArray();
+        }
         var opciones = new BuildPlayerOptions
         {
             scenes = escenas,
@@ -216,6 +223,64 @@ public static class Multiplataforma
 
         return nombre + ": build lista en " + Path.GetFullPath(ruta) + " (" + (TamanoEnDisco(ruta) / (1024 * 1024)) +
                " MB, " + Mathf.RoundToInt((float)r.totalTime.TotalSeconds) + " s)";
+    }
+
+    // ---------- Sonido en la web ----------
+
+    public const string EscenaArranqueWeb = "Assets/_Posuying/Escenas/Arranque/ArranqueWeb.unity";
+
+    /// <summary>
+    /// Deja lista la escena de arranque web y escribe en StreamingAssets la lista de
+    /// bancos de Wwise que esa escena descarga. Devuelve un error, o null si todo bien.
+    /// </summary>
+    public static string PrepararBancosWeb()
+    {
+        // Los bancos de Web que genera Wwise (Unity los copia tal cual a StreamingAssets)
+        string proyectoWwise = Path.GetDirectoryName(Path.GetFullPath(Path.Combine(Application.dataPath,
+            AkWwiseEditorSettings.Instance.WwiseProjectPath)));
+        string origen = Path.Combine(proyectoWwise, "GeneratedSoundBanks", "Web");
+        if (!File.Exists(Path.Combine(origen, "Init.bnk")))
+            return "no hay bancos de Wwise para Web en " + origen + ". Generalos en Wwise (plataforma Web).";
+
+        var archivos = Directory.GetFiles(origen, "*", SearchOption.AllDirectories)
+            .Where(f => f.EndsWith(".bnk") || f.EndsWith(".wem"))
+            .Select(f => f.Substring(origen.Length + 1).Replace('\\', '/'))
+            .OrderBy(f => f).ToList();
+
+        // La version cambia si cambia cualquier banco: asi el navegador sabe si volver a descargarlos
+        long huella = 17;
+        foreach (var rel in archivos)
+        {
+            var info = new FileInfo(Path.Combine(origen, rel));
+            huella = huella * 31 + rel.GetHashCode() + info.Length + info.LastWriteTimeUtc.Ticks;
+        }
+
+        Directory.CreateDirectory(Application.streamingAssetsPath);
+        File.WriteAllText(Path.Combine(Application.streamingAssetsPath, BancosWeb.Manifiesto),
+            huella.ToString("x") + "\n" + string.Join("\n", archivos) + "\n");
+
+        if (!File.Exists(EscenaArranqueWeb)) CrearEscenaArranqueWeb();
+        AssetDatabase.Refresh();
+        return null;
+    }
+
+    // Escena minima: una camara en negro y el componente que descarga los bancos
+    private static void CrearEscenaArranqueWeb()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(EscenaArranqueWeb));
+        var escena = UnityEditor.SceneManagement.EditorSceneManager.NewScene(
+            UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Additive);
+
+        var camara = new GameObject("Camara");
+        var cam = camara.AddComponent<Camera>();
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = new Color(0.055f, 0.067f, 0.078f);
+        new GameObject("BancosWeb").AddComponent<BancosWeb>();
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(camara, escena);
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(GameObject.Find("BancosWeb"), escena);
+
+        UnityEditor.SceneManagement.EditorSceneManager.SaveScene(escena, EscenaArranqueWeb);
+        UnityEditor.SceneManagement.EditorSceneManager.CloseScene(escena, true);
     }
 
     // Lo que ocupa de verdad (ya comprimido), sea un archivo (.apk) o una carpeta (web, .app)

@@ -12,7 +12,7 @@ using UnityEngine.UI;
 // tenga el mismo aspecto.
 public class MainMenuUI : MonoBehaviour
 {
-    private enum Tab { Crear, Buscar, Codigo, Opciones, Pausa }
+    private enum Tab { Crear, Buscar, Codigo, Opciones, Cuenta, Pausa }
 
     // Lo que se esta mostrando: decide que pestanas y que fondo se ven
     private enum Vista { Inicio, Pausa, OpcionesEnPartida, Sala, Oculto }
@@ -92,6 +92,11 @@ public class MainMenuUI : MonoBehaviour
 
     // Union
     private InputField _codeInput;
+
+    // Pestana CUENTA
+    private InputField _usuarioInput, _contrasenaInput;
+    private Text _cuentaEstado;
+    private bool _cuentaOcupada;
     private InputField _joinPasswordInput;
     private string _selectedSessionId = "";
 
@@ -230,7 +235,7 @@ public class MainMenuUI : MonoBehaviour
         }
 
         // Pestanas
-        string[] names = { "CREAR", "BUSCAR", "CODIGO", "OPCIONES" };
+        string[] names = { "CREAR", "BUSCAR", "CODIGO", "OPCIONES", "CUENTA" };
         float tabW = (w - 40f) / names.Length;
 
         for (int i = 0; i < names.Length; i++)
@@ -315,6 +320,7 @@ public class MainMenuUI : MonoBehaviour
             case Tab.Buscar: BuildBrowseTab(); break;
             case Tab.Codigo: BuildCodeTab(); break;
             case Tab.Opciones: BuildOptionsTab(); break;
+            case Tab.Cuenta: BuildAccountTab(); break;
             case Tab.Pausa: BuildPauseTab(); break;
         }
     }
@@ -725,6 +731,155 @@ public class MainMenuUI : MonoBehaviour
         Label("l6", "Para partidas privadas que te hayan pasado por chat", _content,
             new Vector2(0f, -90f), new Vector2(w, 22f), 12, TextAnchor.MiddleCenter,
             new Color(1f, 1f, 1f, 0.6f));
+    }
+
+    // ---------- Pestana CUENTA ----------
+    // Usuario y contrasena en los servicios de Unity (ver Cuenta.cs). Es la base
+    // de las licencias: lo comprado se apuntara en la cuenta.
+
+    private void BuildAccountTab()
+    {
+        float w = _content.sizeDelta.x;
+        string perfil = onlineSession != null ? onlineSession.ResolveProfileName() : "";
+
+        // La primera vez, recuperar la sesion guardada en este dispositivo (si la hay)
+        if (!_cuentaPreparada)
+        {
+            _cuentaPreparada = true;
+            RecuperarSesion(perfil);
+        }
+
+        if (Cuenta.Conectada)
+        {
+            BuildAccountConnected(w);
+            return;
+        }
+
+        Label("c_titulo", Cuenta.Obligatoria ? "Inicia sesion para jugar online"
+                                              : "Inicia sesion (en pruebas tambien se puede jugar sin cuenta)",
+            _content, new Vector2(0f, 98f), new Vector2(w, 24f), 15, TextAnchor.MiddleCenter, Color.white);
+
+        Label("c_lu", "Usuario", _content, new Vector2(-170f, 60f), new Vector2(120f, 24f),
+            14, TextAnchor.MiddleLeft, Color.white);
+        _usuarioInput = Input("usuario", "", _content, new Vector2(40f, 60f), new Vector2(300f, 34f), false);
+        _usuarioInput.characterLimit = 20;
+
+        Label("c_lc", "Contrasena", _content, new Vector2(-170f, 18f), new Vector2(120f, 24f),
+            14, TextAnchor.MiddleLeft, Color.white);
+        _contrasenaInput = Input("contrasena", "", _content, new Vector2(40f, 18f), new Vector2(300f, 34f), true);
+        _contrasenaInput.characterLimit = 30;
+
+        Button("ENTRAR", _content, new Vector2(-80f, -32f), new Vector2(150f, 38f),
+            () => UsarCuenta(perfil, false), accentColor);
+        Button("CREAR CUENTA", _content, new Vector2(90f, -32f), new Vector2(170f, 38f),
+            () => UsarCuenta(perfil, true));
+
+        _cuentaEstado = Label("c_estado", "", _content, new Vector2(0f, -76f), new Vector2(w, 36f),
+            13, TextAnchor.MiddleCenter, new Color(1f, 0.75f, 0.6f, 1f));
+        Label("c_reglas", "Contrasena: 8 a 30 caracteres, con mayuscula, minuscula, numero y simbolo.",
+            _content, new Vector2(0f, -106f), new Vector2(w, 22f), 11, TextAnchor.MiddleCenter,
+            new Color(1f, 1f, 1f, 0.5f));
+    }
+
+    private static bool _cuentaPreparada;
+    private InputField _codigoLicencia;
+    private Text _licenciaMensaje;
+
+    // Con sesion iniciada: quien eres, si tienes el juego, canjear codigos y (admins) crearlos
+    private void BuildAccountConnected(float w)
+    {
+        Label("c_hola", "Conectado como", _content, new Vector2(0f, 112f), new Vector2(w, 22f),
+            14, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.7f));
+        Label("c_usuario", Cuenta.Usuario, _content, new Vector2(0f, 84f), new Vector2(w, 32f),
+            22, TextAnchor.MiddleCenter, Color.white);
+
+        if (!Licencia.Comprobada)
+        {
+            Label("c_lic", "Comprobando la licencia...", _content, new Vector2(0f, 50f), new Vector2(w, 24f),
+                15, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.7f));
+            ComprobarLicenciaYMostrar();
+        }
+        else if (Licencia.Tiene)
+        {
+            Label("c_lic", "Tienes Posuying: vale en PC, movil y navegador", _content, new Vector2(0f, 50f),
+                new Vector2(w, 24f), 15, TextAnchor.MiddleCenter, new Color(0.55f, 0.95f, 0.6f, 1f));
+        }
+        else
+        {
+            Label("c_lic", "Esta cuenta aun no tiene Posuying", _content, new Vector2(0f, 50f),
+                new Vector2(w, 24f), 15, TextAnchor.MiddleCenter, new Color(1f, 0.6f, 0.5f, 1f));
+            _codigoLicencia = Input("codigoLicencia", "", _content, new Vector2(-60f, 12f), new Vector2(260f, 34f), false);
+            _codigoLicencia.characterLimit = 0;   // sin limite: al pegar varios codigos se coge el primero
+            Button("CANJEAR", _content, new Vector2(140f, 12f), new Vector2(120f, 34f), CanjearCodigo, accentColor);
+        }
+
+        if (Licencia.EsAdmin)
+            Button("CREAR 5 CODIGOS", _content, new Vector2(0f, -30f), new Vector2(220f, 32f), CrearCodigosAdmin);
+
+        _licenciaMensaje = Label("c_msg", "", _content, new Vector2(0f, -72f), new Vector2(w, 44f),
+            13, TextAnchor.MiddleCenter, new Color(1f, 0.85f, 0.6f, 1f));
+
+        Button("CERRAR SESION", _content, new Vector2(0f, -122f), new Vector2(200f, 32f),
+            () => { Cuenta.Salir(); Licencia.Olvidar(); ShowTab(Tab.Cuenta); }, new Color(0.35f, 0.1f, 0.1f, 1f));
+    }
+
+    private async void ComprobarLicenciaYMostrar()
+    {
+        string error = await Licencia.Comprobar();
+        if (this == null || _tab != Tab.Cuenta) return;
+        ShowTab(Tab.Cuenta);
+        if (error != null && _licenciaMensaje != null) _licenciaMensaje.text = error;
+    }
+
+    private async void CanjearCodigo()
+    {
+        if (_cuentaOcupada || _codigoLicencia == null) return;
+        _cuentaOcupada = true;
+        if (_licenciaMensaje != null) _licenciaMensaje.text = "Canjeando...";
+        var (ok, mensaje) = await Licencia.Canjear(_codigoLicencia.text);
+        _cuentaOcupada = false;
+        if (this == null || _tab != Tab.Cuenta) return;
+        if (ok) { PostUI(uiStart); ShowTab(Tab.Cuenta); }
+        if (_licenciaMensaje != null) _licenciaMensaje.text = mensaje;
+    }
+
+    private async void CrearCodigosAdmin()
+    {
+        if (_cuentaOcupada) return;
+        _cuentaOcupada = true;
+        if (_licenciaMensaje != null) _licenciaMensaje.text = "Creando codigos...";
+        var (codigos, mensaje) = await Licencia.CrearCodigos(5, "Creados desde el juego");
+        _cuentaOcupada = false;
+        if (this == null || _licenciaMensaje == null) return;
+        if (codigos.Count > 0)
+        {
+            GUIUtility.systemCopyBuffer = string.Join("\n", codigos);
+            _licenciaMensaje.text = string.Join("   ", codigos) + "\n(copiados al portapapeles)";
+        }
+        else _licenciaMensaje.text = mensaje;
+    }
+
+    private async void RecuperarSesion(string perfil)
+    {
+        try { await Cuenta.Preparar(perfil); }
+        catch (System.Exception e) { Debug.LogWarning("[Cuenta] " + e.Message); return; }
+        if (this != null && _tab == Tab.Cuenta && Cuenta.Conectada) ShowTab(Tab.Cuenta);
+    }
+
+    private async void UsarCuenta(string perfil, bool crear)
+    {
+        if (_cuentaOcupada || _usuarioInput == null) return;
+        _cuentaOcupada = true;
+        if (_cuentaEstado != null) _cuentaEstado.text = crear ? "Creando la cuenta..." : "Entrando...";
+
+        string error = crear
+            ? await Cuenta.Crear(perfil, _usuarioInput.text, _contrasenaInput.text)
+            : await Cuenta.Entrar(perfil, _usuarioInput.text, _contrasenaInput.text);
+        _cuentaOcupada = false;
+
+        if (this == null) return;   // se cerro el menu mientras tanto
+        if (error == null) { Licencia.Olvidar(); PostUI(uiStart); ShowTab(Tab.Cuenta); }
+        else if (_cuentaEstado != null) _cuentaEstado.text = error;
     }
 
     // ---------- Pestana OPCIONES ----------

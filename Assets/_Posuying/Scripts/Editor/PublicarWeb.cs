@@ -114,7 +114,11 @@ public static class PublicarWeb
   ""buildCommand"": """",
   ""outputDirectory"": ""."",
   ""headers"": [
-    { ""source"": ""/(.*)"", ""headers"": [ { ""key"": ""Cache-Control"", ""value"": ""no-cache"" } ] }
+    { ""source"": ""/(.*)"", ""headers"": [
+      { ""key"": ""Cache-Control"", ""value"": ""no-cache"" },
+      { ""key"": ""Cross-Origin-Opener-Policy"", ""value"": ""same-origin"" },
+      { ""key"": ""Cross-Origin-Embedder-Policy"", ""value"": ""require-corp"" }
+    ] }
   ]
 }
 ");

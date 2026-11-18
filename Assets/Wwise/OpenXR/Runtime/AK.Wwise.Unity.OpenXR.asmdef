@@ -9,6 +9,7 @@
         "AK.Wwise.Unity.Logging"
     ],
     "includePlatforms": [
+        "Android",
         "Editor",
         "WindowsStandalone32",
         "WindowsStandalone64"

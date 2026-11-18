@@ -7,38 +7,54 @@
 					<PropertyList>
 						<Property Name="Channels" Type="int32">
 							<ValueList>
+								<Value Platform="Web">4</Value>
 								<Value Platform="Windows">4</Value>
+								<Value Platform="Android">4</Value>
 								<Value Platform="Mac">4</Value>
 							</ValueList>
 						</Property>
 						<Property Name="LRMix" Type="Real64">
 							<ValueList>
+								<Value Platform="Web">0</Value>
 								<Value Platform="Windows">0</Value>
+								<Value Platform="Android">0</Value>
 								<Value Platform="Mac">0</Value>
 							</ValueList>
 						</Property>
 						<Property Name="MaxSampleRate" Type="int32">
 							<ValueList>
+								<Value Platform="Web">48000</Value>
 								<Value Platform="Windows">48000</Value>
+								<Value Platform="Android">48000</Value>
 								<Value Platform="Mac">48000</Value>
 							</ValueList>
 						</Property>
 						<Property Name="MinSampleRate" Type="int32">
 							<ValueList>
+								<Value Platform="Web">0</Value>
 								<Value Platform="Windows">0</Value>
+								<Value Platform="Android">0</Value>
 								<Value Platform="Mac">0</Value>
 							</ValueList>
 						</Property>
 						<Property Name="SampleRate" Type="int32">
 							<ValueList>
+								<Value Platform="Web">0</Value>
 								<Value Platform="Windows">0</Value>
+								<Value Platform="Android">0</Value>
 								<Value Platform="Mac">0</Value>
 							</ValueList>
 						</Property>
 					</PropertyList>
 					<ConversionPluginInfoList>
+						<ConversionPluginInfo Platform="Web">
+							<ConversionPlugin Name="" ID="{AF5D9CBC-09E1-4AD9-B9BA-8FB90E33CAB9}" PluginName="Vorbis" CompanyID="0" PluginID="4"/>
+						</ConversionPluginInfo>
 						<ConversionPluginInfo Platform="Windows">
 							<ConversionPlugin Name="" ID="{E0147EEB-F222-401C-B930-796ECCB61050}" PluginName="PCM" CompanyID="0" PluginID="1"/>
+						</ConversionPluginInfo>
+						<ConversionPluginInfo Platform="Android">
+							<ConversionPlugin Name="" ID="{C24B072B-5919-4EED-8737-E809C0A188ED}" PluginName="Vorbis" CompanyID="0" PluginID="4"/>
 						</ConversionPluginInfo>
 						<ConversionPluginInfo Platform="Mac">
 							<ConversionPlugin Name="" ID="{34B85B9B-4622-40E6-89E1-4D170F45B7E7}" PluginName="PCM" CompanyID="0" PluginID="1"/>

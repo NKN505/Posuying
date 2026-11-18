@@ -134,21 +134,39 @@ public class OnlineSession : MonoBehaviour
     {
         try
         {
-            if (UnityServices.State != ServicesInitializationState.Initialized)
-                await UnityServices.InitializeAsync();
+            // El perfil define QUIEN eres para Unity. Sin esto, el editor y la
+            // build del mismo PC comparten identidad y no puedes unirte a tu
+            // propia partida ("ya estas conectado"). Si hay una sesion guardada
+            // en este dispositivo, se entra en esa cuenta.
+            await Cuenta.Preparar(ResolveProfileName());
+
+            // Para jugar online hace falta cuenta (en el editor y en builds de
+            // desarrollo vale el anonimo, para las pruebas)
+            if (Cuenta.Obligatoria && !Cuenta.Conectada)
+            {
+                Status = "Inicia sesion en la pestana CUENTA para jugar online";
+                return false;
+            }
 
             if (!AuthenticationService.Instance.IsSignedIn)
-            {
-                // El perfil define QUIEN eres para Unity. Sin esto, el editor y la
-                // build del mismo PC comparten identidad y no puedes unirte a tu
-                // propia partida ("ya estas conectado").
-                string profile = ResolveProfileName();
-                if (!string.IsNullOrEmpty(profile))
-                    AuthenticationService.Instance.SwitchProfile(profile);
-
                 await AuthenticationService.Instance.SignInAnonymouslyAsync();
-                CurrentProfile = AuthenticationService.Instance.Profile;
+            CurrentProfile = AuthenticationService.Instance.Profile;
+
+            // Licencia: sin el juego en la cuenta no se crea ni se une a partidas
+            // (en el editor y builds de desarrollo no hace falta, para las pruebas)
+            if (Licencia.Obligatoria)
+            {
+                string error = await Licencia.Comprobar();
+                if (error != null) { Status = error; return false; }
+                if (!Licencia.Tiene)
+                {
+                    Status = "Tu cuenta no tiene Posuying: canjea un codigo en la pestana CUENTA";
+                    return false;
+                }
             }
+
+            // El ticket viaja con la peticion de conexion: el anfitrion lo comprueba
+            SalaEspera.PrepararDatosConexion(Licencia.Obligatoria ? await Licencia.TicketVigente() : "");
 
             return true;
         }
@@ -601,7 +619,7 @@ public class OnlineSession : MonoBehaviour
 
         // Rechazados por el anfitrion (version distinta): no tiene sentido reintentar
         string motivo = nm.DisconnectReason;
-        if (!string.IsNullOrEmpty(motivo) && motivo.Contains("version"))
+        if (!string.IsNullOrEmpty(motivo) && (motivo.Contains("version") || motivo.StartsWith("No puedes entrar")))
         {
             Status = motivo;
             Notifications.Show(motivo);
@@ -701,7 +719,7 @@ public class OnlineSession : MonoBehaviour
     //   1) argumento de arranque  -profile <nombre>   (para lanzar 2 builds a la vez)
     //   2) el campo del Inspector
     //   3) automatico: el editor y la build usan perfiles distintos
-    private string ResolveProfileName()
+    public string ResolveProfileName()
     {
         string[] args = System.Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length - 1; i++)

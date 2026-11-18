@@ -111,11 +111,26 @@ public class SalaEspera : NetworkBehaviour
 
         nm.NetworkConfig.ConnectionApproval = true;
         nm.ConnectionApprovalCallback = AprobarConexion;
-        // Con la peticion de conexion viajan la version del juego (para no dejar
-        // entrar a alguien con otra) y el nombre (para que el anfitrion sepa quien pide entrar)
-        nm.NetworkConfig.ConnectionData = System.Text.Encoding.UTF8.GetBytes(
-            Plataforma.Version + "\n" + (PlayerProfile.Name ?? ""));
+        PrepararDatosConexion("");
     }
+
+    /// <summary>
+    /// Lo que viaja con la peticion de conexion: la version del juego (para no dejar
+    /// entrar a alguien con otra), el nombre (para que el anfitrion sepa quien pide
+    /// entrar) y el ticket de licencia (ver Licencia). OnlineSession lo llama con el
+    /// ticket justo antes de unirse a una partida.
+    /// </summary>
+    public static void PrepararDatosConexion(string ticket)
+    {
+        var nm = NetworkManager.Singleton;
+        if (nm == null || nm.IsListening) return;
+        string nombre = (PlayerProfile.Name ?? "").Replace("\n", " ");
+        nm.NetworkConfig.ConnectionData = System.Text.Encoding.UTF8.GetBytes(
+            Plataforma.Version + "\n" + nombre + "\n" + (ticket ?? ""));
+    }
+
+    // Cuenta de Unity de cada cliente conectado: la misma cuenta no puede estar dos veces
+    private readonly Dictionary<ulong, string> _cuentaDe = new Dictionary<ulong, string>();
 
     private void AprobarConexion(NetworkManager.ConnectionApprovalRequest peticion,
                                  NetworkManager.ConnectionApprovalResponse respuesta)
@@ -129,9 +144,10 @@ public class SalaEspera : NetworkBehaviour
         string datos = "";
         try { datos = System.Text.Encoding.UTF8.GetString(peticion.Payload ?? new byte[0]); }
         catch (System.Exception) { }
-        int salto = datos.IndexOf('\n');
-        string version = salto >= 0 ? datos.Substring(0, salto) : "";
-        string nombre = salto >= 0 ? datos.Substring(salto + 1) : datos;
+        string[] partes = datos.Split('\n');
+        string version = partes.Length > 1 ? partes[0] : "";
+        string nombre = partes.Length > 1 ? partes[1] : datos;
+        string ticket = partes.Length > 2 ? partes[2] : "";
 
         // Juego cruzado: PC, movil y navegador juegan juntos, pero con la misma version
         if (!esElAnfitrion && version != Plataforma.Version)
@@ -143,7 +159,48 @@ public class SalaEspera : NetworkBehaviour
             return;
         }
 
-        if (esElAnfitrion || !IsSpawned || FaseActual != Fase.EnJuego) return;
+        if (esElAnfitrion) return;
+
+        // Licencia: el servidor de Unity dice si su ticket vale y de que cuenta es.
+        // Mientras contesta, la conexion queda en espera (Pending).
+        if (Licencia.Obligatoria)
+        {
+            respuesta.Pending = true;
+            VerificarLicencia(peticion.ClientNetworkId, nombre, ticket, respuesta);
+            return;
+        }
+
+        DecidirEntrada(peticion.ClientNetworkId, nombre, respuesta);
+    }
+
+    private async void VerificarLicencia(ulong cliente, string nombre, string ticket,
+                                         NetworkManager.ConnectionApprovalResponse respuesta)
+    {
+        var (ok, cuenta, motivo) = await Licencia.Verificar(ticket);
+
+        if (ok)
+        {
+            string propia = Unity.Services.Authentication.AuthenticationService.Instance.PlayerId;
+            if (cuenta == propia || _cuentaDe.ContainsValue(cuenta)) { ok = false; motivo = "esa cuenta ya esta en la partida"; }
+        }
+
+        if (!ok)
+        {
+            respuesta.Approved = false;
+            respuesta.CreatePlayerObject = false;
+            respuesta.Reason = "No puedes entrar: " + motivo + ".";
+        }
+        else
+        {
+            _cuentaDe[cliente] = cuenta;
+            DecidirEntrada(cliente, nombre, respuesta);
+        }
+        respuesta.Pending = false;
+    }
+
+    private void DecidirEntrada(ulong cliente, string nombre, NetworkManager.ConnectionApprovalResponse respuesta)
+    {
+        if (!IsSpawned || FaseActual != Fase.EnJuego) return;
 
         // Tras un cambio de anfitrion todos vuelven a entrar: no son gente nueva
         if (Time.unscaledTime < _graciaMigracionHasta) return;
@@ -154,7 +211,7 @@ public class SalaEspera : NetworkBehaviour
         if (string.IsNullOrWhiteSpace(nombre)) nombre = "Un jugador";
         if (nombre.Length > 24) nombre = nombre.Substring(0, 24);
 
-        _solicitudes.Add(new Solicitud { cliente = peticion.ClientNetworkId, nombre = nombre, llego = Time.unscaledTime });
+        _solicitudes.Add(new Solicitud { cliente = cliente, nombre = nombre, llego = Time.unscaledTime });
     }
 
     public override void OnNetworkSpawn()
@@ -192,6 +249,7 @@ public class SalaEspera : NetworkBehaviour
     private void AlDesconectarse(ulong cliente)
     {
         if (!IsServer) return;
+        _cuentaDe.Remove(cliente);
         netListos.Remove(cliente);
         _solicitudes.RemoveAll(s => s.cliente == cliente);
     }

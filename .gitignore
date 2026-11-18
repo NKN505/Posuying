@@ -106,3 +106,9 @@ Posuying_WwiseProject.zip
 
 # Builds de Posuying > Multiplataforma > Compilar
 /[Bb]uilds/
+
+# Codigo fuente de la integracion de Wwise que deja el Launcher (no hace falta en el repo)
+WwiseUnityIntegration_*_Src.zip
+# Lista de bancos de Wwise para la web: la genera Unity en cada build web
+/[Aa]ssets/StreamingAssets/BancosWeb.txt
+/[Aa]ssets/StreamingAssets/BancosWeb.txt.meta

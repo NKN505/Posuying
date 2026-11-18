@@ -8,11 +8,25 @@
   "CacheRoot": "../../../../Posuying_WwiseProject/.cache",
   "Platforms": [
    {
+    "Name": "Android",
+    "GUID": "{EFD48959-E677-41BA-9591-2C3E2D9A6181}",
+    "BasePlatform": "Android",
+    "BasePlatformGUID": "{A2D401DE-B8B6-4FEB-8142-137C34D507CA}",
+    "Path": "../../../../Posuying_WwiseProject/GeneratedSoundBanks/Android"
+   },
+   {
     "Name": "Mac",
     "GUID": "{40927313-95FD-467F-B931-B7734A19B05D}",
     "BasePlatform": "Mac",
     "BasePlatformGUID": "{9C6217D5-DD11-4795-87C1-6CE02853C540}",
     "Path": "../../../../Posuying_WwiseProject/GeneratedSoundBanks/Mac"
+   },
+   {
+    "Name": "Web",
+    "GUID": "{D24D9BFB-733D-4081-AB4F-EEA88890126F}",
+    "BasePlatform": "Web",
+    "BasePlatformGUID": "{639AD233-23F2-4C0F-9127-79F44C15E1DA}",
+    "Path": "../../../../Posuying_WwiseProject/GeneratedSoundBanks/Web"
    },
    {
     "Name": "Windows",
@@ -31,6 +45,6 @@
     "UseAsStandIn": "true"
    }
   ],
-  "FileHash": "{90728C3F-BE86-45A7-FDAE-4452CC48B905}"
+  "FileHash": "{F6553B30-A48E-F65B-537D-E8318AE37FB6}"
  }
 }
