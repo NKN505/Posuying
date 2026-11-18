@@ -364,7 +364,7 @@ public class MainMenuUI : MonoBehaviour
             18, TextAnchor.MiddleCenter, Color.white);
         _salaCopiar = Button("Copiar codigo", barra, new Vector2(-270f, -6f), new Vector2(170f, 28f), () =>
         {
-            if (onlineSession != null) GUIUtility.systemCopyBuffer = onlineSession.JoinCode;
+            if (onlineSession != null) Portapapeles.Copiar(onlineSession.JoinCode);
         }).gameObject;
 
         Button principal = Button("LISTO", barra, new Vector2(0f, 14f), new Vector2(280f, 60f), PulsarBotonSala, accentColor);
@@ -515,7 +515,7 @@ public class MainMenuUI : MonoBehaviour
             Label("codigo", "CODIGO:  " + session.JoinCode, _content, new Vector2(-70f, y),
                 new Vector2(w - 160f, 28f), 20, TextAnchor.MiddleLeft, Color.white);
             Button("Copiar", _content, new Vector2(w / 2f - 70f, y), new Vector2(130f, 28f),
-                () => GUIUtility.systemCopyBuffer = session.JoinCode);
+                () => Portapapeles.Copiar(session.JoinCode));
         }
 
         // Solo el anfitrion decide si puede entrar gente con la partida empezada
@@ -784,6 +784,7 @@ public class MainMenuUI : MonoBehaviour
     private static bool _cuentaPreparada;
     private InputField _codigoLicencia;
     private Text _licenciaMensaje;
+    private List<string> _codigosCreados = new List<string>();
 
     // Con sesion iniciada: quien eres, si tienes el juego, canjear codigos y (admins) crearlos
     private void BuildAccountConnected(float w)
@@ -813,14 +814,23 @@ public class MainMenuUI : MonoBehaviour
             Button("CANJEAR", _content, new Vector2(140f, 12f), new Vector2(120f, 34f), CanjearCodigo, accentColor);
         }
 
-        if (Licencia.EsAdmin)
+        if (Licencia.EsAdmin && _codigosCreados.Count > 0)
+        {
+            Button("CREAR 5 CODIGOS", _content, new Vector2(-115f, -30f), new Vector2(210f, 32f), CrearCodigosAdmin);
+            Button("COPIAR CODIGOS", _content, new Vector2(115f, -30f), new Vector2(210f, 32f), () =>
+            {
+                Portapapeles.Copiar(string.Join("\n", _codigosCreados));
+                if (_licenciaMensaje != null) _licenciaMensaje.text = string.Join("   ", _codigosCreados) + "\n(copiados)";
+            }, accentColor);
+        }
+        else if (Licencia.EsAdmin)
             Button("CREAR 5 CODIGOS", _content, new Vector2(0f, -30f), new Vector2(220f, 32f), CrearCodigosAdmin);
 
         _licenciaMensaje = Label("c_msg", "", _content, new Vector2(0f, -72f), new Vector2(w, 44f),
             13, TextAnchor.MiddleCenter, new Color(1f, 0.85f, 0.6f, 1f));
 
         Button("CERRAR SESION", _content, new Vector2(0f, -122f), new Vector2(200f, 32f),
-            () => { Cuenta.Salir(); Licencia.Olvidar(); ShowTab(Tab.Cuenta); }, new Color(0.35f, 0.1f, 0.1f, 1f));
+            () => { Cuenta.Salir(); Licencia.Olvidar(); _codigosCreados.Clear(); ShowTab(Tab.Cuenta); }, new Color(0.35f, 0.1f, 0.1f, 1f));
     }
 
     private async void ComprobarLicenciaYMostrar()
@@ -853,8 +863,12 @@ public class MainMenuUI : MonoBehaviour
         if (this == null || _licenciaMensaje == null) return;
         if (codigos.Count > 0)
         {
-            GUIUtility.systemCopyBuffer = string.Join("\n", codigos);
-            _licenciaMensaje.text = string.Join("   ", codigos) + "\n(copiados al portapapeles)";
+            // En el navegador solo se puede copiar justo al pulsar: por eso el boton COPIAR
+            _codigosCreados = codigos;
+            if (_tab == Tab.Cuenta) ShowTab(Tab.Cuenta);
+            Portapapeles.Copiar(string.Join("\n", codigos));
+            if (_licenciaMensaje != null)
+                _licenciaMensaje.text = string.Join("   ", codigos) + "\n(si no se han copiado, pulsa COPIAR CODIGOS)";
         }
         else _licenciaMensaje.text = mensaje;
     }
