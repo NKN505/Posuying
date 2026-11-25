@@ -58,7 +58,8 @@ public static class Licencia
     public static async Task<string> TicketVigente()
     {
         long ahora = System.DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-        if (!Comprobada || (Tiene && ahora > _caduca - 60000)) await Comprobar();
+        // Se renueva si le quedan menos de 6 min (OnlineSession lo pide cada 5 durante la partida)
+        if (!Comprobada || (Tiene && ahora > _caduca - 6 * 60000)) await Comprobar();
         return Tiene ? _ticket ?? "" : "";
     }
 

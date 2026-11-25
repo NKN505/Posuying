@@ -641,8 +641,24 @@ public class OnlineSession : MonoBehaviour
         Status = "Conexion perdida: intentando volver...";
     }
 
+    // El ticket de licencia dura 15 min. Si cambia el anfitrion, todos vuelven a
+    // pedir entrar con el ticket guardado: se renueva cada 5 min para que siga valiendo.
+    private float _proximoTicket;
+
+    private async void RenovarTicket()
+    {
+        try { SalaEspera.PrepararDatosConexion(await Licencia.TicketVigente()); }
+        catch (System.Exception e) { Debug.LogWarning("[Licencia] " + e.Message); }
+    }
+
     void Update()
     {
+        if (_session != null && Licencia.Obligatoria && Licencia.Tiene && Time.unscaledTime > _proximoTicket)
+        {
+            _proximoTicket = Time.unscaledTime + 300f;
+            RenovarTicket();
+        }
+
         var nm = NetworkManager.Singleton;
         bool backInGame = nm != null && (nm.IsConnectedClient || (nm.IsServer && nm.IsListening));
 

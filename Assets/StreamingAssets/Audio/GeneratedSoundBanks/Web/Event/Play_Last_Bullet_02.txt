@@ -1,0 +1,10 @@
+Event	ID	Name			Wwise Object Path	Notes
+	2621760586	Play_Last_Bullet_02			\Default Work Unit\Play_Last_Bullet_02	
+
+Switch Group	ID	Name			Wwise Object Path	Notes
+	1339508341	SG_Environment			\Default Work Unit\SG_Environment	
+
+Switch	ID	Name	Switch Group			Notes
+	438105790	Outside	SG_Environment			
+	3553349781	Inside	SG_Environment			
+

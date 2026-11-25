@@ -4,13 +4,15 @@ using UnityEngine;
 //
 //   - Al empezar cada partida van saliendo, de uno en uno, los controles
 //     principales (se puede quitar en Opciones > Controles).
-//   - Manteniendo F1 se ve la lista completa en cualquier momento.
+//   - Manteniendo H se ve la lista completa en cualquier momento (F1 en el
+//     navegador abre la ayuda de Chrome/Brave).
 //
 // Lee las teclas de GameSettings, asi que si el jugador las cambia la ayuda lo
 // refleja. Se crea sola al arrancar el juego; no hay que ponerla en la escena.
 public class GuiaJugador : MonoBehaviour
 {
-    public KeyCode teclaAyuda = KeyCode.F1;
+    // Fija en el codigo: la escena aun guarda la F1 de antes
+    [System.NonSerialized] public KeyCode teclaAyuda = KeyCode.H;
     [Tooltip("Segundos que se queda cada consejo al empezar la partida")]
     public float segundosPorConsejo = 5f;
 
@@ -54,7 +56,7 @@ public class GuiaJugador : MonoBehaviour
             "Marcar algo para el equipo: <b>" + N(Accion.Marcar) + "</b>      Hablar: mantener <b>" + N(Accion.Voz) + "</b>" +
                 (mando ? "" : "      Chat: <b>" + N(Accion.Chat) + "</b>"),
             "Levantar a un companero caido: mantener <b>" + N(Accion.Interactuar) +
-                "</b> junto a el      Todos los controles: " + (mando ? "en Opciones > Controles" : "mantener <b>F1</b>"),
+                "</b> junto a el      Todos los controles: " + (mando ? "en Opciones > Controles" : "mantener <b>H</b>"),
         };
     }
 

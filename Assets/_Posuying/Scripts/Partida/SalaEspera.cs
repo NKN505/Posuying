@@ -47,8 +47,10 @@ public class SalaEspera : NetworkBehaviour
     public float segundosCuentaAtras = 3f;
 
     [Header("Solicitudes con la partida empezada")]
-    public KeyCode teclaAceptar = KeyCode.F5;
-    public KeyCode teclaRechazar = KeyCode.F6;
+    // 8 y 9 (fila de arriba o teclado numerico). Antes eran F5/F6, pero en el
+    // navegador F5 recarga la pagina. Fijas en el codigo, no en la escena (1-4 son el inventario).
+    [System.NonSerialized] public KeyCode teclaAceptar = KeyCode.Alpha8;
+    [System.NonSerialized] public KeyCode teclaRechazar = KeyCode.Alpha9;
     [Tooltip("Segundos que una solicitud espera respuesta antes de rechazarse sola")]
     public float segundosSolicitud = 45f;
 
@@ -111,8 +113,15 @@ public class SalaEspera : NetworkBehaviour
 
         nm.NetworkConfig.ConnectionApproval = true;
         nm.ConnectionApprovalCallback = AprobarConexion;
-        PrepararDatosConexion("");
+        // OJO: con el ticket ya guardado. Este OnEnable puede volver a ejecutarse
+        // mientras se arranca la red al unirse, y si aqui se mandaba un ticket vacio
+        // el anfitrion echaba a todos con "no tiene el juego".
+        PrepararDatosConexion(_ticketGuardado);
     }
+
+    // Ultimo ticket que dio OnlineSession: sobrevive a que este objeto se desactive
+    // y se vuelva a activar (o a que se cargue de nuevo la escena)
+    private static string _ticketGuardado = "";
 
     /// <summary>
     /// Lo que viaja con la peticion de conexion: la version del juego (para no dejar
@@ -122,8 +131,11 @@ public class SalaEspera : NetworkBehaviour
     /// </summary>
     public static void PrepararDatosConexion(string ticket)
     {
+        _ticketGuardado = ticket ?? "";
+        // Se puede cambiar aunque la red este arrancando: Netcode lo lee al enviar
+        // la peticion de conexion, no al arrancar
         var nm = NetworkManager.Singleton;
-        if (nm == null || nm.IsListening) return;
+        if (nm == null || nm.IsServer) return;
         string nombre = (PlayerProfile.Name ?? "").Replace("\n", " ");
         nm.NetworkConfig.ConnectionData = System.Text.Encoding.UTF8.GetBytes(
             Plataforma.Version + "\n" + nombre + "\n" + (ticket ?? ""));
@@ -335,11 +347,13 @@ public class SalaEspera : NetworkBehaviour
         bool tocaAceptar = false, tocaRechazar = false;
         if (Plataforma.Tactil) TocarSolicitud(out tocaAceptar, out tocaRechazar);
 
-        if ((teclas && Input.GetKeyDown(teclaAceptar)) || tocaAceptar) Resolver(primera, true);
-        else if (caducada || (teclas && Input.GetKeyDown(teclaRechazar)) || tocaRechazar) Resolver(primera, false);
+        bool aceptar = teclas && (Input.GetKeyDown(teclaAceptar) || Input.GetKeyDown(KeyCode.Keypad8));
+        bool rechazar = teclas && (Input.GetKeyDown(teclaRechazar) || Input.GetKeyDown(KeyCode.Keypad9));
+        if (aceptar || tocaAceptar) Resolver(primera, true);
+        else if (caducada || rechazar || tocaRechazar) Resolver(primera, false);
     }
 
-    // En movil no hay F5/F6: el aviso lleva dos botones que se tocan
+    // En movil no hay teclas: el aviso lleva dos botones que se tocan
     private static void ZonasSolicitud(out Rect caja, out Rect aceptar, out Rect rechazar)
     {
         float escala = Screen.height / 1080f;
@@ -660,8 +674,12 @@ public class SalaEspera : NetworkBehaviour
 
         GUI.Label(new Rect(caja.x + 18f * escala, caja.y, caja.width - 24f * escala, caja.height),
             "<b>" + s.nombre + "</b> quiere entrar en la partida" + mas + "\n" +
-            "<color=#7CFF8A><b>" + teclaAceptar + "</b> aceptar</color>     " +
-            "<color=#ff8a7a><b>" + teclaRechazar + "</b> rechazar</color>     " +
+            "<color=#7CFF8A><b>" + NombreTecla(teclaAceptar) + "</b> aceptar</color>     " +
+            "<color=#ff8a7a><b>" + NombreTecla(teclaRechazar) + "</b> rechazar</color>     " +
             "<color=#9da3ad>(" + quedan + " s)</color>", estilo);
     }
+
+    // "Alpha8" -> "8"
+    private static string NombreTecla(KeyCode k) =>
+        k >= KeyCode.Alpha0 && k <= KeyCode.Alpha9 ? ((int)(k - KeyCode.Alpha0)).ToString() : k.ToString();
 }

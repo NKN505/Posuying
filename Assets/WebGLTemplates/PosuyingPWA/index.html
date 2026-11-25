@@ -51,6 +51,12 @@
       // Guarda la app para poder abrirla rapido y sin volver a descargarla entera
       window.addEventListener("load", function () {
         if ("serviceWorker" in navigator) {
+          // Si habia una build anterior guardada y entra la nueva, se recarga la
+          // pagina: si no, esta sesion seguiria con archivos de la build vieja
+          var habiaOtra = !!navigator.serviceWorker.controller;
+          navigator.serviceWorker.addEventListener("controllerchange", function () {
+            if (habiaOtra) { habiaOtra = false; location.reload(); }
+          });
           navigator.serviceWorker.register("ServiceWorker.js");
         }
       });

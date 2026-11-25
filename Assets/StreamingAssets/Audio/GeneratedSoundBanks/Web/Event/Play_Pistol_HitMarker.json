@@ -1,0 +1,48 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Web",
+  "BasePlatform": "Web",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "4108176095",
+    "Type": "Event",
+    "GUID": "{566EC586-F5C5-438D-9626-AD001BBF143B}",
+    "Language": "SFX",
+    "Hash": "{B91A4476-2CAF-877D-526B-1E5A647BA0C4}",
+    "ObjectPath": "Play_Pistol_HitMarker",
+    "ShortName": "Play_Pistol_HitMarker",
+    "Path": "Event/Play_Pistol_HitMarker.bnk",
+    "Media": [
+     {
+      "Id": "953770460",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "Hitmarker_01.wav",
+      "Path": "Media/953770460.wem",
+      "CachePath": "09/{09893D6F-A554-F5FE-0D93-2A0963BCF392}.wem"
+     }
+    ],
+    "Events": [
+     {
+      "Id": "4108176095",
+      "Name": "Play_Pistol_HitMarker",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Pistol_HitMarker",
+      "GUID": "{566EC586-F5C5-438D-9626-AD001BBF143B}",
+      "DurationType": "OneShot",
+      "DurationMin": "0.69942",
+      "DurationMax": "0.69942",
+      "MediaRefs": [
+       {
+        "Id": "953770460"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "FileHash": "{03A59B8B-C717-D725-06B1-9F3EA4A0D983}"
+ }
+}

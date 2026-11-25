@@ -7,7 +7,10 @@
 //
 // El nombre lleva la version: al publicar una version nueva se descarga de nuevo
 // y la vieja se borra.
-const cacheName = {{{ JSON.stringify(COMPANY_NAME + "-" + PRODUCT_NAME + "-" + PRODUCT_VERSION) }}};
+// OJO: ademas de la version lleva la fecha de la build (la pone Multiplataforma.Compilar).
+// Solo con la version, dos builds de la 0.2.0 compartian el guardado y cada
+// jugador acababa con archivos viejos, o mezclados de builds distintas.
+const cacheName = {{{ JSON.stringify(COMPANY_NAME + "-" + PRODUCT_NAME + "-" + PRODUCT_VERSION) }}} + "-__BUILD__";
 
 self.addEventListener("install", function (e) {
   self.skipWaiting();

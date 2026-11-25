@@ -221,6 +221,15 @@ public static class Multiplataforma
         if (r.result != UnityEditor.Build.Reporting.BuildResult.Succeeded)
             return nombre + ": la build ha FALLADO (" + r.totalErrors + " errores). Mira la consola.";
 
+        // Web: cada build con su propio guardado en el navegador (ver ServiceWorker.js)
+        if (d.objetivo == BuildTarget.WebGL)
+        {
+            string sw = Path.Combine(carpeta, "ServiceWorker.js");
+            if (File.Exists(sw))
+                File.WriteAllText(sw, File.ReadAllText(sw).Replace("__BUILD__",
+                    System.DateTime.UtcNow.ToString("yyyyMMddHHmm")));
+        }
+
         return nombre + ": build lista en " + Path.GetFullPath(ruta) + " (" + (TamanoEnDisco(ruta) / (1024 * 1024)) +
                " MB, " + Mathf.RoundToInt((float)r.totalTime.TotalSeconds) + " s)";
     }
