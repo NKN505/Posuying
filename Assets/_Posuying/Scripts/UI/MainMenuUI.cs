@@ -794,11 +794,23 @@ public class MainMenuUI : MonoBehaviour
         Label("c_usuario", Cuenta.Usuario, _content, new Vector2(0f, 84f), new Vector2(w, 32f),
             22, TextAnchor.MiddleCenter, Color.white);
 
-        if (!Licencia.Comprobada)
+        if (!Licencia.Comprobada && _errorLicencia != null)
+        {
+            // Fallo al preguntar (sin internet, servidor caido): se reintenta a mano.
+            // Antes se volvia a preguntar sin parar mientras la pestana estaba abierta.
+            Label("c_lic", _errorLicencia, _content, new Vector2(0f, 50f), new Vector2(w, 24f),
+                13, TextAnchor.MiddleCenter, new Color(1f, 0.6f, 0.5f, 1f));
+            Button("REINTENTAR", _content, new Vector2(0f, 12f), new Vector2(160f, 32f), () =>
+            {
+                _errorLicencia = null;
+                ShowTab(Tab.Cuenta);
+            }, accentColor);
+        }
+        else if (!Licencia.Comprobada)
         {
             Label("c_lic", "Comprobando la licencia...", _content, new Vector2(0f, 50f), new Vector2(w, 24f),
                 15, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.7f));
-            ComprobarLicenciaYMostrar();
+            if (!_comprobandoLicencia) ComprobarLicenciaYMostrar();
         }
         else if (Licencia.Tiene)
         {
@@ -830,15 +842,20 @@ public class MainMenuUI : MonoBehaviour
             13, TextAnchor.MiddleCenter, new Color(1f, 0.85f, 0.6f, 1f));
 
         Button("CERRAR SESION", _content, new Vector2(0f, -122f), new Vector2(200f, 32f),
-            () => { Cuenta.Salir(); Licencia.Olvidar(); _codigosCreados.Clear(); ShowTab(Tab.Cuenta); }, new Color(0.35f, 0.1f, 0.1f, 1f));
+            () => { Cuenta.Salir(); Licencia.Olvidar(); _codigosCreados.Clear(); _errorLicencia = null; ShowTab(Tab.Cuenta); }, new Color(0.35f, 0.1f, 0.1f, 1f));
     }
+
+    private bool _comprobandoLicencia;
+    private string _errorLicencia;
 
     private async void ComprobarLicenciaYMostrar()
     {
+        _comprobandoLicencia = true;
         string error = await Licencia.Comprobar();
+        _comprobandoLicencia = false;
+        _errorLicencia = error;
         if (this == null || _tab != Tab.Cuenta) return;
         ShowTab(Tab.Cuenta);
-        if (error != null && _licenciaMensaje != null) _licenciaMensaje.text = error;
     }
 
     private async void CanjearCodigo()
@@ -860,11 +877,13 @@ public class MainMenuUI : MonoBehaviour
         if (_licenciaMensaje != null) _licenciaMensaje.text = "Creando codigos...";
         var (codigos, mensaje) = await Licencia.CrearCodigos(5, "Creados desde el juego");
         _cuentaOcupada = false;
+        // Se guardan antes de mirar la pantalla: si se cambio de pestana mientras tanto,
+        // siguen ahi al volver (antes se perdian aunque ya existian en el servidor)
+        if (codigos.Count > 0) _codigosCreados = codigos;
         if (this == null || _licenciaMensaje == null) return;
         if (codigos.Count > 0)
         {
             // En el navegador solo se puede copiar justo al pulsar: por eso el boton COPIAR
-            _codigosCreados = codigos;
             if (_tab == Tab.Cuenta) ShowTab(Tab.Cuenta);
             Portapapeles.Copiar(string.Join("\n", codigos));
             if (_licenciaMensaje != null)
@@ -892,7 +911,7 @@ public class MainMenuUI : MonoBehaviour
         _cuentaOcupada = false;
 
         if (this == null) return;   // se cerro el menu mientras tanto
-        if (error == null) { Licencia.Olvidar(); PostUI(uiStart); ShowTab(Tab.Cuenta); }
+        if (error == null) { Licencia.Olvidar(); _errorLicencia = null; _codigosCreados.Clear(); PostUI(uiStart); ShowTab(Tab.Cuenta); }
         else if (_cuentaEstado != null) _cuentaEstado.text = error;
     }
 
@@ -1242,6 +1261,7 @@ public class MainMenuUI : MonoBehaviour
     private Accion _capturando;
     private bool _capturaDeMando;
     private Text _textoCaptura;
+    private RectTransform _botonCaptura;   // el boton de la fila que se esta cambiando
     private int _frameCaptura;
     private float _capturaDesde;
 
@@ -1261,6 +1281,7 @@ public class MainMenuUI : MonoBehaviour
         button = Button(TextoControl(accion), _content, new Vector2(w / 2f - 110f, y), new Vector2(190f, 26f), () =>
         {
             CancelKeyCapture();
+            _botonCaptura = button.GetComponent<RectTransform>();
             _textoCaptura = button.GetComponentInChildren<Text>();
             _textoCaptura.text = _controlesMando ? "Pulsa un boton..." : "Pulsa una tecla...";
             _capturando = accion;
@@ -1275,7 +1296,17 @@ public class MainMenuUI : MonoBehaviour
     {
         if (_textoCaptura != null) _textoCaptura.text = TextoControl(_capturando);
         _textoCaptura = null;
+        _botonCaptura = null;
         CapturingKey = false;
+    }
+
+    // El raton esta encima del boton que se esta cambiando
+    private bool SobreBotonCaptura()
+    {
+        if (_botonCaptura == null) return false;
+        Canvas raiz = canvas != null ? canvas.rootCanvas : null;
+        Camera camara = raiz != null && raiz.renderMode != RenderMode.ScreenSpaceOverlay ? raiz.worldCamera : null;
+        return RectTransformUtility.RectangleContainsScreenPoint(_botonCaptura, UnityEngine.Input.mousePosition, camara);
     }
 
     private void UpdateKeyCapture()
@@ -1283,7 +1314,7 @@ public class MainMenuUI : MonoBehaviour
         if (!CapturingKey) return;
 
         // Si la fila ya no existe (se cambio de pestana o se cerro el menu), se cancela
-        if (_textoCaptura == null || !_textoCaptura.gameObject.activeInHierarchy) { CapturingKey = false; _textoCaptura = null; return; }
+        if (_textoCaptura == null || !_textoCaptura.gameObject.activeInHierarchy) { CapturingKey = false; _textoCaptura = null; _botonCaptura = null; return; }
         if (Time.frameCount <= _frameCaptura + 1) return;   // el propio clic que abre la espera no cuenta
 
         if (UnityEngine.Input.GetKeyDown(KeyCode.Escape) || Time.unscaledTime - _capturaDesde > 8f) { CancelKeyCapture(); return; }
@@ -1297,6 +1328,16 @@ public class MainMenuUI : MonoBehaviour
         else
         {
             if (!UnityEngine.Input.anyKeyDown) return;
+
+            // Clic izquierdo: solo se asigna si es sobre el propio boton que se esta
+            // cambiando. Fuera de el, cancela. Antes, hacer clic en otro sitio para
+            // cancelar asignaba el clic izquierdo a la accion y se lo quitaba a
+            // Disparar: el jugador se quedaba sin poder disparar.
+            if (UnityEngine.Input.GetKeyDown(KeyCode.Mouse0) && !SobreBotonCaptura())
+            {
+                CancelKeyCapture();
+                return;
+            }
 
             // Suprimir deja la accion sin tecla
             if (UnityEngine.Input.GetKeyDown(KeyCode.Delete)) Controles.PonerTecla(_capturando, KeyCode.None);
@@ -1316,6 +1357,7 @@ public class MainMenuUI : MonoBehaviour
         // Se repinta la pagina entera: al asignar un control, otra accion puede haberlo perdido
         CapturingKey = false;
         _textoCaptura = null;
+        _botonCaptura = null;
         ShowTab(Tab.Opciones);
     }
 

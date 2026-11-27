@@ -37,7 +37,18 @@ public static class Cuenta
     /// Deja los servicios de Unity listos con el perfil indicado y, si hay una sesion
     /// guardada en este dispositivo, entra en ella. No crea cuentas anonimas.
     /// </summary>
-    public static async Task Preparar(string perfil)
+    public static Task Preparar(string perfil)
+    {
+        // Lo llaman a la vez la pestana CUENTA, crear/buscar partida y ENTRAR. Dos
+        // inicios de sesion a la vez hacen fallar al segundo ("already signing in"):
+        // todos esperan al mismo.
+        if (_preparando == null || _preparando.IsCompleted) _preparando = PrepararAhora(perfil);
+        return _preparando;
+    }
+
+    private static Task _preparando;
+
+    private static async Task PrepararAhora(string perfil)
     {
         if (UnityServices.State != ServicesInitializationState.Initialized)
             await UnityServices.InitializeAsync();

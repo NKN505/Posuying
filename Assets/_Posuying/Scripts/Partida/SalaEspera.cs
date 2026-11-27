@@ -188,26 +188,55 @@ public class SalaEspera : NetworkBehaviour
     private async void VerificarLicencia(ulong cliente, string nombre, string ticket,
                                          NetworkManager.ConnectionApprovalResponse respuesta)
     {
-        var (ok, cuenta, motivo) = await Licencia.Verificar(ticket);
+        var (ok, cuenta, motivo, sinRespuesta) = await Licencia.Verificar(ticket);
 
-        if (ok)
+        // Se ha ido mientras se comprobaba, o se ha apagado la red: nada que decidir
+        var nm = NetworkManager.Singleton;
+        if (nm == null || !nm.IsServer || !nm.PendingClients.ContainsKey(cliente)) return;
+
+        // Tras un cambio de anfitrion vuelven todos a la vez, y ya los habia comprobado
+        // el anfitrion anterior: si el servidor de licencias no contesta, se les deja pasar
+        if (!ok && sinRespuesta && Time.unscaledTime < _graciaMigracionHasta) ok = true;
+
+        if (ok && !string.IsNullOrEmpty(cuenta))
         {
             string propia = Unity.Services.Authentication.AuthenticationService.Instance.PlayerId;
-            if (cuenta == propia || _cuentaDe.ContainsValue(cuenta)) { ok = false; motivo = "esa cuenta ya esta en la partida"; }
+            if (cuenta == propia) { ok = false; motivo = "esa cuenta ya esta en la partida (es la del anfitrion)"; }
+            else SoltarConexionVieja(cuenta);
         }
 
         if (!ok)
         {
             respuesta.Approved = false;
             respuesta.CreatePlayerObject = false;
-            respuesta.Reason = "No puedes entrar: " + motivo + ".";
+            respuesta.Reason = sinRespuesta
+                ? "No se pudo comprobar tu licencia ahora mismo. Prueba a entrar otra vez."
+                : "No puedes entrar: " + motivo + ".";
         }
         else
         {
-            _cuentaDe[cliente] = cuenta;
+            if (!string.IsNullOrEmpty(cuenta)) _cuentaDe[cliente] = cuenta;
             DecidirEntrada(cliente, nombre, respuesta);
         }
         respuesta.Pending = false;
+    }
+
+    // La misma cuenta ya estaba dentro con otra conexion. Casi siempre es esa misma
+    // persona que vuelve (recargo la pagina, se le corto la red) antes de que el
+    // anfitrion note que la conexion vieja ha muerto: se suelta la vieja y entra la
+    // nueva. Antes se rechazaba a la nueva y ya no podia volver a entrar.
+    private void SoltarConexionVieja(string cuenta)
+    {
+        var viejas = new List<ulong>();
+        foreach (var par in _cuentaDe)
+            if (par.Value == cuenta) viejas.Add(par.Key);
+
+        foreach (ulong vieja in viejas)
+        {
+            _cuentaDe.Remove(vieja);
+            if (NetworkManager.ConnectedClients.ContainsKey(vieja))
+                NetworkManager.DisconnectClient(vieja, "Has entrado con tu cuenta desde otro sitio.");
+        }
     }
 
     private void DecidirEntrada(ulong cliente, string nombre, NetworkManager.ConnectionApprovalResponse respuesta)
@@ -233,17 +262,26 @@ public class SalaEspera : NetworkBehaviour
         if (IsServer)
         {
             netListos.Clear();
+            _cuentaDe.Clear();   // lo de una partida anterior no cuenta
             NetworkManager.OnClientDisconnectCallback += AlDesconectarse;
 
-            // Si somos el anfitrion NUEVO tras una migracion, la partida ya estaba en marcha
+            // Si somos el anfitrion NUEVO tras una migracion, se sigue donde se estaba:
+            // en partida si ya habia empezado, y si no en la sala (antes se empezaba la
+            // partida para todos aunque nadie hubiera marcado LISTO)
             var sesion = FindFirstObjectByType<OnlineSession>();
             bool migrando = sesion != null && sesion.IsMigrating;
-            netFase.Value = (int)(migrando ? Fase.EnJuego : Fase.Sala);
+            bool yaJugaban = migrando && _ultimaFase == Fase.EnJuego;
+            netFase.Value = (int)(yaJugaban ? Fase.EnJuego : Fase.Sala);
             if (migrando) _graciaMigracionHasta = Time.unscaledTime + 45f;
         }
 
+        _ultimaFase = FaseActual;
         _estabaEnSala = FaseActual != Fase.EnJuego;
     }
+
+    // Ultima fase que ha visto esta maquina. Si el anfitrion se va, el nuevo anfitrion
+    // (que era un cliente) sabe por ella si la partida ya habia empezado.
+    private static Fase _ultimaFase = Fase.Sala;
 
     public override void OnNetworkDespawn()
     {
@@ -251,6 +289,7 @@ public class SalaEspera : NetworkBehaviour
         if (NetworkManager != null) NetworkManager.OnClientDisconnectCallback -= AlDesconectarse;
 
         _solicitudes.Clear();
+        _cuentaDe.Clear();
         EsperandoPermiso = false;
         UIState.SalaAbierta = false;
         if (_camara != null) _camara.enabled = false;
@@ -475,6 +514,7 @@ public class SalaEspera : NetworkBehaviour
     // (la posicion la manda el dueno) y recupera su camara.
     private void AlCambiarFase(int antes, int ahora)
     {
+        _ultimaFase = (Fase)ahora;
         if ((Fase)ahora != Fase.EnJuego || (Fase)antes == Fase.EnJuego) return;
 
         var yo = NetworkPlayer.LocalPlayer;

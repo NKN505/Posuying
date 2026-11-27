@@ -1,15 +1,20 @@
-// Guarda el juego en el dispositivo para que, instalado como app, se abra
-// rapido sin volver a descargar cientos de MB.
+// Lo necesita la web para poder instalarse como app (PWA).
 //
-// OJO: solo se guardan los archivos del propio juego. Las llamadas a los
-// servicios de Unity (iniciar sesion, lista de partidas, Relay) van SIEMPRE a
-// la red: si se guardaran, la lista de partidas se quedaria congelada.
+// SIEMPRE PRIMERO LA RED. Antes servia lo guardado en el dispositivo sin preguntar,
+// y cada jugador acababa con una build vieja, o con archivos mezclados de builds
+// distintas (pantalla negra, "no tiene el juego"...). No hace falta guardar el juego
+// aqui: el navegador ya lo tiene en su cache normal y, como Vercel manda
+// "no-cache", solo vuelve a descargar lo que haya cambiado (lo demas, el servidor
+// contesta "sin cambios" en un momento).
 //
-// El nombre lleva la version: al publicar una version nueva se descarga de nuevo
-// y la vieja se borra.
-// OJO: ademas de la version lleva la fecha de la build (la pone Multiplataforma.Compilar).
-// Solo con la version, dos builds de la 0.2.0 compartian el guardado y cada
-// jugador acababa con archivos viejos, o mezclados de builds distintas.
+// Lo guardado solo se usa sin conexion, y solo la pagina (no los cientos de MB del
+// juego: sin internet no se puede jugar online de todas formas).
+//
+// OJO: las llamadas a los servicios de Unity (iniciar sesion, partidas, Relay) no
+// pasan por aqui: son de otro dominio y van a la red tal cual.
+//
+// El nombre lleva la version y la fecha de la build (la pone Multiplataforma.Compilar);
+// al cambiar, lo guardado de antes se borra.
 const cacheName = {{{ JSON.stringify(COMPANY_NAME + "-" + PRODUCT_NAME + "-" + PRODUCT_VERSION) }}} + "-__BUILD__";
 
 self.addEventListener("install", function (e) {
@@ -29,13 +34,21 @@ self.addEventListener("fetch", function (e) {
   const delJuego = e.request.method === "GET" && url.origin === self.location.origin;
   if (!delJuego) return;   // todo lo demas, a la red tal cual
 
-  e.respondWith((async function () {
-    const cache = await caches.open(cacheName);
-    const guardado = await cache.match(e.request);
-    if (guardado) return guardado;
+  // Los archivos grandes del juego no se guardan (ver arriba)
+  const pesado = url.pathname.indexOf("/Build/") >= 0 || url.pathname.indexOf("/StreamingAssets/") >= 0;
 
-    const respuesta = await fetch(e.request);
-    if (respuesta.ok) cache.put(e.request, respuesta.clone());
-    return respuesta;
+  e.respondWith((async function () {
+    try {
+      const respuesta = await fetch(e.request);
+      if (respuesta.ok && !pesado) {
+        const copia = respuesta.clone();
+        caches.open(cacheName).then(function (cache) { return cache.put(e.request, copia); });
+      }
+      return respuesta;
+    } catch (err) {
+      const guardado = await caches.match(e.request);
+      if (guardado) return guardado;
+      throw err;
+    }
   })());
 });

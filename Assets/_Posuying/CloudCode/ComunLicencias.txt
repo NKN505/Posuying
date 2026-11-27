@@ -1,19 +1,21 @@
 Scripts de Cloud Code del sistema de licencias de Posuying (servidor de Unity).
 
   ComprobarLicencia  - el jugador pregunta si su cuenta tiene el juego. Si lo tiene,
-                       recibe un "ticket" firmado que dura 15 minutos.
+                       recibe un "ticket" que dura 30 minutos.
   VerificarTicket    - el anfitrion de una partida comprueba el ticket de quien
                        quiere entrar (que es de verdad esa cuenta y que tiene el juego).
   CanjearCodigo      - canjea un codigo de un solo uso: el juego queda en la cuenta.
   CrearCodigos       - genera codigos nuevos. Solo para las cuentas de ADMINS.
 
 Donde se guarda (Cloud Save):
-  - En cada jugador, el dato PROTEGIDO "licencia": el jugador puede leerlo pero
-    solo el servidor puede escribirlo.
+  - En cada jugador, los datos PROTEGIDOS "licencia" y "ticket": el jugador puede
+    leerlos pero solo el servidor puede escribirlos.
   - Los codigos, en los datos personalizados "codigos" (uno por codigo).
 
-Se suben al proyecto de Unity Cloud desde Window > Services > Deployment.
+Como funciona el ticket: es "playerId|codigo", con un codigo al azar que se guarda
+en el dato "ticket" de esa cuenta. VerificarTicket lo compara con el guardado. No
+hay ninguna clave secreta en los scripts: el repositorio es PUBLICO en GitHub y
+cualquiera podria leerla. Al pedir un ticket nuevo, el anterior deja de valer.
 
-IMPORTANTE: la clave de firma de los tickets (CLAVE en cada script) tiene que ser
-la misma en ComprobarLicencia y VerificarTicket. Antes de publicar el juego,
-cambiala por una nueva y no la compartas fuera del equipo.
+Se suben al proyecto de Unity Cloud desde Window > Services > Deployment, con
+"Deploy Selected" y SIN marcar WwiseAudioWorklet.processor.js (no es nuestro).

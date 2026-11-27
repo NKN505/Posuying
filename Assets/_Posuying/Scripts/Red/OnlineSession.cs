@@ -18,9 +18,12 @@ public class OnlineSession : MonoBehaviour
     // encontrarlas al listar: por defecto el SDK pone un GUID aleatorio y
     // entonces ninguna partida veria a las demas.
     //
-    // Lleva la version del juego: en la lista solo salen las partidas de jugadores
-    // con tu MISMA version (con versiones distintas la partida no funcionaria).
+    // OJO: el tipo NO filtra la lista de partidas (el SDK no lo usa al buscar). Para
+    // que solo salgan las de tu MISMA version, cada partida lleva la version en una
+    // propiedad publica indexada (PropiedadVersion) y la busqueda filtra por ella.
     public static string SessionType => "posuying-" + Plataforma.Version;
+
+    private const string PropiedadVersion = "version";
 
     // Todos, en cualquier plataforma, hablan con el Relay por WebSocket seguro.
     // El navegador SOLO puede usar ese; si los de PC o movil usaran otro (DTLS,
@@ -206,6 +209,9 @@ public class OnlineSession : MonoBehaviour
                     IsPrivate = config.isPrivate,
                     Type = SessionType
                 };
+                // Indice de texto 3: el SDK se reserva el 1 y el 2
+                options.SessionProperties[PropiedadVersion] = new SessionProperty(
+                    Plataforma.Version, VisibilityPropertyOptions.Public, PropertyIndex.String3);
 
                 if (!string.IsNullOrWhiteSpace(config.password))
                     options.Password = config.password.Trim();
@@ -261,6 +267,7 @@ public class OnlineSession : MonoBehaviour
             try
             {
                 var query = new QuerySessionsOptions { Count = 25 };
+                query.FilterOptions.Add(new FilterOption(FilterField.StringIndex3, Plataforma.Version, FilterOperation.Equal));
                 QuerySessionsResults results = await MultiplayerService.Instance
                     .QuerySessionsAsync(query);
 
@@ -390,10 +397,14 @@ public class OnlineSession : MonoBehaviour
         Busy = false;
     }
 
-    public async void LeaveOnlineGame()
+    public void LeaveOnlineGame()
     {
         if (_session == null) return;
+        Salir("Desconectado");
+    }
 
+    private async void Salir(string estadoFinal)
+    {
         _leavingOnPurpose = true;   // que no lo confunda con una caida
         UnhookSessionEvents();
 
@@ -407,7 +418,7 @@ public class OnlineSession : MonoBehaviour
         JoinCode = "";
         IsMigrating = false;
         _disconnectedAt = -1f;
-        Status = "Desconectado";
+        Status = estadoFinal;
 
         // El SDK ya apaga Netcode al dejar la sesion. Hacerlo tambien nosotros
         // es justo lo que rompia la siguiente conexion.
@@ -617,17 +628,27 @@ public class OnlineSession : MonoBehaviour
         // Si seguimos dentro es que se fue OTRO jugador: no es asunto nuestro
         if (nm.IsServer || nm.IsConnectedClient) return;
 
-        // Rechazados por el anfitrion (version distinta): no tiene sentido reintentar
+        // Rechazados por el anfitrion (otra version, sin licencia, cuenta repetida...):
+        // no tiene sentido esperar a reconectar
         string motivo = nm.DisconnectReason;
-        if (!string.IsNullOrEmpty(motivo) && (motivo.Contains("version") || motivo.StartsWith("No puedes entrar")))
+        if (!string.IsNullOrEmpty(motivo) && (motivo.Contains("version") || motivo.StartsWith("No puedes entrar") ||
+                                              motivo.StartsWith("No se pudo comprobar tu licencia") ||
+                                              motivo.StartsWith("Has entrado con tu cuenta")))
         {
-            Status = motivo;
             Notifications.Show(motivo);
-            LeaveOnlineGame();
+            SalirConMotivo(motivo);
             return;
         }
 
         BeginReconnectWatch();
+    }
+
+    // Sale de la partida dejando el motivo a la vista (con LeaveOnlineGame a secas,
+    // el "Desconectado" del final borraba al instante el motivo del rechazo)
+    private void SalirConMotivo(string motivo)
+    {
+        Status = motivo;
+        if (_session != null) Salir(motivo);
     }
 
     private void OnTransportFailure() => BeginReconnectWatch();
@@ -641,8 +662,9 @@ public class OnlineSession : MonoBehaviour
         Status = "Conexion perdida: intentando volver...";
     }
 
-    // El ticket de licencia dura 15 min. Si cambia el anfitrion, todos vuelven a
-    // pedir entrar con el ticket guardado: se renueva cada 5 min para que siga valiendo.
+    // El ticket de licencia dura 30 min. Si cambia el anfitrion, todos vuelven a
+    // pedir entrar con el ticket guardado: se mira cada minuto (sin llamar al servidor)
+    // y se renueva cuando le quedan menos de 6, para que siempre valga.
     private float _proximoTicket;
 
     private async void RenovarTicket()
@@ -655,7 +677,7 @@ public class OnlineSession : MonoBehaviour
     {
         if (_session != null && Licencia.Obligatoria && Licencia.Tiene && Time.unscaledTime > _proximoTicket)
         {
-            _proximoTicket = Time.unscaledTime + 300f;
+            _proximoTicket = Time.unscaledTime + 60f;
             RenovarTicket();
         }
 
