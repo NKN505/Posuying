@@ -112,3 +112,6 @@ WwiseUnityIntegration_*_Src.zip
 # Lista de bancos de Wwise para la web: la genera Unity en cada build web
 /[Aa]ssets/StreamingAssets/BancosWeb.txt
 /[Aa]ssets/StreamingAssets/BancosWeb.txt.meta
+# Huella del codigo de cada build: la escribe Editor/HuellaBuild.cs al compilar
+/[Aa]ssets/_Posuying/Resources/HuellaBuild.txt
+/[Aa]ssets/_Posuying/Resources/HuellaBuild.txt.meta

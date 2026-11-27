@@ -14,10 +14,17 @@ public static class PlayerProfile
         set { PlayerPrefs.SetInt("player_color", value); PlayerPrefs.Save(); }
     }
 
+    /// <summary>Con sesion iniciada, el nombre es el de la cuenta y no se puede cambiar.</summary>
+    public static bool NombreDeCuenta => !string.IsNullOrEmpty(Cuenta.Usuario);
+
     public static string Name
     {
         get
         {
+            // Con cuenta, todos ven el nombre de la cuenta: asi se sabe quien es quien
+            // (antes cada uno salia con el nombre guardado en su equipo o "Jugador123")
+            if (NombreDeCuenta) return Cuenta.Usuario;
+
             string saved = PlayerPrefs.GetString(Key, "");
             return string.IsNullOrWhiteSpace(saved) ? DefaultName() : saved;
         }

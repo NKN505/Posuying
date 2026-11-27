@@ -138,7 +138,7 @@ public class SalaEspera : NetworkBehaviour
         if (nm == null || nm.IsServer) return;
         string nombre = (PlayerProfile.Name ?? "").Replace("\n", " ");
         nm.NetworkConfig.ConnectionData = System.Text.Encoding.UTF8.GetBytes(
-            Plataforma.Version + "\n" + nombre + "\n" + (ticket ?? ""));
+            Plataforma.VersionRed + "\n" + nombre + "\n" + (ticket ?? ""));
     }
 
     // Cuenta de Unity de cada cliente conectado: la misma cuenta no puede estar dos veces
@@ -161,6 +161,11 @@ public class SalaEspera : NetworkBehaviour
         string nombre = partes.Length > 1 ? partes[1] : datos;
         string ticket = partes.Length > 2 ? partes[2] : "";
 
+        // "0.2.0+huella" (ver Plataforma.Huella); las builds antiguas mandan solo "0.2.0"
+        string huella = "";
+        int mas = version.IndexOf('+');
+        if (mas >= 0) { huella = version.Substring(mas + 1); version = version.Substring(0, mas); }
+
         // Juego cruzado: PC, movil y navegador juegan juntos, pero con la misma version
         if (!esElAnfitrion && version != Plataforma.Version)
         {
@@ -168,6 +173,18 @@ public class SalaEspera : NetworkBehaviour
             respuesta.CreatePlayerObject = false;
             respuesta.Reason = "El anfitrion tiene la version " + Plataforma.Version +
                                " y tu la " + (version.Length > 0 ? version : "antigua") + ". Actualizad el juego.";
+            return;
+        }
+
+        // ...y de la misma build: con el mismo numero de version pero codigo distinto
+        // la red no cuadra (personajes que no se ven, partidas que no arrancan...)
+        if (!esElAnfitrion && huella != "dev" && Plataforma.Huella != "dev" && huella != Plataforma.Huella)
+        {
+            respuesta.Approved = false;
+            respuesta.CreatePlayerObject = false;
+            respuesta.Reason = "El anfitrion tiene otra build de la version " + Plataforma.Version +
+                               " (" + Plataforma.Huella + ", la tuya " + (huella.Length > 0 ? huella : "antigua") +
+                               "). Actualizad todos el juego a la ultima.";
             return;
         }
 
@@ -282,6 +299,9 @@ public class SalaEspera : NetworkBehaviour
     // Ultima fase que ha visto esta maquina. Si el anfitrion se va, el nuevo anfitrion
     // (que era un cliente) sabe por ella si la partida ya habia empezado.
     private static Fase _ultimaFase = Fase.Sala;
+
+    /// <summary>La partida ya habia empezado (lo usa WorldRestorer tras un cambio de anfitrion).</summary>
+    public static bool PartidaEmpezada => _ultimaFase == Fase.EnJuego;
 
     public override void OnNetworkDespawn()
     {

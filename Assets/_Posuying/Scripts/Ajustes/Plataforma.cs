@@ -12,6 +12,36 @@ public static class Plataforma
     /// <summary>Version del juego. Solo pueden jugar juntos jugadores con la MISMA version.</summary>
     public static string Version => Application.version;
 
+    /// <summary>
+    /// Huella del codigo con el que se hizo esta build (la escribe Editor/HuellaBuild.cs al
+    /// compilar). Dos builds de la MISMA version pero con codigo distinto no deben jugar
+    /// juntas: la red no cuadra y pasan cosas raras. En el editor y en las builds de
+    /// desarrollo es "dev" y no se comprueba, para poder probar.
+    /// </summary>
+    public static string Huella
+    {
+        get
+        {
+#if UNITY_EDITOR
+            return "dev";
+#else
+            if (Debug.isDebugBuild) return "dev";
+            if (_huella == null)
+            {
+                var txt = Resources.Load<TextAsset>("HuellaBuild");
+                _huella = txt != null ? txt.text.Trim() : "?";
+            }
+            return _huella;
+#endif
+        }
+    }
+#if !UNITY_EDITOR
+    private static string _huella;
+#endif
+
+    /// <summary>Version y huella juntas: lo que tiene que coincidir para jugar juntos.</summary>
+    public static string VersionRed => Version + "+" + Huella;
+
     /// <summary>Navegador (WebGL).</summary>
     public static bool EsWeb =>
 #if UNITY_WEBGL && !UNITY_EDITOR

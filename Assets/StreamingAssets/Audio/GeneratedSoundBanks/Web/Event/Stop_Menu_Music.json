@@ -1,0 +1,33 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Web",
+  "BasePlatform": "Web",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "3945748993",
+    "Type": "Event",
+    "GUID": "{3777F9A2-E6E7-4571-A290-E8BF2DC6EF2B}",
+    "Language": "SFX",
+    "Hash": "{A69C4365-9544-E807-DD98-CE18A838666C}",
+    "ObjectPath": "Stop_Menu_Music",
+    "ShortName": "Stop_Menu_Music",
+    "Path": "Event/Stop_Menu_Music.bnk",
+    "Events": [
+     {
+      "Id": "3945748993",
+      "Name": "Stop_Menu_Music",
+      "ObjectPath": "\\Events\\Default Work Unit\\Stop_Menu_Music",
+      "GUID": "{3777F9A2-E6E7-4571-A290-E8BF2DC6EF2B}",
+      "MaxAttenuation": "0",
+      "DurationType": "OneShot",
+      "DurationMin": "0",
+      "DurationMax": "0"
+     }
+    ]
+   }
+  ],
+  "FileHash": "{9788DA25-A870-56F0-149B-593BED26133E}"
+ }
+}

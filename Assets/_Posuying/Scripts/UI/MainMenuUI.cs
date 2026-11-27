@@ -987,10 +987,19 @@ public class MainMenuUI : MonoBehaviour
         Label("lname", "Tu nombre", _content, new Vector2(-w / 2f + 85f, y),
             new Vector2(170f, 22f), 14, TextAnchor.MiddleLeft, Color.white);
 
-        InputField nameField = Input("nombreJugador", PlayerProfile.Name, _content,
-            new Vector2(w / 2f - 130f, y), new Vector2(220f, 28f), false);
-        nameField.characterLimit = PlayerProfile.MaxLength;
-        nameField.onEndEdit.AddListener(value => PlayerProfile.Name = value);
+        if (PlayerProfile.NombreDeCuenta)
+        {
+            // Con cuenta, el nombre es el de la cuenta (ver PlayerProfile)
+            Label("vname", PlayerProfile.Name + "  (el de tu cuenta)", _content, new Vector2(w / 2f - 130f, y),
+                new Vector2(220f, 28f), 14, TextAnchor.MiddleLeft, Color.white);
+        }
+        else
+        {
+            InputField nameField = Input("nombreJugador", PlayerProfile.Name, _content,
+                new Vector2(w / 2f - 130f, y), new Vector2(220f, 28f), false);
+            nameField.characterLimit = PlayerProfile.MaxLength;
+            nameField.onEndEdit.AddListener(value => PlayerProfile.Name = value);
+        }
 
         // Deslizante y en vivo: con los pasos de 0,25 de antes no se podia afinar,
         // y asi se nota al momento si la ajustas con la partida en marcha
@@ -1039,7 +1048,9 @@ public class MainMenuUI : MonoBehaviour
         }
         else
         {
-            Label("plataforma", "Jugando en " + Plataforma.Nombre + " · version " + Plataforma.Version,
+            // La build tambien: para comprobar de un vistazo que todos tienen la misma
+            Label("plataforma", "Jugando en " + Plataforma.Nombre + " · version " + Plataforma.Version +
+                                " · build " + Plataforma.Huella,
                 _content, new Vector2(0f, RowY(0) - _rowStep * 0.5f), new Vector2(_content.sizeDelta.x, 24f),
                 13, TextAnchor.MiddleCenter, new Color(1f, 1f, 1f, 0.6f));
         }

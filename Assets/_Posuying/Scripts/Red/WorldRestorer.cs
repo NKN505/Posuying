@@ -151,8 +151,10 @@ public class WorldRestorer : MonoBehaviour
     {
         if (_pending == null || !_pending.match.valid) return;
 
-        // La partida ya estaba empezada: nada de volver a la sala de espera
-        if (SalaEspera.Instance != null) SalaEspera.Instance.EmpezarAhora();
+        // Si la partida ya estaba empezada, nada de volver a la sala de espera. Si
+        // seguian en la sala, se sigue en la sala (antes se empezaba siempre: el
+        // guardado marca "valido" en cuanto existe la partida, tambien en la sala)
+        if (SalaEspera.Instance != null && SalaEspera.PartidaEmpezada) SalaEspera.Instance.EmpezarAhora();
 
         if (MatchManager.Instance != null) MatchManager.Instance.RestaurarVidas(_pending.match.lives);
         if (ProgresoTercios.Instance != null) ProgresoTercios.Instance.Restaurar(_pending.match.tercio);

@@ -211,7 +211,7 @@ public class OnlineSession : MonoBehaviour
                 };
                 // Indice de texto 3: el SDK se reserva el 1 y el 2
                 options.SessionProperties[PropiedadVersion] = new SessionProperty(
-                    Plataforma.Version, VisibilityPropertyOptions.Public, PropertyIndex.String3);
+                    Plataforma.VersionRed, VisibilityPropertyOptions.Public, PropertyIndex.String3);
 
                 if (!string.IsNullOrWhiteSpace(config.password))
                     options.Password = config.password.Trim();
@@ -267,7 +267,7 @@ public class OnlineSession : MonoBehaviour
             try
             {
                 var query = new QuerySessionsOptions { Count = 25 };
-                query.FilterOptions.Add(new FilterOption(FilterField.StringIndex3, Plataforma.Version, FilterOperation.Equal));
+                query.FilterOptions.Add(new FilterOption(FilterField.StringIndex3, Plataforma.VersionRed, FilterOperation.Equal));
                 QuerySessionsResults results = await MultiplayerService.Instance
                     .QuerySessionsAsync(query);
 

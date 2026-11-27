@@ -105,19 +105,64 @@ public class Bruma : MonoBehaviour
         }
         _puesta = true;
 
-        // Se abre y se cierra despacio y sin patron reconocible
+        // Se abre y se cierra despacio y sin patron reconocible.
+        // OJO: todo a prueba de valores raros. Si el reloj de red llega mal (NaN,
+        // infinito o enorme), el ruido sale NaN, la densidad tambien, y la niebla
+        // NaN pinta TODO del color de la bruma: no se ve nada salvo la interfaz.
+        double reloj = Reloj();
         float ritmo = 1f / Mathf.Max(5f, _ajustes.segundosDeCambio);
-        float cerrada = Mathf.SmoothStep(0f, 1f, Mathf.PerlinNoise(Reloj() * ritmo, 7.3f));
-        _visibilidad = Mathf.Lerp(_ajustes.visibilidadMaxima, _ajustes.visibilidadMinima, cerrada)
-                     * GameSettings.FogVisibilityFactor;
+        float x = (float)((reloj * ritmo) % 10000.0);   // Perlin pierde precision con numeros grandes
+        float ruido = Mathf.PerlinNoise(x, 7.3f);
+        if (!EsNumero(ruido)) { AvisarUnaVez(ref _avisoReloj, "reloj de la partida no valido (" + reloj + ")"); ruido = 0.5f; }
+        float cerrada = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(ruido));
+
+        float visibilidad = Mathf.Lerp(_ajustes.visibilidadMaxima, _ajustes.visibilidadMinima, cerrada)
+                          * GameSettings.FogVisibilityFactor;
+        if (!EsNumero(visibilidad) || visibilidad < 1f)
+        {
+            AvisarUnaVez(ref _avisoVisibilidad, "visibilidad no valida (" + visibilidad + ")");
+            visibilidad = Mathf.Max(1f, _ajustes.visibilidadMaxima);
+        }
+        _visibilidad = visibilidad;
 
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.ExponentialSquared;
         RenderSettings.fogColor = _ajustes.color;
-        RenderSettings.fogDensity = Corte / Mathf.Max(1f, _visibilidad);
+        RenderSettings.fogDensity = Corte / _visibilidad;
 
         PonerCamaras();
         PrepararVolumen();
+        if (Debug.isDebugBuild) Diagnostico(reloj);
+    }
+
+    private static bool EsNumero(float v) => !float.IsNaN(v) && !float.IsInfinity(v);
+
+    private bool _avisoReloj, _avisoVisibilidad;
+
+    private static void AvisarUnaVez(ref bool avisado, string que)
+    {
+        if (avisado) return;
+        avisado = true;
+        Debug.LogWarning("[Bruma] " + que + ": se usa un valor seguro");
+    }
+
+    // Solo en builds de desarrollo: cada 10 s, el estado de la niebla y de las camaras
+    private float _proximoDiagnostico;
+
+    private void Diagnostico(double reloj)
+    {
+        if (Time.unscaledTime < _proximoDiagnostico) return;
+        _proximoDiagnostico = Time.unscaledTime + 10f;
+
+        var red = NetworkManager.Singleton;
+        string horaRed = red != null && red.IsListening ? red.ServerTime.Time.ToString() : "-";
+        var sb = new System.Text.StringBuilder("[Bruma] horaRed=" + horaRed + " reloj=" + reloj + " visibilidad=" + _visibilidad +
+                                               " densidad=" + RenderSettings.fogDensity + " modo=" + RenderSettings.fogMode);
+        foreach (var c in Camera.allCameras)
+            sb.Append(" | " + c.name + " prof=" + c.depth + " cerca=" + c.nearClipPlane + " lejos=" + c.farClipPlane +
+                      " fondo=" + c.clearFlags + " mascara=" + c.cullingMask + " pos=" + c.transform.position +
+                      (c.targetTexture != null ? " (a textura)" : ""));
+        Debug.Log(sb.ToString());
     }
 
     private bool EnEscenaConBruma()
@@ -129,11 +174,21 @@ public class Bruma : MonoBehaviour
     }
 
     // El reloj de la partida es el mismo en todas las maquinas
-    private static float Reloj()
+    private static double Reloj()
     {
         var red = NetworkManager.Singleton;
-        return red != null && red.IsListening ? (float)red.ServerTime.Time : Time.time;
+        if (red == null || !red.IsListening) return Time.time;
+        double t = red.ServerTime.Time;
+        // Recien conectado (o con una medida de red rara) puede venir mal: entonces el local
+        if (double.IsNaN(t) || double.IsInfinity(t) || t < 0 || t > 1e9)
+        {
+            if (!_avisoRelojRed) { _avisoRelojRed = true; Debug.LogWarning("[Bruma] hora de red no valida (" + t + "): se usa la local"); }
+            return Time.time;
+        }
+        return t;
     }
+
+    private static bool _avisoRelojRed;
 
     // ---------- Camaras: cielo tapado y distancia recortada ----------
 

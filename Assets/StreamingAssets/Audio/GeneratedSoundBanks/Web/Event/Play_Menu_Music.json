@@ -1,0 +1,46 @@
+{
+ "SoundBanksInfo": {
+  "Platform": "Web",
+  "BasePlatform": "Web",
+  "SchemaVersion": "16",
+  "SoundBankVersion": "172",
+  "SoundBanks": [
+   {
+    "Id": "2228153899",
+    "Type": "Event",
+    "GUID": "{4EEE4DF1-8B75-40AA-B998-058BD1CD5E5B}",
+    "Language": "SFX",
+    "Hash": "{004B03D8-DB89-2AEE-D3DD-B0DB8C22758A}",
+    "ObjectPath": "Play_Menu_Music",
+    "ShortName": "Play_Menu_Music",
+    "Path": "Event/Play_Menu_Music.bnk",
+    "Media": [
+     {
+      "Id": "710371120",
+      "Language": "SFX",
+      "Streaming": "false",
+      "Location": "Loose",
+      "ShortName": "If I'm Gone - Official Menu Theme.wav",
+      "Path": "Media/710371120.wem",
+      "CachePath": "DB/{DB0345AA-FA94-34E3-F9AE-871A1214DB16}.wem"
+     }
+    ],
+    "Events": [
+     {
+      "Id": "2228153899",
+      "Name": "Play_Menu_Music",
+      "ObjectPath": "\\Events\\Default Work Unit\\Play_Menu_Music",
+      "GUID": "{4EEE4DF1-8B75-40AA-B998-058BD1CD5E5B}",
+      "DurationType": "Infinite",
+      "MediaRefs": [
+       {
+        "Id": "710371120"
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "FileHash": "{CF2C249D-CE42-6052-68F6-CF7CE7F856F8}"
+ }
+}

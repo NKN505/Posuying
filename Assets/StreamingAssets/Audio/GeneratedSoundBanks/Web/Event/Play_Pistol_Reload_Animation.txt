@@ -1,0 +1,10 @@
+Event	ID	Name			Wwise Object Path	Notes
+	2077039894	Play_Pistol_Reload_Animation			\Default Work Unit\Play_Pistol_Reload_Animation	
+
+Switch Group	ID	Name			Wwise Object Path	Notes
+	1339508341	SG_Environment			\Default Work Unit\SG_Environment	
+
+Switch	ID	Name	Switch Group			Notes
+	438105790	Outside	SG_Environment			
+	3553349781	Inside	SG_Environment			
+
